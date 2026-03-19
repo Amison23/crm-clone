@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Omnichannel Inbox</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f97415",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display h-screen overflow-hidden">
+<div class="flex h-full w-full">
+<!-- Sidebar Navigation -->
+<aside class="w-16 lg:w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
+<div class="p-4 flex items-center gap-3">
+<div class="bg-primary text-white rounded-lg p-1">
+<span class="material-symbols-outlined block">bolt</span>
+</div>
+<h1 class="font-bold text-lg hidden lg:block tracking-tight">SupportSuite</h1>
+</div>
+<nav class="flex-1 px-3 py-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium hidden lg:block">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">chat_bubble</span>
+<span class="text-sm font-semibold hidden lg:block">Chat</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium hidden lg:block">Customers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-sm font-medium hidden lg:block">Analytics</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-200" data-alt="Agent profile picture" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBaX_wZqyQw8oNGx-9SlURkmfPI9kHyOJhIUoLDj6UxFs2P5O9O32AtdkEbd5iTDdNYxKmdWbv5C-lrow0p5yi963E9mlvamMxHmF0JcC6f0sm_tmxh7-DvCGrg-tR2_WForhkbn5xnh88wKfkfz4LT5eteYThubVoLQUzHsazLyLWaiElFvQn-_OFuAgRQyJT5fpfV8mLJSOCAAvEUmRiP_JozpzxYMJO2crv-e7IvB3AJjEYgvhzd3ITsCNqPDOK4G_Vcb1dSSRI')"></div>
+<div class="hidden lg:block">
+<p class="text-sm font-semibold">Sarah Jenkins</p>
+<p class="text-xs text-slate-500">Online</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area: Split View -->
+<main class="flex-1 flex overflow-hidden">
+<!-- Left Pane: Conversation List -->
+<section class="w-80 lg:w-96 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
+<div class="p-4 space-y-4">
+<div class="flex items-center justify-between">
+<h2 class="text-xl font-bold">Inbox</h2>
+<button class="text-primary hover:bg-primary/10 p-1 rounded-full">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary" placeholder="Search conversations..." type="text"/>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+<button class="px-3 py-1.5 rounded-full bg-primary text-white text-xs font-medium whitespace-nowrap">Mine</button>
+<button class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium whitespace-nowrap">Unassigned</button>
+<button class="px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium whitespace-nowrap">Bot-only</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<!-- Chat Item (Active) -->
+<div class="px-4 py-3 bg-primary/5 border-l-4 border-primary cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-slate-300 shrink-0" data-alt="Customer avatar Alex" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBLJw1n11g0oX7uwnkOTuY2FitG0CcQZZjxyTuertD00nYeayzOUDxipOgHYm4BPr-RPMzZwDlbaGIl6DVuENORlm_99A6QrSj-gM7aa7r7CfUH-G-YA0zpxMIrRHYVEV4WtgFQcqYSjtDS5n4cfpwj9BmsowMkOYdMTv3tB5bzsmZjSAUi7pac5y7Q9YYiD5rKxo-Rwbc3YLJaYjHtrx8EGTA71LRg_aZv6HOCYTWZ4Gicc1GMa3yVTZtGKfkpskhhGKpgK8unGNE')"></div>
+<div>
+<p class="text-sm font-semibold">Alex Johnson</p>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-green-500">shield_with_heart</span>
+<span class="text-[10px] uppercase font-bold text-slate-400">WhatsApp</span>
+</div>
+</div>
+</div>
+<span class="text-[11px] text-slate-500 font-medium">2m ago</span>
+</div>
+<p class="text-xs text-slate-600 dark:text-slate-400 line-clamp-1">I'm having trouble with my recent subscription billing...</p>
+</div>
+<!-- Chat Item -->
+<div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-slate-300 shrink-0" data-alt="Customer avatar Martha" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDwZQ8kHhe5kcT2VOf8BjErNtRqpIAfGDu2tVYQXEciegy9YCmZiHm3sFJCeWl_Vy1aBDxpOvrC_AV-Bn1yU0cAmPCnO_JJsQTMG3QryLn6pMSux1b3tNwq0Cd3NoUXG4nXCfPfpF9fmKI52SVty2NGhfv8i5ve0gcTq0i74r8hcW4hSvHHexgkczonLo-3cdRGuHD_oxY3De-dJoqILsAQLARRjL_giTEQIxwMYrX43cHukLjgT9xlzr3VSYq6NhAZXxlBornLSj0')"></div>
+<div>
+<p class="text-sm font-semibold">Martha Stewart</p>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">language</span>
+<span class="text-[10px] uppercase font-bold text-slate-400">Web Chat</span>
+</div>
+</div>
+</div>
+<span class="text-[11px] text-slate-500 font-medium">15m ago</span>
+</div>
+<p class="text-xs text-slate-500 line-clamp-1">Thank you for the quick resolution!</p>
+</div>
+<!-- Chat Item -->
+<div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer">
+<div class="flex justify-between items-start mb-1">
+<div class="flex items-center gap-2">
+<div class="w-10 h-10 rounded-full bg-slate-300 shrink-0" data-alt="Customer avatar Kevin" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD7gK85HWg6o2q1Mwlqjp9g64M7LwVvBeUv2XNL0A-_B-a_YnjWZLeayFbWCbiGeoK5jnVQ-3yMjRLHK-XcfVFirHFVKqVU9nI3U2VxV69BdYvteCFkfdeF0mF7rEg4cR1ilMjzaAKObYPK-SS5McQgWbebDNWHlvSuZxHLE5Dcv4Uwrvx4UCdKDqKkKoyuJ0WskYTyJZFJhvB9xVGA_iCHtpd1iwxwUgyevJDRsXryYQSDpUz_Pqhhtb47ZBO-Z3BgeNS-EzghRqI')"></div>
+<div>
+<p class="text-sm font-semibold">Kevin Smith</p>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-green-500">shield_with_heart</span>
+<span class="text-[10px] uppercase font-bold text-slate-400">WhatsApp</span>
+</div>
+</div>
+</div>
+<span class="text-[11px] text-slate-500 font-medium">1h ago</span>
+</div>
+<p class="text-xs text-slate-500 line-clamp-1">Where is my order #5524?</p>
+</div>
+</div>
+</section>
+<!-- Middle Pane: Active Chat Window -->
+<section class="flex-1 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
+<!-- Chat Header -->
+<header class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-slate-300" data-alt="Alex Johnson profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCDWI4swOre4w9Sb4pl9HzdnXcSsz4YTPBRQu4uS8CSPr2UlGuumUbJlVutImS3FpzE9rVjq-AWnlRmcpXsuSAuilC8yCKjD2DXswW0Xg4G_sOhVTjsLtLzgpRsVrr0IPA6FkeODkfj5SAy2JHrc8dm8j69HEPNs6x2A5917TxkduIfFzVr-9L3xsxJDlpMWqnHznBZevgbachokL-gdHZ6YChAaltL4z-vdQgM4kcaneL3gZxa_ORg5RmmL3VNUCrXXxAsEimvlqQ')"></div>
+<div>
+<h3 class="font-bold">Alex Johnson</h3>
+<div class="flex items-center gap-2">
+<span class="flex h-2 w-2 rounded-full bg-green-500"></span>
+<span class="text-xs text-slate-500 font-medium">Online via WhatsApp</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-sm">forward</span>
+                        Transfer
+                    </button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Chat Body -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Status Indicator -->
+<div class="flex justify-center">
+<span class="px-3 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 text-[11px] font-semibold rounded-full flex items-center gap-1.5 uppercase tracking-wider border border-amber-100 dark:border-amber-800">
+<span class="material-symbols-outlined text-xs">smart_toy</span>
+                        Taken over from Bot
+                    </span>
+</div>
+<!-- Message Received -->
+<div class="flex items-end gap-3 max-w-[80%]">
+<div class="w-8 h-8 rounded-full bg-slate-300 shrink-0" data-alt="Alex Johnson" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCBYxqG5UBwNn79kCKPfgBxbpjM6ylXY95BN2FpaT8kAtp_hdUwrPNQmh-F5JelAmlZ9qNuzVSWLobpUAqs9yUjjBqmqBqlyhydfzjFbO5mMgTtodaEP-4UMQ-2orn5Ge6buvLn19E6UgGqXiKbyVjF5nZaCYkuaHEMe0trpjmeASrxutsIT6CTujBBpw6gy2gb0LT5xRW1JZIvGTsxcPZHsYo9F0SE-pujOdEKTykosfL0XyqefrfDEyx4gE1Yw39ZCmvhGVRc7b8')"></div>
+<div class="space-y-1">
+<div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl rounded-bl-none">
+<p class="text-sm">Hi, I'm having trouble with my recent subscription billing. It seems I was charged twice this month.</p>
+</div>
+<span class="text-[10px] text-slate-400 ml-1">10:42 AM</span>
+</div>
+</div>
+<!-- Message Sent -->
+<div class="flex items-end justify-end gap-3 ml-auto max-w-[80%]">
+<div class="space-y-1 text-right">
+<div class="bg-primary text-white p-3 rounded-2xl rounded-br-none">
+<p class="text-sm text-left">I'm sorry to hear that, Alex. Let me look into your account. Could you please confirm the last 4 digits of the card used?</p>
+</div>
+<div class="flex items-center justify-end gap-1">
+<span class="text-[10px] text-slate-400">10:45 AM</span>
+<span class="material-symbols-outlined text-[14px] text-primary">done_all</span>
+</div>
+</div>
+</div>
+<!-- Message Received -->
+<div class="flex items-end gap-3 max-w-[80%]">
+<div class="w-8 h-8 rounded-full bg-slate-300 shrink-0" data-alt="Alex Johnson" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCbUqgsH5vr80wEHew377GWNnQFR-higsOBERU2lAqXs5gxcsStufdoRikYciMw8F5Xntf64wGgkZ7LhRnpqhrOYJhrYRwRfUtqcPlTdJRcX98V0jQgBHooWJ6dGfyv3oG2PCd3wnM7dR25erqqGD0NKOwLcUSJUVkP-HXvA_qO2WnspW9s86VGsfiGvWcYdaGnONeX74tADyCF0ShAdoLljGFGtJX3RBixtAVI5sw_C1VCv2s8zQXrplJzNC6IhEqJx85Z7jK8IUg')"></div>
+<div class="space-y-1">
+<div class="bg-slate-100 dark:bg-slate-800 p-3 rounded-2xl rounded-bl-none">
+<p class="text-sm">Sure, it ends in 4492. I also have the invoice number if that helps: #INV-2024-009.</p>
+</div>
+<span class="text-[10px] text-slate-400 ml-1">10:46 AM</span>
+</div>
+</div>
+</div>
+<!-- Chat Footer: Input Area -->
+<footer class="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+<div class="flex items-end gap-3">
+<div class="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary">
+<textarea class="w-full p-3 bg-transparent border-none focus:ring-0 resize-none text-sm" placeholder="Type a message..." rows="1"></textarea>
+<div class="flex items-center justify-between px-3 py-2 border-t border-slate-100 dark:border-slate-700">
+<div class="flex gap-2">
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined">mood</span>
+</button>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined">attach_file</span>
+</button>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined">image</span>
+</button>
+</div>
+<button class="text-xs font-bold text-primary uppercase tracking-wide">Templates</button>
+</div>
+</div>
+<button class="h-12 w-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</footer>
+</section>
+<!-- Right Pane: Customer Mini-Profile -->
+<section class="w-72 hidden xl:flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-6 overflow-y-auto">
+<div class="text-center space-y-3 mb-8">
+<div class="relative inline-block">
+<div class="w-24 h-24 rounded-full border-4 border-slate-50 dark:border-slate-800 bg-slate-200 mx-auto" data-alt="Alex Johnson large profile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBqlGt8YFGYBNDiRKzYLNkx5sz4g2zKlsBGinYPu-AJtKebWpeptt2GomlnOeZX9sVoAx1Q9T1w0Ss5oSrVaWWjvVbWvKqTdTnwj4-yFl3rPRLoWtlo9alAxx6XGbhijBUYUBW5jYizNN5VgwNJs_yQxLW-8JmJxaBYK5B7LaMVHUGpUg9MqhGihOPLnsYdDZ0fqceooHDtp7Hiwl8KYXxZp5cuhwUGy99vUTxq92txaFCvtACFO_ynsE5DtSQKnqzYWs6bWg3K-JA')"></div>
+<div class="absolute bottom-1 right-1 bg-green-500 w-5 h-5 rounded-full border-2 border-white dark:border-slate-900"></div>
+</div>
+<div>
+<h4 class="text-lg font-bold">Alex Johnson</h4>
+<span class="px-2 py-0.5 bg-primary/10 text-primary text-[10px] font-bold uppercase rounded-full tracking-wider">Lead</span>
+</div>
+</div>
+<div class="space-y-6">
+<div class="space-y-1">
+<p class="text-[10px] font-bold text-slate-400 uppercase">Contact Information</p>
+<div class="space-y-3">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 text-lg">mail</span>
+<span class="text-sm truncate">alex.j@example.com</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 text-lg">call</span>
+<span class="text-sm">+1 (555) 012-3456</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400 text-lg">location_on</span>
+<span class="text-sm">San Francisco, CA</span>
+</div>
+</div>
+</div>
+<div class="space-y-1">
+<p class="text-[10px] font-bold text-slate-400 uppercase">Recent Tickets</p>
+<div class="space-y-2">
+<div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-semibold">#TCK-9902</span>
+<span class="text-[10px] px-1.5 py-0.5 bg-green-100 text-green-700 rounded">Closed</span>
+</div>
+<p class="text-[11px] text-slate-500 line-clamp-1">Product return inquiry</p>
+</div>
+<div class="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700">
+<div class="flex justify-between items-start mb-1">
+<span class="text-xs font-semibold">#TCK-9120</span>
+<span class="text-[10px] px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded">Open</span>
+</div>
+<p class="text-[11px] text-slate-500 line-clamp-1">Billing issue report</p>
+</div>
+</div>
+</div>
+<button class="w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-colors">
+                    View Full History
+                </button>
+</div>
+</section>
+</main>
+</div>
+</body></html>

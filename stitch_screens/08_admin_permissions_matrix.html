@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Admin Permissions Matrix</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f97415",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-fill .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1;
+        }
+        input[type="checkbox"]:checked {
+            background-color: #f97415;
+            border-color: #f97415;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+<div class="p-6 flex items-center gap-3">
+<div class="bg-primary p-1.5 rounded-lg">
+<span class="material-symbols-outlined text-white">shield_person</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight">AdminConsole</h2>
+</div>
+<nav class="flex-1 px-4 space-y-1 overflow-y-auto">
+<div class="py-4">
+<p class="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">System Admin</p>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-sm font-medium">Modules</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Users</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary active-fill" href="#">
+<span class="material-symbols-outlined">verified_user</span>
+<span class="text-sm font-medium">Admin</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">bar_chart_4_bars</span>
+<span class="text-sm font-medium">Reports</span>
+</a>
+</div>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 px-3 py-2">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img alt="User profile" data-alt="Avatar of the system administrator" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDbrML199PtCNUINlfF4d2jRBv9puKKJ4fmoLMjlKCLHzEa3ypJRhDyiioaZ_442cFR4qE_fcl0-_p0FrtX-vkZUBnNd6ot2WX0gUrlTiYUPrcIezh29zhRi1J_t0PwJNBe-U7UnDTiZew-1t9Rvw_1F8uwDtWi8V6iYxPZe_V2avtqRfb9OeHv5g2chxLV2wFyCftQSy8bdWO4B6iGkbeeDc1yRx9RoZgCx7wIwzpLjVQUQNx5T-Ivc8GhZzpKsDqr5COm5k80cTg"/>
+</div>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-semibold truncate">Alex Rivera</p>
+<p class="text-xs text-slate-500 truncate">System Manager</p>
+</div>
+<span class="material-symbols-outlined text-slate-400 text-lg">settings</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-background-light dark:bg-background-dark">
+<!-- Top Header -->
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur flex items-center justify-between px-8 shrink-0">
+<div class="flex items-center flex-1 max-w-md">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/50 transition-all" placeholder="Search permissions..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+</button>
+<button class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">help</span>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="flex-1 overflow-y-auto p-8">
+<div class="mb-8">
+<h1 class="text-3xl font-black tracking-tight mb-2">Permissions Matrix</h1>
+<p class="text-slate-500 dark:text-slate-400">Configure role-based access control (RBAC) across system modules.</p>
+</div>
+<!-- Role Selection Tabs -->
+<div class="border-b border-slate-200 dark:border-slate-800 mb-8 flex gap-8 overflow-x-auto">
+<button class="border-b-2 border-primary text-primary px-4 py-4 text-sm font-bold whitespace-nowrap">Super Admin</button>
+<button class="border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 px-4 py-4 text-sm font-bold transition-all whitespace-nowrap">Company Admin</button>
+<button class="border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 px-4 py-4 text-sm font-bold transition-all whitespace-nowrap">Sales Agent</button>
+<button class="border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 px-4 py-4 text-sm font-bold transition-all whitespace-nowrap">Server Admin</button>
+</div>
+<!-- Permissions Table Card -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50">
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800 min-w-[240px]">Module Name</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800 text-center">Enable</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800 text-center">Read</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800 text-center">Write</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800 text-center">Delete</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 border-b border-slate-200 dark:border-slate-800 text-center">Export</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+<!-- Row: CRM -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400">
+<span class="material-symbols-outlined text-lg">contacts</span>
+</div>
+<div>
+<p class="font-semibold text-sm">CRM</p>
+<p class="text-xs text-slate-400">Manage customer relationships</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+</tr>
+<!-- Row: Chat -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+<span class="material-symbols-outlined text-lg">forum</span>
+</div>
+<div>
+<p class="font-semibold text-sm">Chat</p>
+<p class="text-xs text-slate-400">Real-time internal messaging</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+</tr>
+<!-- Row: Support -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined text-lg">support_agent</span>
+</div>
+<div>
+<p class="font-semibold text-sm">Support</p>
+<p class="text-xs text-slate-400">Helpdesk and ticketing</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+</tr>
+<!-- Row: Admin Settings -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+<span class="material-symbols-outlined text-lg">settings_applications</span>
+</div>
+<div>
+<p class="font-semibold text-sm">Admin Settings</p>
+<p class="text-xs text-slate-400">System configuration tools</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input checked="" class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+</tr>
+<!-- Row: Telephony -->
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="size-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600 dark:text-rose-400">
+<span class="material-symbols-outlined text-lg">call</span>
+</div>
+<div>
+<p class="font-semibold text-sm">Telephony</p>
+<p class="text-xs text-slate-400">Voice and call routing</p>
+</div>
+</div>
+</td>
+<td class="px-6 py-5 text-center">
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</td>
+<td class="px-6 py-5 text-center">
+<input class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+<td class="px-6 py-5 text-center">
+<input class="size-5 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary/20 bg-transparent" type="checkbox"/>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-between items-center">
+<p class="text-xs text-slate-500 font-medium">Last updated: Oct 24, 2023 - 14:32 PM</p>
+<div class="flex gap-3">
+<button class="px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors">Discard Changes</button>
+<button class="px-6 py-2 text-sm font-bold text-white bg-primary rounded-lg hover:brightness-110 shadow-lg shadow-primary/20 transition-all">Save Permissions</button>
+</div>
+</div>
+</div>
+<!-- Footer Section -->
+<div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-start gap-4">
+<div class="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-primary">
+<span class="material-symbols-outlined">history</span>
+</div>
+<div>
+<h4 class="font-bold text-sm mb-1">Audit Logs</h4>
+<p class="text-xs text-slate-500">Review all historical permission changes for compliance.</p>
+<a class="inline-block mt-3 text-xs font-bold text-primary hover:underline" href="#">View History →</a>
+</div>
+</div>
+<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-start gap-4">
+<div class="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg text-emerald-600 dark:text-emerald-400">
+<span class="material-symbols-outlined">security</span>
+</div>
+<div>
+<h4 class="font-bold text-sm mb-1">Security Score</h4>
+<p class="text-xs text-slate-500">Current RBAC configuration adheres to best practices.</p>
+<div class="mt-3 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 w-[92%]"></div>
+</div>
+</div>
+</div>
+<div class="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-start gap-4">
+<div class="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg text-amber-600 dark:text-amber-400">
+<span class="material-symbols-outlined">group_add</span>
+</div>
+<div>
+<h4 class="font-bold text-sm mb-1">Quick Invite</h4>
+<p class="text-xs text-slate-500">Quickly add a new administrator with pre-defined roles.</p>
+<a class="inline-block mt-3 text-xs font-bold text-primary hover:underline" href="#">Invite User →</a>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Task Board - Kanban View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f97415",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
+<div class="p-6 flex items-center gap-3">
+<div class="bg-primary p-1.5 rounded-lg text-white">
+<span class="material-symbols-outlined text-2xl">grid_view</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">TaskFlow</h1>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<div class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Dashboard</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_box</span>
+<span class="text-sm font-medium">Tasks</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined">folder</span>
+<span class="text-sm font-medium">Projects</span>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined">group</span>
+<span class="text-sm font-medium">Team</span>
+</div>
+</nav>
+<div class="p-4 mt-auto border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Settings</span>
+</div>
+<div class="mt-4 flex items-center gap-3 px-3 py-2">
+<img alt="User Profile" class="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" data-alt="Profile avatar of the current project manager user" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtegv8gvqjfAiodPbyI6ePztZscWBXlizdS9UEgSBvSH9Gb1eWLfc1SMSFZYiAlmjSVTuKsoQupGYkOrxhR72acDeoch8_tyR5CZ001TN64Ridm4lzKwAweBavgWrc0PrCUZAKMqlmw6ZS8faSBQokS8RALEZhHXx2sEMkeIB7W0meXXOc4LXcnNg6ZM7KFqznz_L_cmYV6JtNAm1PwHDyMprhjsjrVVBb-PqPx_siAxnpYup_2GXqyy4iSyhTlYFafFrwhWYPuhI"/>
+<div class="flex flex-col overflow-hidden">
+<p class="text-sm font-semibold truncate">Alex Rivera</p>
+<p class="text-xs text-slate-500 truncate">Project Lead</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark overflow-hidden">
+<!-- Top Header -->
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
+<div class="flex items-center gap-6">
+<h2 class="text-lg font-bold">Engineering Board</h2>
+<div class="relative w-64 group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary" placeholder="Search tasks..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+<button class="px-3 py-1 bg-white dark:bg-slate-700 shadow-sm rounded-md text-slate-900 dark:text-white">
+<span class="material-symbols-outlined text-lg align-middle">view_kanban</span>
+</button>
+<button class="px-3 py-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+<span class="material-symbols-outlined text-lg align-middle">view_list</span>
+</button>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-sm">add</span>
+                    Add Task
+                </button>
+</div>
+</header>
+<!-- Board Section -->
+<div class="flex-1 overflow-x-auto p-8 scrollbar-hide">
+<div class="flex gap-6 h-full min-w-max">
+<!-- Column: To Do -->
+<div class="w-80 flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<h3 class="font-bold text-sm uppercase tracking-wider text-slate-500">To Do</h3>
+<span class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full text-xs font-bold">3</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Task Card -->
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-primary transition-all cursor-pointer group">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">High</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-primary text-sm">link</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 line-clamp-2">Update API documentation for v2.4 release</h4>
+<div class="flex items-center justify-between mt-auto">
+<div class="flex items-center gap-1.5 text-slate-500 text-xs">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 25</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-900" data-alt="Team member avatar circle profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-5rKCn5GVx_rOWmSqp3crKNKhALcXOcrLuRH-Dwq69azNy8HIaOvU18MmKdeiZawO769v0QSni-8eNO74qbeZAEq_f6LJnQrd0StWReAj7i78ikzRql0QCOqs7b47gA-TBsPOr6jC0Lnc3F-wonl-pTtLKwYKHviMbyZPqpzRUhqGaxaYHzNrnA95wJnDNG_nrpEslHdTAQjiSX_TxbsKmIqnWnem8awTHzOd-9rMFVl15Z1c9Oy4YX_LZOVfMOy4brhz5urHxPw"/>
+</div>
+</div>
+</div>
+<!-- Task Card -->
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-primary transition-all cursor-pointer group">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase">Medium</span>
+<span class="material-symbols-outlined text-slate-300 group-hover:text-primary text-sm">confirmation_number</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 line-clamp-2">Fix sidebar responsive layout on tablet devices</h4>
+<div class="flex items-center justify-between mt-auto">
+<div class="flex items-center gap-1.5 text-slate-500 text-xs">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 27</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-900" data-alt="Team member avatar circle profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADPhCpkgkGisrPN6LWOLa0Fn6RukEhFsmI2zOpz1AZeFQgCMHeJwsRqWUb29sMpUR5S6iNxUuzi3p8BT1oUzUkC15ws1s8tzYBEnajNGz5oR4jxbd286KcvwX-1S-tXO0GBgapk-X8ZYTd9p7ni8hNdUHJeOUlBS5OYJcUH1HGDioA99vaWjniIlkFxJnMM48T8oGa3XJO9m7-xSeP-3WOfM8ocozXH7fEiMMoVoFKXF8Dcjrk54WanAZz9FNGucet2wwH4gAmPWs"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: In Progress -->
+<div class="w-80 flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<h3 class="font-bold text-sm uppercase tracking-wider text-slate-500">In Progress</h3>
+<span class="bg-primary/20 text-primary px-2 py-0.5 rounded-full text-xs font-bold">2</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="flex flex-col gap-3">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 border-l-4 border-l-primary">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">High</span>
+<span class="material-symbols-outlined text-slate-300 text-sm">confirmation_number</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 line-clamp-2">Refactor authentication middleware</h4>
+<div class="flex items-center justify-between mt-auto">
+<div class="flex items-center gap-1.5 text-slate-500 text-xs">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 24</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-900" data-alt="Team member avatar circle profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKgfZheTP8XsmQ6psGlRwTgyhM5QsjiujLP8IzQZgrNR1-ck5_XVczbhD2jqLYABpLxJiwwETYGLBBP5eetqtLSMVddUiuJLYhRNX_4--QEtOswCUj2pfJdCe6lb0VOTutRI1VvuGzsyXenY41H6MFD06sGTyI00pyAEXKShGnoc0JxAHeXI_kKjKN7V6kYTeFXzSCa2PvaZR3v2Ay1YvaQg9yGnauYBplDfqn3k3rE09jpo7uPt5JSSBN8Qvd8LBZtJLmFmGswzc"/>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Low</span>
+<span class="material-symbols-outlined text-slate-300 text-sm">link</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 line-clamp-2">New client onboarding flow mockups</h4>
+<div class="flex items-center justify-between mt-auto">
+<div class="flex items-center gap-1.5 text-slate-500 text-xs">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 30</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-900" data-alt="Team member avatar circle profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYkH09ia7K2tts581L3BCNrSY6YIsL0nijhRsNdWb7tkv7tBnypWWv-tD2FRhS8t6_dwz-wlwetTso9-txXjYWjc4xDrjcdlc0nyY2nwTcm4RvQfMzekyLHtMDAtmR-z-XZY5-PK742bDM-LIzNge7rkuyIWnMXgEJZ7SLTftvoCJverH1ax40cKAImxpqDZAAO1BZ8VTU9bpmeWZYCoQamTOmUV-_hAz5SULge1cqDNB4HkbgYSCNkC8M1dpKEW7bhlLIPQz98cI"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Review -->
+<div class="w-80 flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<h3 class="font-bold text-sm uppercase tracking-wider text-slate-500">Review</h3>
+<span class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full text-xs font-bold">1</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="flex flex-col gap-3">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase">Medium</span>
+<span class="material-symbols-outlined text-slate-300 text-sm">link</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 line-clamp-2">Integration tests for payment gateway</h4>
+<div class="flex items-center justify-between mt-auto">
+<div class="flex items-center gap-1.5 text-slate-500 text-xs">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 22</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-900" data-alt="Team member avatar circle profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDznKAVUYMjdOh6ko1kp0f2vSAfAwGB3pOp-aJ7hW9mU5qbkSaQ4kf_UqyhBUvTD1nKbJPRK55ZvdxQVFDXSKhb3q-qC0AH70f_xsqZRmbUChLLuipeE7XW23XqMvfnU7WUfppe0PotkorOAC7r_2DU0aDVAquG8dyN7_nIiRH7ow7tWmpERo_X-RIj2fqjrYeJRM55T_ranW20wuceQjUojSMTUpMFM_kggx_FuVqvxbeiWDhIri1Hu3tz_rRs552d-K0eBFtOzE8"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Column: Completed -->
+<div class="w-80 flex flex-col gap-4">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<h3 class="font-bold text-sm uppercase tracking-wider text-slate-500">Completed</h3>
+<span class="bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full text-xs font-bold">4</span>
+</div>
+<button class="text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="flex flex-col gap-3 opacity-75">
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Medium</span>
+<span class="material-symbols-outlined text-green-500 text-sm">check_circle</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 line-clamp-2 line-through text-slate-500">Dashboard analytics bugfix</h4>
+<div class="flex items-center justify-between mt-auto">
+<div class="flex items-center gap-1.5 text-slate-400 text-xs">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 18</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-900" data-alt="Team member avatar circle profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCg5b6uJF9xS9mqhr-Oj0qGIQX5q8Vnxb8Mts-0DDNzpMuyiCJmd4tMcA1B-6ZhpzTkbrDGk86PNCeThf2wHOcF_CKyExFmTIcxN0tDlpV_sCgAbM8spWg18Iwe1pq2Utfcc21cT7-ADrroxRxbXa7v1asiIR-uAPHcEBWtRqhQGqabyr6EAFpslvyMyEWdvZwYLeD10-loVgtT5ERtESHbl9yPXd6GcLhNp9dENJmy7OyyqP0AkUlu86crV-iyOvaL_n7p0TPAlVE"/>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
+<div class="flex justify-between items-start mb-3">
+<span class="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Low</span>
+<span class="material-symbols-outlined text-green-500 text-sm">check_circle</span>
+</div>
+<h4 class="text-sm font-semibold mb-4 line-clamp-2 line-through text-slate-500">Update company brand assets</h4>
+<div class="flex items-center justify-between mt-auto">
+<div class="flex items-center gap-1.5 text-slate-400 text-xs">
+<span class="material-symbols-outlined text-sm">calendar_today</span>
+<span>Oct 15</span>
+</div>
+<div class="flex -space-x-2">
+<img alt="Assignee" class="w-6 h-6 rounded-full ring-2 ring-white dark:ring-slate-900" data-alt="Team member avatar circle profile photo" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGGc-ms8Vl6E7QRD0Bi9GnVJuAVuKr0jU3b8WLmF0nMxCRpozlPJXrib4BNEjoY2Eo4QHU6hjaRs3zVWx0SCUjP3k53IqGporrgJ9DuzkswpKhtjfWlx1HMJ47JTgfuB_EQM0b9g1-7CC7onW7WXZOptA84EmsxILQyJYQGbiXC_IF6GDCv_iogbZsFKgq6EVR96bJIW_bRTYkY6MMJxFQ0z4iNZvWsuFa6cZgkt4X5zQHy8ORU7n5zZz48geOH8OrB1Nhbq0PoUU"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Add New Column -->
+<div class="w-80 flex flex-col gap-4">
+<button class="flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl h-24 text-slate-400 hover:border-primary hover:text-primary transition-all">
+<span class="material-symbols-outlined">add</span>
+<span class="text-sm font-semibold">New Column</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
