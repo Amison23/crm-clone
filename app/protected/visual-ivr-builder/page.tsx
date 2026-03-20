@@ -4,128 +4,12 @@ export default function VisualIvrBuilder() {
       
 <div className="relative flex h-screen w-full flex-col overflow-hidden">
 {/*  TopNavBar  */}
-<header className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 shrink-0">
-<div className="flex items-center gap-4">
-<div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
-<span className="material-symbols-outlined text-xl">settings_input_component</span>
-</div>
-<div className="flex flex-col">
-<h2 className="text-sm font-bold leading-tight tracking-tight">VoiceFlow Architect</h2>
-<div className="flex items-center gap-1">
-<span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">Project:</span>
-<span className="text-[10px] font-bold text-primary uppercase">Support_Main_v2</span>
-</div>
-</div>
-</div>
-<nav className="hidden md:flex items-center gap-6">
-<a className="text-sm font-semibold text-slate-900 dark:text-slate-100 border-b-2 border-primary pb-1" href="#">Flow Designer</a>
-<a className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary transition-colors" href="#">Phone Numbers</a>
-<a className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary transition-colors" href="#">Call Logs</a>
-<a className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary transition-colors" href="#">Analytics</a>
-</nav>
-<div className="flex items-center gap-3">
-<button className="flex items-center gap-2 rounded-lg bg-slate-100 dark:bg-slate-800 px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
-<span className="material-symbols-outlined text-lg">play_circle</span>
-<span>Test Flow</span>
-</button>
-<button className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
-<span className="material-symbols-outlined text-lg">publish</span>
-<span>Publish</span>
-</button>
-<div className="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden ml-2 border border-slate-300 dark:border-slate-600">
-<img className="h-full w-full object-cover" alt="User profile avatar" src="https://ui-avatars.com/api/?name=User&background=random" />
-</div>
-</div>
-</header>
+
 <div className="flex flex-1 overflow-hidden">
 {/*  Sidebar: Node Library  */}
-<aside className="w-72 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
-<div className="p-4 border-b border-slate-100 dark:border-slate-800">
-<h3 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">Flow Components</h3>
-<div className="relative">
-<span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-<input className="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 pl-10 pr-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none" placeholder="Search nodes..." type="text" />
-</div>
-</div>
-<div className="flex-1 overflow-y-auto p-4 space-y-2">
-{/*  Node Category  */}
-<div className="mb-6">
-<p className="text-[11px] font-bold text-slate-400 uppercase mb-3 px-2">Triggers &amp; Inputs</p>
-<div className="space-y-1">
-<div className="group flex items-center gap-3 rounded-xl p-3 bg-primary/5 border border-primary/20 cursor-grab hover:border-primary transition-all">
-<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-white">
-<span className="material-symbols-outlined">call_received</span>
-</div>
-<div>
-<p className="text-sm font-bold text-slate-900 dark:text-white">Incoming Call</p>
-<p className="text-[11px] text-slate-500">Entry point node</p>
-</div>
-</div>
-<div className="group flex items-center gap-3 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent cursor-grab transition-all">
-<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500 text-white">
-<span className="material-symbols-outlined">dialpad</span>
-</div>
-<div>
-<p className="text-sm font-bold text-slate-900 dark:text-white">Menu Options</p>
-<p className="text-[11px] text-slate-500">DTMF Input / IVR Menu</p>
-</div>
-</div>
-</div>
-</div>
-{/*  Node Category  */}
-<div className="mb-6">
-<p className="text-[11px] font-bold text-slate-400 uppercase mb-3 px-2">Actions</p>
-<div className="space-y-1">
-<div className="group flex items-center gap-3 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent cursor-grab transition-all">
-<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500 text-white">
-<span className="material-symbols-outlined">record_voice_over</span>
-</div>
-<div>
-<p className="text-sm font-bold text-slate-900 dark:text-white">Welcome Message</p>
-<p className="text-[11px] text-slate-500">Play audio or TTS</p>
-</div>
-</div>
-<div className="group flex items-center gap-3 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent cursor-grab transition-all">
-<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500 text-white">
-<span className="material-symbols-outlined">schedule</span>
-</div>
-<div>
-<p className="text-sm font-bold text-slate-900 dark:text-white">Time Routing</p>
-<p className="text-[11px] text-slate-500">Schedule based path</p>
-</div>
-</div>
-<div className="group flex items-center gap-3 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent cursor-grab transition-all">
-<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-500 text-white">
-<span className="material-symbols-outlined">groups</span>
-</div>
-<div>
-<p className="text-sm font-bold text-slate-900 dark:text-white">Queue Assignment</p>
-<p className="text-[11px] text-slate-500">Send to agent pool</p>
-</div>
-</div>
-<div className="group flex items-center gap-3 rounded-xl p-3 hover:bg-slate-50 dark:hover:bg-slate-800 border border-transparent cursor-grab transition-all">
-<div className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-500 text-white">
-<span className="material-symbols-outlined">voicemail</span>
-</div>
-<div>
-<p className="text-sm font-bold text-slate-900 dark:text-white">Voicemail</p>
-<p className="text-[11px] text-slate-500">Record caller message</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div className="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-<button className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
-<span className="material-symbols-outlined">help_outline</span>
-</button>
-<div className="flex items-center gap-1 text-[11px] font-medium text-slate-400">
-<span>Autosaved at 14:02</span>
-</div>
-</div>
-</aside>
+
 {/*  Canvas Area  */}
-<main className="flex-1 relative bg-slate-50 dark:bg-[#0d1117] overflow-hidden" style={{'backgroundImage':'radial-gradient(#cbd5e1 0.5px, transparent 0.5px)','backgroundSize':'24px 24px'}}>
+<div className="w-full flex-1 relative flex flex-col">
 {/*  Canvas Toolbar  */}
 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 rounded-full bg-white dark:bg-slate-900 shadow-2xl border border-slate-200 dark:border-slate-800 p-2 z-10">
 <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300">
@@ -247,7 +131,7 @@ export default function VisualIvrBuilder() {
                     100%
                 </div>
 </div>
-</main>
+</div>
 {/*  Right Panel: Node Properties  */}
 <aside className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto flex flex-col shrink-0">
 <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">

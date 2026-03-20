@@ -4,75 +4,11 @@ export default function CrmLeadsTable() {
       
 <div className="flex h-screen overflow-hidden">
 {/*  Sidebar  */}
-<aside className="w-64 flex flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-<div className="p-6 flex items-center gap-3">
-<div className="size-10 bg-primary rounded-lg flex items-center justify-center text-white">
-<span className="material-symbols-outlined">hub</span>
-</div>
-<div>
-<h1 className="text-sm font-bold leading-none">Enterprise CRM</h1>
-<p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Admin Console</p>
-</div>
-</div>
-<nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-<a className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
-<span className="material-symbols-outlined">dashboard</span>
-<span>Dashboard</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-primary text-white" href="#">
-<span className="material-symbols-outlined">group</span>
-<span>CRM</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
-<span className="material-symbols-outlined">campaign</span>
-<span>Marketing</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
-<span className="material-symbols-outlined">payments</span>
-<span>Sales</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900" href="#">
-<span className="material-symbols-outlined">bar_chart</span>
-<span>Reports</span>
-</a>
-</nav>
-<div className="p-4 border-t border-slate-200 dark:border-slate-800">
-<div className="flex items-center gap-3 px-3 py-2">
-<div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800 bg-cover bg-center" data-alt="User profile avatar" style={{}}></div>
-<div className="flex-1 min-w-0">
-<p className="text-xs font-semibold truncate">Alex Rivera</p>
-<p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">alex@enterprise.com</p>
-</div>
-<span className="material-symbols-outlined text-slate-400 text-sm">settings</span>
-</div>
-</div>
-</aside>
+
 {/*  Main Content  */}
-<main className="flex-1 flex flex-col overflow-hidden">
+<div className="w-full flex-1 relative flex flex-col">
 {/*  Header  */}
-<header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center justify-between px-8">
-<div className="flex items-center gap-4">
-<h2 className="text-xl font-bold">Lead Management</h2>
-<div className="relative">
-<span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-<input className="pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-900 border-none rounded-lg text-sm w-64 focus:ring-2 focus:ring-primary/50" placeholder="Search leads..." type="text" />
-</div>
-</div>
-<div className="flex items-center gap-3">
-<button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg relative">
-<span className="material-symbols-outlined">notifications</span>
-<span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950"></span>
-</button>
-<button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold border border-slate-200 dark:border-slate-800 hover:bg-slate-200 dark:hover:bg-slate-800">
-<span className="material-symbols-outlined text-lg">upload</span>
-<span>Import</span>
-</button>
-<button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90">
-<span className="material-symbols-outlined text-lg">person_add</span>
-<span>Add Lead</span>
-</button>
-</div>
-</header>
+
 {/*  Content Area  */}
 <div className="flex-1 overflow-auto p-8 space-y-6">
 {/*  Filters  */}
@@ -303,9 +239,6 @@ export default function CrmLeadsTable() {
 </div>
 </div>
 </div>
-</main>
-</div>
-
-    </>
+</div></div></>
   );
 }

@@ -4,71 +4,11 @@ export default function TaskManagementBoard() {
       
 <div className="flex h-screen overflow-hidden">
 {/*  Sidebar  */}
-<aside className="w-64 flex-shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col">
-<div className="p-6 flex items-center gap-3">
-<div className="bg-primary p-1.5 rounded-lg text-white">
-<span className="material-symbols-outlined text-2xl">grid_view</span>
-</div>
-<h1 className="text-xl font-bold tracking-tight">TaskFlow</h1>
-</div>
-<nav className="flex-1 px-4 space-y-1">
-<div className="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
-<span className="material-symbols-outlined">dashboard</span>
-<span className="text-sm font-medium">Dashboard</span>
-</div>
-<div className="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg cursor-pointer">
-<span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>check_box</span>
-<span className="text-sm font-medium">Tasks</span>
-</div>
-<div className="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
-<span className="material-symbols-outlined">folder</span>
-<span className="text-sm font-medium">Projects</span>
-</div>
-<div className="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
-<span className="material-symbols-outlined">group</span>
-<span className="text-sm font-medium">Team</span>
-</div>
-</nav>
-<div className="p-4 mt-auto border-t border-slate-200 dark:border-slate-800">
-<div className="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer">
-<span className="material-symbols-outlined">settings</span>
-<span className="text-sm font-medium">Settings</span>
-</div>
-<div className="mt-4 flex items-center gap-3 px-3 py-2">
-<img alt="User Profile" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700" data-alt="Profile avatar of the current project manager user" src="https://ui-avatars.com/api/?name=User&background=random" />
-<div className="flex flex-col overflow-hidden">
-<p className="text-sm font-semibold truncate">Alex Rivera</p>
-<p className="text-xs text-slate-500 truncate">Project Lead</p>
-</div>
-</div>
-</div>
-</aside>
+
 {/*  Main Content  */}
-<main className="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark overflow-hidden">
+<div className="w-full flex-1 relative flex flex-col">
 {/*  Top Header  */}
-<header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shrink-0">
-<div className="flex items-center gap-6">
-<h2 className="text-lg font-bold">Engineering Board</h2>
-<div className="relative w-64 group">
-<span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
-<input className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary" placeholder="Search tasks..." type="text" />
-</div>
-</div>
-<div className="flex items-center gap-3">
-<div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-<button className="px-3 py-1 bg-white dark:bg-slate-700 shadow-sm rounded-md text-slate-900 dark:text-white">
-<span className="material-symbols-outlined text-lg align-middle">view_kanban</span>
-</button>
-<button className="px-3 py-1 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
-<span className="material-symbols-outlined text-lg align-middle">view_list</span>
-</button>
-</div>
-<button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors">
-<span className="material-symbols-outlined text-sm">add</span>
-                    Add Task
-                </button>
-</div>
-</header>
+
 {/*  Board Section  */}
 <div className="flex-1 overflow-x-auto p-8 scrollbar-hide">
 <div className="flex gap-6 h-full min-w-max">
@@ -251,9 +191,6 @@ export default function TaskManagementBoard() {
 </div>
 </div>
 </div>
-</main>
-</div>
-
-    </>
+</div></div></>
   );
 }

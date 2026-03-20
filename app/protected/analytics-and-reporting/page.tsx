@@ -3,69 +3,9 @@ export default function AnalyticsAndReporting() {
     <>
       
 <div className="flex min-h-screen">
-<aside className="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hidden lg:flex flex-col">
-<div className="p-6">
-<div className="flex items-center gap-3 mb-8">
-<div className="bg-primary text-white p-2 rounded-lg">
-<span className="material-symbols-outlined">analytics</span>
-</div>
-<div>
-<h1 className="text-slate-900 dark:text-white text-base font-bold leading-tight">DataCorp</h1>
-<p className="text-slate-500 dark:text-slate-400 text-xs font-normal">Admin Console</p>
-</div>
-</div>
-<nav className="flex flex-col gap-1">
-<a className="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
-<span className="material-symbols-outlined">dashboard</span>
-<span className="text-sm font-medium">Dashboard</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 bg-primary/10 text-primary rounded-lg transition-colors" href="#">
-<span className="material-symbols-outlined filled-icon">bar_chart</span>
-<span className="text-sm font-semibold">Analytics</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
-<span className="material-symbols-outlined">description</span>
-<span className="text-sm font-medium">Reports</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
-<span className="material-symbols-outlined">group</span>
-<span className="text-sm font-medium">Team</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors" href="#">
-<span className="material-symbols-outlined">settings</span>
-<span className="text-sm font-medium">Settings</span>
-</a>
-</nav>
-</div>
-<div className="mt-auto p-6 border-t border-slate-200 dark:border-slate-800">
-<div className="flex items-center gap-3">
-<div className="size-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center overflow-hidden">
-<img alt="User profile" className="w-full h-full object-cover" src="https://ui-avatars.com/api/?name=User&background=random" />
-</div>
-<div className="flex-1 overflow-hidden">
-<p className="text-sm font-bold truncate">James Wilson</p>
-<p className="text-xs text-slate-500 dark:text-slate-400 truncate">Analyst Lead</p>
-</div>
-</div>
-</div>
-</aside>
-<main className="flex-1 flex flex-col">
-<header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10 px-6 flex items-center justify-between">
-<div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
-<span className="material-symbols-outlined text-sm">home</span>
-<span className="material-symbols-outlined text-xs">chevron_right</span>
-<span className="text-slate-900 dark:text-slate-100 font-medium">Analytics Dashboard</span>
-</div>
-<div className="flex items-center gap-4">
-<div className="relative max-w-xs hidden md:block">
-<span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-<input className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/50" placeholder="Search analytics..." type="text" />
-</div>
-<button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-<span className="material-symbols-outlined">notifications</span>
-</button>
-</div>
-</header>
+
+<div className="w-full flex-1 relative flex flex-col">
+
 <div className="p-6 lg:p-10 space-y-8">
 <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
 <div className="space-y-1">
@@ -296,18 +236,7 @@ export default function AnalyticsAndReporting() {
 </div>
 </div>
 </div>
-<footer className="mt-auto border-t border-slate-200 dark:border-slate-800 p-6 flex items-center justify-between text-xs text-slate-500">
-<p>© 2024 DataCorp Advanced Analytics Engine. All rights reserved.</p>
-<div className="flex gap-4">
-<a className="hover:text-primary transition-colors" href="#">System Status</a>
-<a className="hover:text-primary transition-colors" href="#">API Documentation</a>
-<a className="hover:text-primary transition-colors" href="#">Support</a>
-</div>
-</footer>
-</main>
-</div>
 
-
-    </>
+</div></div></>
   );
 }

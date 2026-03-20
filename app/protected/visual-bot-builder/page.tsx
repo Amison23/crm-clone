@@ -4,132 +4,12 @@ export default function VisualBotBuilder() {
       
 <div className="flex h-screen w-full flex-col">
 {/*  Top Navigation Bar  */}
-<header className="flex h-16 items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 shrink-0">
-<div className="flex items-center gap-6">
-<div className="flex items-center gap-3">
-<div className="bg-primary text-white p-1.5 rounded-lg flex items-center justify-center">
-<span className="material-symbols-outlined !text-2xl">account_tree</span>
-</div>
-<div className="flex flex-col">
-<h2 className="text-sm font-bold leading-none">Support Bot v2</h2>
-<span className="text-[11px] text-slate-500 uppercase font-semibold tracking-wider">Draft Workflow</span>
-</div>
-</div>
-<nav className="hidden md:flex items-center gap-1 ml-4">
-<a className="px-3 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg" href="#">Builder</a>
-<a className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" href="#">Settings</a>
-<a className="px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg" href="#">Analytics</a>
-</nav>
-</div>
-<div className="flex items-center gap-4">
-<div className="flex items-center border-r border-slate-200 dark:border-slate-800 pr-4 mr-2 gap-2">
-<button className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-<span className="material-symbols-outlined">undo</span>
-</button>
-<button className="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
-<span className="material-symbols-outlined">redo</span>
-</button>
-</div>
-<button className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-<span className="material-symbols-outlined !text-xl">play_circle</span>
-                Preview
-            </button>
-<button className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-white border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                Save
-            </button>
-<button className="flex items-center gap-2 px-4 py-2 text-sm font-bold bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm">
-                Publish
-            </button>
-<div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 ml-2 overflow-hidden">
-<img alt="User Profile" className="w-full h-full object-cover" data-alt="User avatar placeholder profile picture" src="https://ui-avatars.com/api/?name=User&background=random" />
-</div>
-</div>
-</header>
+
 <div className="flex flex-1 overflow-hidden">
 {/*  Sidebar: Building Blocks  */}
-<aside className="w-72 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0 overflow-y-auto">
-<div className="p-6">
-<h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Building Blocks</h3>
-<div className="space-y-3">
-{/*  Block: Trigger  */}
-<div className="group cursor-grab active:cursor-grabbing p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all">
-<div className="flex items-center gap-3">
-<div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-primary flex items-center justify-center">
-<span className="material-symbols-outlined">bolt</span>
-</div>
-<div>
-<p className="text-sm font-bold">User Message</p>
-<p className="text-[11px] text-slate-500">Starting trigger</p>
-</div>
-</div>
-</div>
-{/*  Block: Bot Reply  */}
-<div className="group cursor-grab active:cursor-grabbing p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all">
-<div className="flex items-center gap-3">
-<div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-primary flex items-center justify-center">
-<span className="material-symbols-outlined">chat_bubble</span>
-</div>
-<div>
-<p className="text-sm font-bold">Bot Reply</p>
-<p className="text-[11px] text-slate-500">Send message</p>
-</div>
-</div>
-</div>
-{/*  Block: Logic  */}
-<div className="group cursor-grab active:cursor-grabbing p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all">
-<div className="flex items-center gap-3">
-<div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 flex items-center justify-center">
-<span className="material-symbols-outlined">call_split</span>
-</div>
-<div>
-<p className="text-sm font-bold">Condition (If/Then)</p>
-<p className="text-[11px] text-slate-500">Branch your flow</p>
-</div>
-</div>
-</div>
-{/*  Block: Lead Info  */}
-<div className="group cursor-grab active:cursor-grabbing p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all">
-<div className="flex items-center gap-3">
-<div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
-<span className="material-symbols-outlined">contact_page</span>
-</div>
-<div>
-<p className="text-sm font-bold">Collect Lead Info</p>
-<p className="text-[11px] text-slate-500">Capture data</p>
-</div>
-</div>
-</div>
-{/*  Block: Handoff  */}
-<div className="group cursor-grab active:cursor-grabbing p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 transition-all">
-<div className="flex items-center gap-3">
-<div className="w-10 h-10 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-600 flex items-center justify-center">
-<span className="material-symbols-outlined">support_agent</span>
-</div>
-<div>
-<p className="text-sm font-bold">Agent Handoff</p>
-<p className="text-[11px] text-slate-500">Talk to human</p>
-</div>
-</div>
-</div>
-</div>
-<div className="mt-8 border-t border-slate-200 dark:border-slate-800 pt-8">
-<h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Integrations</h3>
-<div className="flex gap-2">
-<div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-<img alt="Slack" className="w-5 h-5 grayscale" data-alt="Slack logo grayscale" src="https://ui-avatars.com/api/?name=User&background=random" />
-</div>
-<div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-<img alt="Hubspot" className="w-5 h-5 grayscale" data-alt="Hubspot logo grayscale" src="https://ui-avatars.com/api/?name=User&background=random" />
-</div>
-<div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800">
-<img alt="Mailchimp" className="w-5 h-5 grayscale" data-alt="Mailchimp logo grayscale" src="https://ui-avatars.com/api/?name=User&background=random" />
-</div>
-</div>
-</div>
-</div>
-</aside>
+
 {/*  Main Canvas Area  */}
-<main className="flex-1 relative bg-slate-50 dark:bg-slate-950 canvas-grid overflow-hidden">
+<div className="w-full flex-1 relative flex flex-col">
 {/*  Canvas Toolbar (Zoom/Controls)  */}
 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2 flex items-center gap-4 shadow-xl z-10">
 <button className="p-1 hover:text-primary transition-colors"><span className="material-symbols-outlined">zoom_in</span></button>
@@ -213,7 +93,7 @@ export default function VisualBotBuilder() {
 </div>
 </div>
 </div>
-</main>
+</div>
 {/*  Node Configuration Panel  */}
 <aside className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0 overflow-y-auto">
 <div className="p-6 border-b border-slate-200 dark:border-slate-800">

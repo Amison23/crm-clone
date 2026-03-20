@@ -2,70 +2,15 @@ export default function SupportTicketsList() {
   return (
     <>
       
-<div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div className="w-full h-full flex flex-col">
 <div className="layout-container flex h-full grow flex-col">
 {/*  Header  */}
-<header className="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 lg:px-10">
-<div className="flex items-center gap-8">
-<div className="flex items-center gap-3">
-<div className="flex size-10 items-center justify-center rounded-lg bg-primary text-white">
-<span className="material-symbols-outlined">confirmation_number</span>
-</div>
-<h2 className="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">SupportHub</h2>
-</div>
-<label className="hidden md:flex flex-col min-w-40 h-10 max-w-64">
-<div className="flex w-full flex-1 items-stretch rounded-lg h-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
-<div className="text-slate-500 dark:text-slate-400 flex items-center justify-center pl-3">
-<span className="material-symbols-outlined text-xl">search</span>
-</div>
-<input className="flex w-full min-w-0 flex-1 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-0 focus:ring-0 border-none bg-transparent h-full placeholder:text-slate-500 text-sm" placeholder="Search tickets..." value="" />
-</div>
-</label>
-</div>
-<div className="flex flex-1 justify-end gap-4 items-center">
-<button className="flex min-w-[84px] cursor-pointer items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary text-white text-sm font-bold transition-all hover:opacity-90">
-<span className="material-symbols-outlined text-xl">add</span>
-<span className="truncate">New Ticket</span>
-</button>
-<div className="relative">
-<div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-slate-200 dark:border-slate-700" data-alt="User profile avatar of a professional support agent" style={{backgroundImage: 'url("https://ui-avatars.com/api/?name=User&background=random")'}}></div>
-<div className="absolute bottom-0 right-0 size-3 rounded-full bg-green-500 border-2 border-white dark:border-slate-900"></div>
-</div>
-</div>
-</header>
+
 <div className="flex flex-1">
 {/*  Sidebar  */}
-<aside className="hidden lg:flex flex-col w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shrink-0">
-<div className="flex flex-col gap-1">
-<div className="mb-4 px-3 py-2">
-<h1 className="text-slate-900 dark:text-slate-100 text-base font-bold">Support Center</h1>
-<p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Administrator Panel</p>
-</div>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 group" href="#">
-<span className="material-symbols-outlined">dashboard</span>
-<p className="text-sm font-medium">Dashboard</p>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
-<span className="material-symbols-outlined">confirmation_number</span>
-<p className="text-sm font-bold">Tickets</p>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800" href="#">
-<span className="material-symbols-outlined">group</span>
-<p className="text-sm font-medium">Customers</p>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800" href="#">
-<span className="material-symbols-outlined">bar_chart</span>
-<p className="text-sm font-medium">Reports</p>
-</a>
-<div className="mt-8 mb-2 px-3 text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold">System</div>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800" href="#">
-<span className="material-symbols-outlined">settings</span>
-<p className="text-sm font-medium">Settings</p>
-</a>
-</div>
-</aside>
+
 {/*  Main Content  */}
-<main className="flex-1 flex flex-col bg-background-light dark:bg-background-dark min-w-0">
+<div className="w-full flex-1 relative flex flex-col">
 <div className="flex flex-col gap-6 p-6 lg:p-10">
 {/*  Content Header  */}
 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -267,7 +212,7 @@ export default function SupportTicketsList() {
 </div>
 </div>
 </div>
-</main>
+</div>
 </div>
 </div>
 </div>

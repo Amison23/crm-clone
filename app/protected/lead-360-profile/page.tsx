@@ -2,67 +2,11 @@ export default function Lead360Profile() {
   return (
     <>
       
-<div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
-<header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 sticky top-0 z-50">
-<div className="flex items-center gap-8">
-<div className="flex items-center gap-2 text-primary">
-<span className="material-symbols-outlined text-3xl">hub</span>
-<h2 className="text-slate-900 dark:text-white text-lg font-bold leading-tight tracking-tight">CRM Plus</h2>
-</div>
-<label className="flex flex-col min-w-40 h-10 max-w-64">
-<div className="flex w-full flex-1 items-stretch rounded-lg h-full bg-slate-100 dark:bg-slate-800">
-<div className="flex items-center justify-center pl-4 text-slate-500">
-<span className="material-symbols-outlined text-xl">search</span>
-</div>
-<input className="form-input flex w-full border-none bg-transparent focus:ring-0 text-sm placeholder:text-slate-500" placeholder="Search leads..." value="" />
-</div>
-</label>
-</div>
-<div className="flex items-center gap-4">
-<button className="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-<span className="material-symbols-outlined text-xl">notifications</span>
-</button>
-<button className="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-<span className="material-symbols-outlined text-xl">settings</span>
-</button>
-<div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-2"></div>
-<div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border border-slate-200 dark:border-slate-700" data-alt="User profile avatar circle" style={{backgroundImage: 'url("https://ui-avatars.com/api/?name=User&background=random")'}}></div>
-</div>
-</header>
+<div className="w-full h-full flex flex-col">
+
 <div className="flex flex-1">
-<aside className="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col gap-2 shrink-0">
-<div className="mb-4 px-3 py-2">
-<h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Main Menu</h3>
-</div>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
-<span className="material-symbols-outlined">dashboard</span>
-<span className="text-sm font-medium">Dashboard</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
-<span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>group</span>
-<span className="text-sm font-medium">CRM</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
-<span className="material-symbols-outlined">description</span>
-<span className="text-sm font-medium">Deals</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
-<span className="material-symbols-outlined">analytics</span>
-<span className="text-sm font-medium">Analytics</span>
-</a>
-<div className="mt-auto border-t border-slate-200 dark:border-slate-800 pt-4">
-<div className="flex items-center gap-3 px-3 py-2">
-<div className="size-8 rounded bg-primary flex items-center justify-center text-white">
-<span className="material-symbols-outlined text-sm">support</span>
-</div>
-<div className="flex flex-col">
-<p className="text-xs font-bold">Support Hub</p>
-<p className="text-[10px] text-slate-500">2 Active Tickets</p>
-</div>
-</div>
-</div>
-</aside>
-<main className="flex-1 overflow-y-auto">
+
+<div className="w-full flex-1 relative flex flex-col">
 <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6">
 <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
 <div className="flex items-center gap-4">
@@ -296,7 +240,7 @@ export default function Lead360Profile() {
 </div>
 </div>
 </div>
-</main>
+</div>
 </div>
 </div>
 

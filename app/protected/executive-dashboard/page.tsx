@@ -2,95 +2,13 @@ export default function ExecutiveDashboard() {
   return (
     <>
       
-<div className="relative flex min-h-screen w-full overflow-x-hidden">
+<div className="w-full h-full flex flex-col">
 {/*  Sidebar Navigation  */}
-<aside className="fixed inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hidden lg:flex flex-col z-20">
-<div className="p-6 flex items-center gap-3">
-<div className="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
-<span className="material-symbols-outlined">dataset</span>
-</div>
-<div>
-<h2 className="text-lg font-bold leading-tight tracking-tight">CRM Executive</h2>
-<p className="text-xs text-slate-500 dark:text-slate-400">Admin Console</p>
-</div>
-</div>
-<nav className="flex-1 px-4 space-y-1">
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium" href="#">
-<span className="material-symbols-outlined text-[22px]">dashboard</span>
-<span className="text-sm">Dashboard</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
-<span className="material-symbols-outlined text-[22px]">groups</span>
-<span className="text-sm">CRM</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
-<span className="material-symbols-outlined text-[22px]">assignment_turned_in</span>
-<span className="text-sm">Tasks</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
-<span className="material-symbols-outlined text-[22px]">chat_bubble</span>
-<span className="text-sm">Chat</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
-<span className="material-symbols-outlined text-[22px]">support_agent</span>
-<span className="text-sm">Support</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
-<span className="material-symbols-outlined text-[22px]">insights</span>
-<span className="text-sm">Analytics</span>
-</a>
-<div className="pt-4 pb-2">
-<p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">System</p>
-</div>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
-<span className="material-symbols-outlined text-[22px]">settings</span>
-<span className="text-sm">Admin</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary transition-colors" href="#">
-<span className="material-symbols-outlined text-[22px]">call</span>
-<span className="text-sm">Telephony</span>
-</a>
-</nav>
-<div className="p-4 border-t border-slate-200 dark:border-slate-800">
-<div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-<div className="size-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs" data-alt="User avatar placeholder">AD</div>
-<div className="flex-1 min-w-0">
-<p className="text-xs font-semibold truncate">Alex Director</p>
-<p className="text-[10px] text-slate-500 truncate">Global Admin</p>
-</div>
-<span className="material-symbols-outlined text-slate-400 text-lg cursor-pointer">logout</span>
-</div>
-</div>
-</aside>
+
 {/*  Main Content Area  */}
-<main className="flex-1 lg:ml-64 flex flex-col min-w-0">
+<div className="w-full h-full flex flex-col">
 {/*  Top Navigation Bar  */}
-<header className="sticky top-0 z-10 flex h-16 w-full items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-6">
-<div className="flex items-center gap-4 flex-1">
-<div className="relative w-full max-w-md">
-<span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
-<input className="w-full rounded-lg border-none bg-slate-100 dark:bg-slate-800 pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 transition-all outline-none text-slate-700 dark:text-slate-200" placeholder="Search across tenants, clients, or tickets..." type="text" />
-</div>
-</div>
-<div className="flex items-center gap-3">
-<div className="flex items-center gap-2 mr-2">
-<button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative">
-<span className="material-symbols-outlined">notifications</span>
-<span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-</button>
-<button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
-<span className="material-symbols-outlined">help</span>
-</button>
-</div>
-<div className="h-8 w-[1px] bg-slate-200 dark:border-slate-800"></div>
-<div className="flex items-center gap-3 pl-2">
-<button className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
-<span className="material-symbols-outlined text-lg">add</span>
-<span>Quick Action</span>
-</button>
-</div>
-</div>
-</header>
+
 {/*  Dashboard Content  */}
 <div className="p-6 lg:p-8 flex flex-col gap-8">
 {/*  Welcome Section  */}
@@ -311,17 +229,7 @@ export default function ExecutiveDashboard() {
 </div>
 </div>
 {/*  Footer  */}
-<footer className="mt-auto p-6 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs text-slate-500">
-<p>© 2024 CRM Executive v2.4.0</p>
-<div className="flex gap-4">
-<a className="hover:text-primary" href="#">Status</a>
-<a className="hover:text-primary" href="#">Privacy</a>
-<a className="hover:text-primary" href="#">Terms</a>
-</div>
-</footer>
-</main>
-</div>
 
-    </>
+</div></div></>
   );
 }

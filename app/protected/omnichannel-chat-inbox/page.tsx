@@ -4,43 +4,9 @@ export default function OmnichannelChatInbox() {
       
 <div className="flex h-full w-full">
 {/*  Sidebar Navigation  */}
-<aside className="w-16 lg:w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
-<div className="p-4 flex items-center gap-3">
-<div className="bg-primary text-white rounded-lg p-1">
-<span className="material-symbols-outlined block">bolt</span>
-</div>
-<h1 className="font-bold text-lg hidden lg:block tracking-tight">SupportSuite</h1>
-</div>
-<nav className="flex-1 px-3 py-4 space-y-1">
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
-<span className="material-symbols-outlined">dashboard</span>
-<span className="text-sm font-medium hidden lg:block">Dashboard</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary" href="#">
-<span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>chat_bubble</span>
-<span className="text-sm font-semibold hidden lg:block">Chat</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
-<span className="material-symbols-outlined">group</span>
-<span className="text-sm font-medium hidden lg:block">Customers</span>
-</a>
-<a className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" href="#">
-<span className="material-symbols-outlined">analytics</span>
-<span className="text-sm font-medium hidden lg:block">Analytics</span>
-</a>
-</nav>
-<div className="p-4 border-t border-slate-200 dark:border-slate-800">
-<div className="flex items-center gap-3">
-<div className="w-10 h-10 rounded-full bg-slate-200" data-alt="Agent profile picture" style={{}}></div>
-<div className="hidden lg:block">
-<p className="text-sm font-semibold">Sarah Jenkins</p>
-<p className="text-xs text-slate-500">Online</p>
-</div>
-</div>
-</div>
-</aside>
+
 {/*  Main Content Area: Split View  */}
-<main className="flex-1 flex overflow-hidden">
+<div className="w-full flex-1 relative flex flex-col">
 {/*  Left Pane: Conversation List  */}
 <section className="w-80 lg:w-96 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0">
 <div className="p-4 space-y-4">
@@ -117,27 +83,7 @@ export default function OmnichannelChatInbox() {
 {/*  Middle Pane: Active Chat Window  */}
 <section className="flex-1 flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
 {/*  Chat Header  */}
-<header className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
-<div className="flex items-center gap-3">
-<div className="w-10 h-10 rounded-full bg-slate-300" data-alt="Alex Johnson profile" style={{}}></div>
-<div>
-<h3 className="font-bold">Alex Johnson</h3>
-<div className="flex items-center gap-2">
-<span className="flex h-2 w-2 rounded-full bg-green-500"></span>
-<span className="text-xs text-slate-500 font-medium">Online via WhatsApp</span>
-</div>
-</div>
-</div>
-<div className="flex items-center gap-2">
-<button className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
-<span className="material-symbols-outlined text-sm">forward</span>
-                        Transfer
-                    </button>
-<button className="p-2 text-slate-500 hover:bg-slate-100 rounded-lg">
-<span className="material-symbols-outlined">more_vert</span>
-</button>
-</div>
-</header>
+
 {/*  Chat Body  */}
 <div className="flex-1 overflow-y-auto p-6 space-y-6">
 {/*  Status Indicator  */}
@@ -181,30 +127,7 @@ export default function OmnichannelChatInbox() {
 </div>
 </div>
 {/*  Chat Footer: Input Area  */}
-<footer className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-<div className="flex items-end gap-3">
-<div className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-primary">
-<textarea className="w-full p-3 bg-transparent border-none focus:ring-0 resize-none text-sm" placeholder="Type a message..." rows={1}></textarea>
-<div className="flex items-center justify-between px-3 py-2 border-t border-slate-100 dark:border-slate-700">
-<div className="flex gap-2">
-<button className="text-slate-400 hover:text-slate-600">
-<span className="material-symbols-outlined">mood</span>
-</button>
-<button className="text-slate-400 hover:text-slate-600">
-<span className="material-symbols-outlined">attach_file</span>
-</button>
-<button className="text-slate-400 hover:text-slate-600">
-<span className="material-symbols-outlined">image</span>
-</button>
-</div>
-<button className="text-xs font-bold text-primary uppercase tracking-wide">Templates</button>
-</div>
-</div>
-<button className="h-12 w-12 rounded-xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
-<span className="material-symbols-outlined">send</span>
-</button>
-</div>
-</footer>
+
 </section>
 {/*  Right Pane: Customer Mini-Profile  */}
 <section className="w-72 hidden xl:flex flex-col bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-6 overflow-y-auto">
@@ -260,9 +183,6 @@ export default function OmnichannelChatInbox() {
                 </button>
 </div>
 </section>
-</main>
-</div>
-
-    </>
+</div></div></>
   );
 }
