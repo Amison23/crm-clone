@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 
 const mainNavItems = [
   { href: "/protected", icon: "dashboard", label: "Dashboard" },
-  { href: "/protected/crm-leads-table", icon: "groups", label: "CRM" },
+  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive" },
+  { href: "/protected/crm-leads-table", icon: "groups", label: "Leads" },
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks" },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat" },
   { href: "/protected/support-tickets-list", icon: "support_agent", label: "Support" },
@@ -13,10 +14,10 @@ const mainNavItems = [
 ];
 
 const systemNavItems = [
-  { href: "/protected/admin-permissions-matrix", icon: "settings", label: "Admin" },
-  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony" },
   { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder" },
   { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder" },
+  { href: "/protected/admin-permissions-matrix", icon: "admin_panel_settings", label: "Admin" },
+  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony" },
 ];
 
 export function Sidebar() {

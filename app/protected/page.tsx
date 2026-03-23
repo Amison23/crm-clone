@@ -32,18 +32,6 @@ async function DashboardContent() {
     redirect("/sign-in");
   }
 
-  const quickLinks = [
-    { name: "Executive Dashboard", href: "/protected/executive-dashboard", icon: BarChart3, color: "text-primary", bg: "bg-primary/10" },
-    { name: "CRM Leads", href: "/protected/crm-leads-table", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { name: "Chat Inbox", href: "/protected/omnichannel-chat-inbox", icon: MessageSquare, color: "text-indigo-500", bg: "bg-indigo-500/10" },
-    { name: "Support Tickets", href: "/protected/support-tickets-list", icon: Headset, color: "text-rose-500", bg: "bg-rose-500/10" },
-    { name: "Task Management", href: "/protected/task-management-board", icon: Target, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { name: "Analytics", href: "/protected/analytics-and-reporting", icon: BarChart3, color: "text-amber-500", bg: "bg-amber-500/10" },
-    { name: "Visual Bot Builder", href: "/protected/visual-bot-builder", icon: Bot, color: "text-purple-500", bg: "bg-purple-500/10" },
-    { name: "IVR Builder", href: "/protected/visual-ivr-builder", icon: Network, color: "text-cyan-500", bg: "bg-cyan-500/10" },
-    { name: "Admin Setup", href: "/protected/admin-permissions-matrix", icon: Settings, color: "text-slate-500", bg: "bg-slate-500/10" },
-  ];
-
   return (
     <div className="flex-1 w-full flex flex-col gap-8 p-6 lg:p-10 max-w-7xl mx-auto">
       {/* Header Section */}
@@ -114,42 +102,17 @@ async function DashboardContent() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+      <div>
         {/* Main Chart Area */}
-        <div className="xl:col-span-2 space-y-6">
-          <Card className="shadow-sm h-[400px] flex flex-col">
-            <CardHeader>
-              <CardTitle>Activity Overview</CardTitle>
-              <CardDescription>Multi-channel interactions over the last 7 days</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 pb-4 px-2">
-              <DashboardCharts />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Links / Navigation */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold tracking-tight">Quick Access</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3">
-            {quickLinks.map((link) => {
-              const Icon = link.icon;
-              return (
-                <Link key={link.href} href={link.href}>
-                  <div className="group flex items-center gap-4 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
-                    <div className={`p-2 rounded-md ${link.bg} ${link.color} group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="flex-1 font-medium text-sm text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
-                      {link.name}
-                    </div>
-                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-primary opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        <Card className="shadow-sm h-[400px] flex flex-col">
+          <CardHeader>
+            <CardTitle>Activity Overview</CardTitle>
+            <CardDescription>Multi-channel interactions over the last 7 days</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 pb-4 px-2">
+            <DashboardCharts />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
