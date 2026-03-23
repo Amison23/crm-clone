@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -9,8 +10,8 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "CRM Tool",
+  description: "Manage your leads and tasks in one place",
 };
 
 const inter = Inter({
@@ -29,7 +30,7 @@ export default function RootLayout({
       <head>
         <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
       </head>
-      <body className={`${inter.variable} font-sans antialiased text-slate-900 dark:text-slate-100`}>
+      <body suppressHydrationWarning className={`${inter.variable} font-sans antialiased text-slate-900 dark:text-slate-100`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -37,6 +38,17 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster 
+            position="top-center"
+            containerClassName="lg:ml-64 mt-4"
+            toastOptions={{
+              className: "w-full shadow-xl !max-w-4xl",
+              style: {
+                maxWidth: "100%",
+                width: "100%",
+              }
+            }} 
+          />
         </ThemeProvider>
       </body>
     </html>

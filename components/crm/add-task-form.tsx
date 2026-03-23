@@ -4,10 +4,10 @@ import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createLeadAction } from "@/lib/api/leads";
+import { createTaskAction } from "@/lib/api/tasks";
 import { Loader2 } from "lucide-react";
 
-export function AddLeadForm({ 
+export function AddTaskForm({ 
   onSuccess,
   onMessage 
 }: { 
@@ -22,11 +22,11 @@ export function AddLeadForm({
     isSubmitting.current = true;
     setIsPending(true);
     try {
-      const result = await createLeadAction(formData);
+      const result = await createTaskAction(formData);
       if (result.error) {
         onMessage?.("error", result.error);
       } else {
-        onMessage?.("success", "Lead added successfully!");
+        onMessage?.("success", "Task added successfully!");
         onSuccess?.();
       }
     } catch (error: any) {
@@ -39,48 +39,46 @@ export function AddLeadForm({
 
   return (
     <form action={onSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="first_name">First Name *</Label>
-          <Input id="first_name" name="first_name" required placeholder="John" />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="last_name">Last Name</Label>
-          <Input id="last_name" name="last_name" placeholder="Doe" />
-        </div>
+      <div className="space-y-2">
+        <Label htmlFor="title">Title *</Label>
+        <Input id="title" name="title" required placeholder="Task title" />
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="company_name">Company</Label>
-        <Input id="company_name" name="company_name" placeholder="Acme Inc." />
-      </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" placeholder="john@example.com" />
+          <Label htmlFor="description">Description</Label>
+          <Input id="description" name="description" placeholder="Short description" />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone *</Label>
-          <Input id="phone" name="phone" required placeholder="+1 234 567 890" />
+          <Label htmlFor="due_date">Due Date *</Label>
+          <Input id="due_date" name="due_date" type="datetime-local" required />
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="source">Source</Label>
-          <Input id="source" name="source" placeholder="Website, Referral, etc." />
+          <Label htmlFor="status">Status</Label>
+          <select id="status" name="status" className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm">
+            <option value="pending">To Do</option>
+            <option value="in_progress">In Progress</option>
+            <option value="review">Review</option>
+            <option value="completed">Completed</option>
+          </select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="status">Initial Status</Label>
-          <Input id="status" name="status" defaultValue="new" />
+          <Label htmlFor="priority">Priority</Label>
+          <select id="priority" name="priority" className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
         </div>
       </div>
 
       <div className="pt-4 flex justify-end gap-2 border-t mt-6">
         <Button disabled={isPending} className="w-full sm:w-auto">
           {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-          Save Lead
+          Save Task
         </Button>
       </div>
     </form>

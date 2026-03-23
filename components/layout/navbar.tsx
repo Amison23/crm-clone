@@ -27,7 +27,7 @@ export function Navbar() {
           <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">search</span>
           <input 
             className="w-full rounded-lg border-none bg-slate-100 dark:bg-slate-800 pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary/50 transition-all outline-none text-slate-700 dark:text-slate-200" 
-            placeholder="Search across tenants, clients, or tickets..." 
+            placeholder="Search across companies, clients, or tickets..." 
             type="text" 
           />
         </div>

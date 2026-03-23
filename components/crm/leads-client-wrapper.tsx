@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { AddLeadForm } from "./add-lead-form";
+import toast from "react-hot-toast";
 
 export type Lead = {
   id: string;
@@ -19,11 +20,10 @@ export type Lead = {
 
 export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<{ type: "success" | "error", text: string } | null>(null);
 
   const showToast = (type: "success" | "error", text: string) => {
-    setToastMessage({ type, text });
-    setTimeout(() => setToastMessage(null), 3000);
+    if (type === "success") toast.success(text);
+    else toast.error(text);
   };
 
   return (
@@ -33,15 +33,6 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
         <div className="w-full flex-1 relative flex flex-col">
           {/* Content Area */}
           <div className="flex-1 overflow-auto p-8 space-y-6 relative">
-            
-            {/* Simple Custom Toast */}
-            {toastMessage && (
-              <div className={`fixed top-4 right-4 z-[60] px-4 py-3 rounded shadow-lg text-sm font-medium transition-all ${
-                toastMessage.type === "success" ? "bg-emerald-100 text-emerald-800 border border-emerald-200" : "bg-red-100 text-red-800 border border-red-200"
-              }`}>
-                {toastMessage.text}
-              </div>
-            )}
 
             {/* Filters */}
             <div className="flex items-center justify-between">

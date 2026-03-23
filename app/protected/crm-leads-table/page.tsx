@@ -1,19 +1,16 @@
-import { createClient } from "@/lib/supabase/server";
+import { connection } from "next/server";
+import { getLeads } from "@/lib/api/leads";
 import { LeadsClientWrapper } from "@/components/crm/leads-client-wrapper";
 
 export default async function CrmLeadsTable() {
-  const supabase = await createClient();
-  
-  const { data: leads, error } = await supabase
-    .from("leads")
-    .select("*")
-    .order("created_at", { ascending: false });
+  await connection();
+  const result = await getLeads();
 
-  if (error) {
-    console.error("Failed to fetch leads:", error.message);
+  if (result.error) {
+    console.error("Failed to fetch leads:", result.error);
   }
 
   return (
-    <LeadsClientWrapper initialLeads={leads || []} />
+    <LeadsClientWrapper initialLeads={result.leads || []} />
   );
 }

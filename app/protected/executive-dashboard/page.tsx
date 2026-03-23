@@ -15,7 +15,7 @@ export default function ExecutiveDashboard() {
 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 <div>
 <h1 className="text-3xl font-black tracking-tight">Executive Dashboard</h1>
-<p className="text-slate-500 dark:text-slate-400 mt-1">Global performance overview for all active tenants.</p>
+<p className="text-slate-500 dark:text-slate-400 mt-1">Global performance overview for all active companies.</p>
 </div>
 <div className="flex gap-3">
 <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors">
@@ -163,7 +163,7 @@ export default function ExecutiveDashboard() {
 </div>
 </div>
 <div className="flex-1">
-<p className="text-sm font-medium">Approve tenant migration: Acme Corp</p>
+<p className="text-sm font-medium">Approve company migration: Acme Corp</p>
 <p className="text-[11px] text-rose-500 font-bold">Due today</p>
 </div>
 </div>
@@ -194,7 +194,7 @@ export default function ExecutiveDashboard() {
 <span className="material-symbols-outlined text-white text-[12px]">add</span>
 </div>
 <div className="flex flex-col md:flex-row md:items-center justify-between gap-1">
-<p className="text-sm"><span className="font-bold">New Tenant Onboarded:</span> "TechFlow Solutions" joined the platform.</p>
+<p className="text-sm"><span className="font-bold">New Company Onboarded:</span> "TechFlow Solutions" joined the platform.</p>
 <span className="text-xs text-slate-400 whitespace-nowrap">12 minutes ago</span>
 </div>
 </div>

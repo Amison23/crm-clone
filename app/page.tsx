@@ -48,7 +48,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
             <Link 
-              href="/sign-in" 
+              href="/auth/login" 
               className="px-8 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all flex items-center gap-2 group shadow-lg shadow-orange-500/20"
             >
               Start for free
@@ -116,7 +116,7 @@ export default function Home() {
                    <h3 className="text-3xl font-bold mb-3">Ready to transform your sales?</h3>
                    <p className="text-slate-300 dark:text-slate-700 text-lg max-w-sm">Join forward-thinking teams using our platform to close more leads.</p>
                  </div>
-                 <Link href="/sign-in" className="px-8 py-3 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold hover:scale-105 transition-transform whitespace-nowrap shadow-xl">
+                 <Link href="/auth/login" className="px-8 py-3 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold hover:scale-105 transition-transform whitespace-nowrap shadow-xl">
                    Get Started Today
                  </Link>
                </div>
@@ -126,7 +126,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="w-full flex items-center justify-between border-t border-slate-200 dark:border-slate-800 max-w-6xl mx-auto px-6 text-sm text-slate-500 py-8">
-          <p>© {new Date().getFullYear()} SystemCRM. All rights reserved.</p>
+          <p>© 2026 SystemCRM. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <Link href="#" className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">Privacy Policy</Link>
             <Link href="#" className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">Terms of Service</Link>
