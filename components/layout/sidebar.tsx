@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// --- NAVIGATION CONFIGURATION ---
 const mainNavItems = [
-  { href: "/protected", icon: "dashboard", label: "Dashboard" },
+  { href: "/protected", icon: "dashboard", label: "Portal Home" },
+  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive" }, // NEW: Section 5.1
+  { href: "/protected/sales-agent", icon: "badge", label: "My Workspace" },         // NEW: Section 5.2
   { href: "/protected/crm-leads-table", icon: "groups", label: "CRM" },
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks" },
-  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat" },
   { href: "/protected/support-tickets-list", icon: "support_agent", label: "Support" },
   { href: "/protected/analytics-and-reporting", icon: "insights", label: "Analytics" },
 ];
 
 const systemNavItems = [
+  { href: "/protected/server-admin", icon: "dns", label: "Server Node" },           // NEW: Section 5.3
   { href: "/protected/admin-permissions-matrix", icon: "settings", label: "Admin" },
   { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony" },
   { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder" },
@@ -24,37 +27,49 @@ export function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hidden lg:flex flex-col z-20">
-      <div className="p-6 flex items-center gap-3">
-        <div className="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
-          <span className="material-symbols-outlined">dataset</span>
+      
+      {/* BRANDING NODE */}
+      <div className="p-8 flex items-center gap-3">
+        <div className="size-10 bg-primary rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+          <span className="material-symbols-outlined font-black">dataset</span>
         </div>
         <div>
-          <h2 className="text-lg font-bold leading-tight tracking-tight">CRM</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Admin Console</p>
+          <h2 className="text-xl font-black leading-tight tracking-tighter uppercase">CRM <span className="text-primary text-[10px] tracking-widest">v3</span></h2>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Intelligence Engine</p>
         </div>
       </div>
       
-      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
+      {/* NAVIGATION SCROLL AREA */}
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
+        
+        {/* MAIN OPERATIONS */}
+        <div className="pb-2">
+           <p className="px-3 py-4 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">Core Operations</p>
+        </div>
+
         {mainNavItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link 
               key={item.href} 
               href={item.href} 
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${
                 isActive 
-                  ? "bg-primary/10 text-primary font-medium" 
+                  ? "bg-primary text-white font-bold shadow-lg shadow-primary/25 scale-[1.02]" 
                   : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary"
               }`}
             >
-              <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-sm">{item.label}</span>
+              <span className={`material-symbols-outlined text-[20px] ${isActive ? "text-white" : "group-hover:scale-110 transition-transform"}`}>
+                {item.icon}
+              </span>
+              <span className="text-xs uppercase font-black tracking-tight">{item.label}</span>
             </Link>
           );
         })}
         
-        <div className="pt-4 pb-2">
-          <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">System</p>
+        {/* SYSTEM & INFRASTRUCTURE */}
+        <div className="pt-8 pb-2 border-t border-slate-50 dark:border-slate-800/50 mt-6">
+          <p className="px-3 text-[9px] font-black uppercase tracking-[0.3em] text-slate-400">System Nodes</p>
         </div>
         
         {systemNavItems.map((item) => {
@@ -63,27 +78,32 @@ export function Sidebar() {
             <Link 
               key={item.href} 
               href={item.href} 
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group ${
                 isActive 
-                  ? "bg-primary/10 text-primary font-medium" 
-                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary"
+                  ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold shadow-md" 
+                  : "text-slate-500 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary"
               }`}
             >
-              <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
-              <span className="text-sm">{item.label}</span>
+              <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+              <span className="text-xs uppercase font-black tracking-tight">{item.label}</span>
             </Link>
           );
         })}
       </nav>
       
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800">
-        <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-          <img src="https://ui-avatars.com/api/?name=Alex+Director&background=f97415&color=fff" alt="User avatar" className="size-8 rounded-full" />
+      {/* USER CONTEXT FOOTER */}
+      <div className="p-6 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <img 
+            src="https://ui-avatars.com/api/?name=Admin+Node&background=3b82f6&color=fff" 
+            alt="User avatar" 
+            className="size-9 rounded-xl shadow-inner" 
+          />
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold truncate">Alex Director</p>
-            <p className="text-[10px] text-slate-500 truncate">Global Admin</p>
+            <p className="text-[11px] font-black truncate uppercase tracking-tighter">Verified Node</p>
+            <p className="text-[9px] font-bold text-slate-500 truncate uppercase tracking-widest">af-south-1</p>
           </div>
-          <span className="material-symbols-outlined text-slate-400 text-lg cursor-pointer hover:text-red-500 transition-colors">logout</span>
+          <button className="material-symbols-outlined text-slate-400 text-lg hover:text-red-500 transition-colors">logout</button>
         </div>
       </div>
     </aside>

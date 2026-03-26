@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { 
   Card, 
   CardContent, 
-  CardDescription, 
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
@@ -20,127 +19,79 @@ import {
   ArrowRight,
   Target,
   TrendingUp,
-  Activity
+  Activity,
+  ShieldCheck,
+  Zap
 } from "lucide-react";
-import { DashboardCharts } from "@/components/dashboard-charts";
+
+// Import your Intelligence Engine
+import SummaryCards from "@/app/ui/dashboard/analytics/components/SummaryCards";
 
 async function DashboardContent() {
   const supabase = await createClient();
-  const { data, error } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (error || !data?.user) {
-    redirect("/sign-in");
-  }
+  if (!user) redirect("/sign-in");
 
-  const quickLinks = [
-    { name: "Executive Dashboard", href: "/protected/executive-dashboard", icon: BarChart3, color: "text-primary", bg: "bg-primary/10" },
-    { name: "CRM Leads", href: "/protected/crm-leads-table", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10" },
-    { name: "Chat Inbox", href: "/protected/omnichannel-chat-inbox", icon: MessageSquare, color: "text-indigo-500", bg: "bg-indigo-500/10" },
-    { name: "Support Tickets", href: "/protected/support-tickets-list", icon: Headset, color: "text-rose-500", bg: "bg-rose-500/10" },
-    { name: "Task Management", href: "/protected/task-management-board", icon: Target, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { name: "Analytics", href: "/protected/analytics-and-reporting", icon: BarChart3, color: "text-amber-500", bg: "bg-amber-500/10" },
-    { name: "Visual Bot Builder", href: "/protected/visual-bot-builder", icon: Bot, color: "text-purple-500", bg: "bg-purple-500/10" },
-    { name: "IVR Builder", href: "/protected/visual-ivr-builder", icon: Network, color: "text-cyan-500", bg: "bg-cyan-500/10" },
-    { name: "Admin Setup", href: "/protected/admin-permissions-matrix", icon: Settings, color: "text-slate-500", bg: "bg-slate-500/10" },
+  // 1. EXTRACT ROLE & IDENTITY
+  const role = user.user_metadata?.role || 'sales_agent';
+  const fullName = user.user_metadata?.full_name || user.email?.split('@')[0];
+
+  // 2. DEFINE DYNAMIC QUICK LINKS (Role-Aware)
+  const allLinks = [
+    { name: "Executive Dashboard", href: "/protected/executive-dashboard", icon: BarChart3, color: "text-primary", bg: "bg-primary/10", roles: ['admin', 'super_admin'] },
+    { name: "CRM Leads", href: "/protected/crm-leads-table", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10", roles: ['sales_agent', 'admin', 'super_admin'] },
+    { name: "Support Tickets", href: "/protected/support-tickets-list", icon: Headset, color: "text-rose-500", bg: "bg-rose-500/10", roles: ['sales_agent', 'admin', 'super_admin'] },
+    { name: "Analytics Engine", href: "/protected/analytics-and-reporting", icon: Zap, color: "text-amber-500", bg: "bg-amber-500/10", roles: ['admin', 'super_admin'] },
+    { name: "Task Management", href: "/protected/task-management-board", icon: Target, color: "text-emerald-500", bg: "bg-emerald-500/10", roles: ['sales_agent', 'admin', 'super_admin'] },
+    { name: "System Command", href: "/protected/server-admin", icon: ShieldCheck, color: "text-purple-500", bg: "bg-purple-500/10", roles: ['super_admin'] },
+    { name: "Bot Builder", href: "/protected/visual-bot-builder", icon: Bot, color: "text-indigo-500", bg: "bg-indigo-500/10", roles: ['admin', 'super_admin'] },
+    { name: "Admin Matrix", href: "/protected/admin-permissions-matrix", icon: Settings, color: "text-slate-500", bg: "bg-slate-500/10", roles: ['super_admin'] },
   ];
 
+  const quickLinks = allLinks.filter(link => link.roles.includes(role));
+
   return (
-    <div className="flex-1 w-full flex flex-col gap-8 p-6 lg:p-10 max-w-7xl mx-auto">
-      {/* Header Section */}
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-          Welcome back, {data.user.email?.split('@')[0] || 'Executive'}
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400">
-          Here's an overview of your CRM operations today.
-        </p>
+    <div className="flex-1 w-full flex flex-col gap-8 p-6 lg:p-10 max-w-7xl mx-auto animate-in fade-in duration-700">
+      
+      {/* --- PORTAL HEADER --- */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 dark:border-slate-800 pb-8">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 mb-2">
+             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+             <p className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.3em]">Node Connection Active</p>
+          </div>
+          <h1 className="text-5xl font-black tracking-tighter text-slate-900 dark:text-slate-100 uppercase">
+            {fullName}<span className="text-primary">'s</span> Command
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium italic">
+            Centralized access for <span className="font-bold text-slate-700 dark:text-slate-200">{role.replace('_', ' ')}</span> protocol.
+          </p>
+        </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-l-4 border-l-primary shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-            <Users className="w-4 h-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">12,840</div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-emerald-500"/>
-              <span className="text-emerald-500 font-medium">+12.5%</span> from last month
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Active Tickets</CardTitle>
-            <Headset className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">158</div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              <Activity className="w-3 h-3 text-rose-500"/>
-              <span className="text-rose-500 font-medium">+5.4%</span> since yesterday
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Chat Volume</CardTitle>
-            <MessageSquare className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">8,231</div>
-            <p className="text-xs text-muted-foreground mt-1 text-slate-500">
-              Across 5 active channels
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-sm">
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Bot Resolution Rate</CardTitle>
-            <Bot className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">76.4%</div>
-            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3 text-emerald-500"/>
-              <span className="text-emerald-500 font-medium">+2.1%</span> from base model
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* --- SECTION 5.3: LIVE INTELLIGENCE VITALS --- */}
+      {/* We replace the 4 static cards with your real Intelligence SummaryCards component */}
+      <section className="space-y-4">
+        <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] px-2">Real-Time Platform Pulse</h2>
+        <SummaryCards />
+      </section>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        {/* Main Chart Area */}
+        
+        {/* --- DYNAMIC MODULE ACCESS --- */}
         <div className="xl:col-span-2 space-y-6">
-          <Card className="shadow-sm h-[400px] flex flex-col">
-            <CardHeader>
-              <CardTitle>Activity Overview</CardTitle>
-              <CardDescription>Multi-channel interactions over the last 7 days</CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 pb-4 px-2">
-              <DashboardCharts />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Links / Navigation */}
-        <div className="space-y-6">
-          <h2 className="text-xl font-bold tracking-tight">Quick Access</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3">
+          <h2 className="text-xl font-black tracking-tight uppercase">Module Directory</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {quickLinks.map((link) => {
               const Icon = link.icon;
               return (
                 <Link key={link.href} href={link.href}>
-                  <div className="group flex items-center gap-4 p-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer">
-                    <div className={`p-2 rounded-md ${link.bg} ${link.color} group-hover:scale-110 transition-transform duration-300`}>
-                      <Icon className="w-5 h-5" />
+                  <div className="group flex items-center gap-4 p-5 rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary/50 hover:shadow-xl transition-all cursor-pointer">
+                    <div className={`p-3 rounded-2xl ${link.bg} ${link.color} group-hover:scale-110 transition-transform duration-500`}>
+                      <Icon className="w-6 h-6" />
                     </div>
-                    <div className="flex-1 font-medium text-sm text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
+                    <div className="flex-1 font-black text-sm uppercase tracking-tight text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
                       {link.name}
                     </div>
                     <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-primary opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
@@ -150,6 +101,24 @@ async function DashboardContent() {
             })}
           </div>
         </div>
+
+        {/* --- SYSTEM LOGS / ACTIVITY PREVIEW --- */}
+        <div className="space-y-6">
+          <h2 className="text-xl font-black tracking-tight uppercase">Node Status</h2>
+          <Card className="rounded-[2.5rem] border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden">
+             <div className="bg-[#0a0a0a] p-8 font-mono text-[10px] space-y-3 text-slate-400">
+                <p className="text-emerald-500 font-bold tracking-widest border-b border-white/5 pb-2 uppercase">// System_Audit_Trail</p>
+                <p><span className="text-slate-600">[08:42]</span> <span className="text-blue-500">INFO</span>: Session authorized for {user.email?.slice(0, 5)}...</p>
+                <p><span className="text-slate-600">[09:15]</span> <span className="text-emerald-500">AUTH</span>: RLS Token validated.</p>
+                <p><span className="text-slate-600">[10:02]</span> <span className="text-amber-500">SYNC</span>: Analytics buffer refreshed.</p>
+                <div className="flex items-center gap-2 pt-4">
+                   <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-ping" />
+                   <p className="italic text-[9px] text-emerald-500/50">Listening for node events...</p>
+                </div>
+             </div>
+          </Card>
+        </div>
+
       </div>
     </div>
   );
@@ -157,7 +126,7 @@ async function DashboardContent() {
 
 export default function ProtectedPage() {
   return (
-    <Suspense fallback={<div className="flex-1 p-10 flex items-center justify-center text-slate-500">Loading Dashboard...</div>}>
+    <Suspense fallback={<div className="flex-1 p-10 flex items-center justify-center text-slate-500 font-black uppercase tracking-[0.3em] animate-pulse">Initializing Portal...</div>}>
       <DashboardContent />
     </Suspense>
   );
