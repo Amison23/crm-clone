@@ -15,7 +15,7 @@ type FAQ = {
   triggers_routing: boolean
   is_active: boolean
   usage_count: number
-  tenant_id: string
+  company_id: string
 }
 
 const emptyFAQ = {
@@ -39,8 +39,9 @@ export default function VisualBotBuilder() {
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      // Derive tenant_id from user metadata if available
-      const tid = user?.user_metadata?.tenant_id || user?.id || null
+      // Derive company_id from user metadata if available
+      // const tid = user?.user_metadata?.company_id || user?.id || null
+      const tid = 'c2b4fc9e-b23e-450a-9f33-0edca935d1ac' // Hardcoded the company id for now until auth.id is wired up
       setTenantId(tid)
       await loadFAQs()
       setLoading(false)
@@ -68,8 +69,9 @@ export default function VisualBotBuilder() {
         category: form.category.trim() || null,
         department: form.department,
         triggers_routing: form.triggers_routing,
-        tenant_id: tenantId,
-        created_by: user?.id,
+        company_id: tenantId,
+        created_by: null, // null for now until auth.id is wired up
+        // created_by: user?.id,
         is_active: true,
       }
 
