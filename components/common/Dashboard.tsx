@@ -11,7 +11,7 @@ const navItems = [
   { href: "/protected/crm-leads-table", icon: "groups", label: "Leads" },
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks" },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat" },
-  { href: "/protected/support-tickets-list", icon: "support_agent", label: "Support" },
+  { href: "/protected/tickets", icon: "support_agent", label: "Support" },
   { href: "/protected/analytics-and-reporting", icon: "insights", label: "Analytics" },
 ];
 
@@ -22,7 +22,7 @@ const systemItems = [
   { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony" },
 ];
 
-export default function Dashboard({ children }: { children: ReactNode }) {
+export default function Dashboard({ children, role }: { children: ReactNode; role?: string }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -100,7 +100,7 @@ export default function Dashboard({ children }: { children: ReactNode }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-semibold truncate">Alex Director</p>
-            <p className="text-[10px] text-slate-500 truncate">Global Admin</p>
+            <p className="text-[10px] text-slate-500 truncate">{role || "User"}</p>
           </div>
           <button aria-label="Sign out" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors">
             <span className="material-symbols-outlined text-lg">logout</span>
@@ -180,12 +180,7 @@ export default function Dashboard({ children }: { children: ReactNode }) {
               <ThemeSwitcher />
             </div>
             <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block" />
-            <div className="hidden sm:block pl-2">
-              <button className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-lg shadow-indigo-500/25 dark:shadow-indigo-500/20 transition-all active:scale-[0.97]">
-                <span className="material-symbols-outlined text-lg">add</span>
-                <span>Quick Action</span>
-              </button>
-            </div>
+
             {/* Mobile-only compact quick action */}
             <button className="sm:hidden p-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-lg shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.97]">
               <span className="material-symbols-outlined text-lg">add</span>
@@ -210,3 +205,4 @@ export default function Dashboard({ children }: { children: ReactNode }) {
     </div>
   );
 }
+

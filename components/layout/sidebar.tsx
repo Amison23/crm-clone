@@ -9,7 +9,7 @@ const mainNavItems = [
   { href: "/protected/crm-leads-table", icon: "groups", label: "Leads" },
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks" },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat" },
-  { href: "/protected/support-tickets-list", icon: "support_agent", label: "Support" },
+  { href: "/protected/tickets", icon: "support_agent", label: "Support" },
   { href: "/protected/analytics-and-reporting", icon: "insights", label: "Analytics" },
 ];
 

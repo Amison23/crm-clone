@@ -57,13 +57,6 @@ export function Navbar() {
         </div>
         
         <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800 hidden lg:block"></div>
-        
-        <div className="flex items-center gap-3 lg:pl-2">
-          <button className="bg-primary text-white px-3 lg:px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1 lg:gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
-            <span className="material-symbols-outlined text-lg">add</span>
-            <span className="hidden sm:inline">Quick Action</span>
-          </button>
-        </div>
       </div>
     </header>
   );

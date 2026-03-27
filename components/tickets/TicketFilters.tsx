@@ -3,8 +3,15 @@
 import { useState, useRef, useEffect } from "react";
 import type { Ticket, TicketPriority, SlaStatus } from "./TicketBadges";
 
-export const FILTER_OPTIONS = ["All Tickets", "Open", "Pending", "Resolved"] as const;
+export const FILTER_OPTIONS = ["All Tickets", "Open", "Pending", "Resolved", "Sent", "Responses", "Closed"] as const;
 export type FilterOption = (typeof FILTER_OPTIONS)[number];
+
+const FILTER_BY_ROLE: Record<string, FilterOption[]> = {
+  admin: ["All Tickets", "Open", "Pending", "Resolved"],
+  sales_agent: ["All Tickets", "Open", "Pending", "Resolved"],
+  customer: ["Sent", "Responses", "Closed"],
+}
+
 
 interface TicketFiltersProps {
   active: FilterOption;
@@ -14,6 +21,7 @@ interface TicketFiltersProps {
   activeSla: SlaStatus | "All SLA";
   onSlaChange: (sla: SlaStatus | "All SLA") => void;
   tickets: Ticket[];
+  role: "admin" | "sales_agent" | "customer";
 }
 
 export default function TicketFilters({ 
@@ -23,8 +31,10 @@ export default function TicketFilters({
   onPriorityChange, 
   activeSla, 
   onSlaChange, 
-  tickets 
+  tickets,
+  role
 }: TicketFiltersProps) {
+  const visibleFilters = FILTER_BY_ROLE[role] ?? FILTER_OPTIONS;
   const [showMore, setShowMore] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -45,11 +55,14 @@ export default function TicketFilters({
     Open: tickets.filter((t) => t.status === "Open").length,
     Pending: tickets.filter((t) => t.status === "Pending").length,
     Resolved: tickets.filter((t) => t.status === "Resolved").length,
+    Sent: 0,
+    Responses: 0,
+    Closed: 0
   };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {FILTER_OPTIONS.map((label) => {
+      {visibleFilters.map((label) => {
         const count = counts[label];
         return (
           <button

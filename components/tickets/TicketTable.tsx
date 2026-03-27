@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   StatusBadge,
   PriorityBadge,
@@ -20,6 +20,7 @@ interface TicketsTableProps {
   total: number;
   page: number;
   pageCount: number;
+  role: "admin" | "customer" | "sales_agent"
 }
 
 // ─── Assign Agent Sub-Modal ────────────────────────────────────────────────
@@ -269,7 +270,7 @@ export const TicketModal = ({
 };
 
 // ─── Ticket Table ─────────────────────────────────────────────────────────────
-export default function TicketTable({ tickets, total, page, pageCount }: TicketsTableProps) {
+export default function TicketTable({ tickets, total, page, pageCount, role}: TicketsTableProps) {
   const start = tickets.length > 0 ? (page - 1) * tickets.length + 1 : 0;
   const end = start + tickets.length - (tickets.length > 0 ? 1 : 0);
 
@@ -277,13 +278,34 @@ export default function TicketTable({ tickets, total, page, pageCount }: Tickets
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [, setStatus] = useState<TicketStatus>("Open");
 
+
+  // table column values
+  const TABLE_COLUMNS = [
+    "Ticket ID",
+    "Subject",
+    "Status",
+    "Priority",
+    "SLA Status",
+    "Agent",
+  ];
+
+  type FilterColumns = (typeof TABLE_COLUMNS)[number]
+  
+  const filteredColumns: Record<string, FilterColumns[]> ={
+    admin: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"],
+    sales_agent: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"],
+    customer: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status"],
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/50">
-              {["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"].map((col) => (
+              {[
+                ...filteredColumns[role]
+              ].map((col) => (
                 <th
                   key={col}
                   className="px-6 py-4 text-xs font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800"

@@ -12,15 +12,15 @@ export async function createLeadAction(formData: FormData) {
     return { error: "You must be logged in to add a lead." };
   }
 
-  // Fetch the user's profile to get their tenant_id
+  // Fetch the user's employee profile to get their company_id
   const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("tenant_id")
+    .from("employees")
+    .select("company_id")
     .eq("id", user.id)
     .single();
 
-  if (profileError || !profile?.tenant_id) {
-    return { error: "Unable to find your organization (tenant_id). Please contact support." };
+  if (profileError || !profile?.company_id) {
+    return { error: "Unable to find your organization (company_id). Please contact support." };
   }
 
   // Extract form data
@@ -40,7 +40,7 @@ export async function createLeadAction(formData: FormData) {
   // Insert into leads table using the user's tenant_id
   const { data, error } = await supabase.from("leads").insert([
     {
-      tenant_id: profile.tenant_id,
+      company_id: profile.company_id,
       assigned_to: user.id, // we can optionally assign the lead to the user creating it
       first_name,
       last_name,

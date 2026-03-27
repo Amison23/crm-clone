@@ -5,7 +5,11 @@
 CREATE TABLE ticket_logs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_id uuid NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+<<<<<<< Updated upstream
   user_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+=======
+  -- user_id uuid REFERENCES profiles(id) ON DELETE SET NULL,
+>>>>>>> Stashed changes
   action text NOT NULL,
   details jsonb,
   created_at timestamptz DEFAULT now()
