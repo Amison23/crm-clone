@@ -31,14 +31,21 @@ export default async function TicketsPage() {
     companyId = employee?.company_id ?? "";
   }
 
-  // Fetch tickets — customers only see their own
+  // Fetch tickets with joined employee name for the assigned agent
   let ticketsQuery = supabase
     .from("tickets")
-    .select("*")
+    .select(`
+      *,
+      assigned_agent:employees!tickets_assigned_to_fkey(id, full_name, role)
+    `)
     .order("created_at", { ascending: false });
 
   if (role === "customer" && user) {
+    // Clients only see their own tickets
     ticketsQuery = ticketsQuery.eq("client_id", user.id);
+  } else if (companyId) {
+    // Admins & agents only see their company's tickets
+    ticketsQuery = ticketsQuery.eq("company_id", companyId);
   }
 
   const { data: ticketsData } = await ticketsQuery;

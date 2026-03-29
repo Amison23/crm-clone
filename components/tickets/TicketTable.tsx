@@ -1,40 +1,68 @@
 "use client";
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   StatusBadge,
   PriorityBadge,
   SlaBadge,
   type Ticket,
   type TicketStatus,
-  type TicketPriority,
-  type SlaStatus,
   type AuditEntry,
-  type Worker,
-  MOCK_WORKERS,
-  getMockAuditLog,
 } from "./TicketBadges";
 import TicketAuditLog from "./TicketAuditLog";
 
 interface TicketsTableProps {
   tickets: Ticket[];
+  rawTickets: any[];
   total: number;
   page: number;
   pageCount: number;
-  role: "admin" | "customer" | "sales_agent"
+  role: "admin" | "customer" | "sales_agent";
 }
 
-// ─── Assign Agent Sub-Modal ────────────────────────────────────────────────
+// ─── DB Employee type ────────────────────────────────────────────────────────
+interface DbEmployee {
+  id: string;
+  full_name: string;
+  role: string;
+}
+
+// ─── Assign Agent Sub-Modal ──────────────────────────────────────────────────
 interface AssignAgentModalProps {
-  currentAgent: string;
-  onAssign: (worker: Worker) => void;
+  currentAgentName: string;
+  onAssign: (emp: DbEmployee) => void;
   onClose: () => void;
 }
 
-function AssignAgentModal({ currentAgent, onAssign, onClose }: AssignAgentModalProps) {
+function AssignAgentModal({ currentAgentName, onAssign, onClose }: AssignAgentModalProps) {
+  const supabase = createClient();
+  const [employees, setEmployees] = useState<DbEmployee[]>([]);
   const [search, setSearch] = useState("");
-  const filtered = MOCK_WORKERS.filter((w) =>
-    w.name.toLowerCase().includes(search.toLowerCase())
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      const { data } = await supabase
+        .from("employees")
+        .select("id, full_name, role")
+        .in("role", ["super_admin", "company_admin", "sales_agent", "server_admin"])
+        .order("full_name");
+      setEmployees(data ?? []);
+      setLoading(false);
+    }
+    load();
+  }, []);
+
+  const filtered = employees.filter((e) =>
+    e.full_name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const roleLabel: Record<string, string> = {
+    super_admin: "Super Admin",
+    company_admin: "Company Admin",
+    sales_agent: "Sales Agent",
+    server_admin: "Server Admin",
+  };
 
   return (
     <div
@@ -65,58 +93,42 @@ function AssignAgentModal({ currentAgent, onAssign, onClose }: AssignAgentModalP
           </div>
         </div>
 
-        {/* Worker list */}
+        {/* Employee list */}
         <ul className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-          {filtered.length === 0 && (
+          {loading ? (
+            <li className="px-5 py-8 text-center text-sm text-slate-400">Loading agents…</li>
+          ) : filtered.length === 0 ? (
             <li className="px-5 py-8 text-center text-sm text-slate-400">No agents found</li>
-          )}
-          {filtered.map((worker) => {
-            const isCurrentAgent = worker.name === currentAgent;
-            return (
-              <li key={worker.id}>
-                <button
-                  onClick={() => { if (!isCurrentAgent) { onAssign(worker); onClose(); } }}
-                  disabled={isCurrentAgent}
-                  className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-colors ${
-                    isCurrentAgent
-                      ? "opacity-50 cursor-default"
-                      : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                  }`}
-                >
-                  {/* Avatar */}
-                  <div className="relative flex-shrink-0">
-                    <div className="size-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold">
-                      {worker.initials}
+          ) : (
+            filtered.map((emp) => {
+              const isCurrent = emp.full_name === currentAgentName;
+              const initials = emp.full_name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+              return (
+                <li key={emp.id}>
+                  <button
+                    onClick={() => { if (!isCurrent) { onAssign(emp); onClose(); } }}
+                    disabled={isCurrent}
+                    className={`w-full flex items-center gap-3 px-5 py-3 text-left transition-colors ${
+                      isCurrent ? "opacity-50 cursor-default" : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                    }`}
+                  >
+                    <div className="size-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                      {initials}
                     </div>
-                    <span
-                      className={`absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-white dark:border-slate-900 ${
-                        worker.isActive ? "bg-emerald-500" : "bg-slate-400"
-                      }`}
-                    />
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
-                      {worker.name}
-                      {isCurrentAgent && (
-                        <span className="ml-2 text-[10px] font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full">Current</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{worker.role}</p>
-                  </div>
-
-                  {/* Load */}
-                  <div className="flex-shrink-0 text-right">
-                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                      {worker.openTickets + worker.pendingTickets}
-                    </p>
-                    <p className="text-[10px] text-slate-400">open</p>
-                  </div>
-                </button>
-              </li>
-            );
-          })}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
+                        {emp.full_name}
+                        {isCurrent && (
+                          <span className="ml-2 text-[10px] font-medium text-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded-full">Current</span>
+                        )}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabel[emp.role] ?? emp.role}</p>
+                    </div>
+                  </button>
+                </li>
+              );
+            })
+          )}
         </ul>
       </div>
     </div>
@@ -127,7 +139,9 @@ function AssignAgentModal({ currentAgent, onAssign, onClose }: AssignAgentModalP
 interface TicketModalProps {
   openModal: boolean;
   selectedTicket: Ticket;
-  setOpenModal: (openModal: boolean) => void;
+  rawTicketId: string; // real UUID from DB
+  currentUserId?: string;
+  setOpenModal: (v: boolean) => void;
   onStatusChange: (status: TicketStatus) => void;
   onClose: () => void;
 }
@@ -135,27 +149,117 @@ interface TicketModalProps {
 export const TicketModal = ({
   openModal,
   selectedTicket,
+  rawTicketId,
+  currentUserId,
   setOpenModal,
   onStatusChange,
   onClose,
 }: TicketModalProps) => {
+  const supabase = createClient();
   const [showAssign, setShowAssign] = useState(false);
   const [agent, setAgent] = useState(selectedTicket.agent);
-  const [auditLog, setAuditLog] = useState<AuditEntry[]>(() =>
-    getMockAuditLog(selectedTicket.id)
-  );
+  const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  function handleAssign(worker: Worker) {
+  // Load real audit data: ticket_assignments + ticket_comments
+  useEffect(() => {
+    if (!rawTicketId) return;
+    async function load() {
+      setLoadingAudit(true);
+      const entries: AuditEntry[] = [];
+
+      // Fetch assignment history
+      const { data: assignments } = await supabase
+        .from("ticket_assignments")
+        .select("id, assigned_to, assigned_by, created_at")
+        .eq("ticket_id", rawTicketId)
+        .order("created_at", { ascending: false });
+
+      (assignments ?? []).forEach((a) => {
+        entries.push({
+          id: a.id,
+          action: "assigned",
+          actor: "Agent",
+          actorInitials: "AG",
+          description: `Ticket assigned`,
+          timestamp: new Date(a.created_at).toLocaleString(),
+        });
+      });
+
+      // Fetch all comments (public + internal) for the agent/admin view
+      const { data: comments } = await supabase
+        .from("ticket_comments")
+        .select("id, author_id, body, is_internal, created_at")
+        .eq("ticket_id", rawTicketId)
+        .order("created_at", { ascending: false });
+
+      (comments ?? []).forEach((c) => {
+        entries.push({
+          id: c.id,
+          action: "comment",
+          actor: c.is_internal ? "Internal Note" : "Comment",
+          actorInitials: c.is_internal ? "🔒" : "💬",
+          description: c.body,
+          timestamp: new Date(c.created_at).toLocaleString(),
+        });
+      });
+
+      // Sort by timestamp descending
+      entries.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      setAuditLog(entries);
+      setLoadingAudit(false);
+    }
+    load();
+  }, [rawTicketId]);
+
+  async function handleAssign(emp: DbEmployee) {
+    if (!rawTicketId) return;
+    setSaving(true);
+    // Update the ticket's assigned_to
+    await supabase
+      .from("tickets")
+      .update({ assigned_to: emp.id, updated_at: new Date().toISOString() })
+      .eq("id", rawTicketId);
+
+    // Insert assignment audit record
+    await supabase.from("ticket_assignments").insert({
+      ticket_id: rawTicketId,
+      assigned_to: emp.id,
+      assigned_by: currentUserId ?? emp.id,
+    });
+
     const newEntry: AuditEntry = {
       id: `a-${Date.now()}`,
       action: "assigned",
-      actor: "Alex Director",
-      actorInitials: "AD",
-      description: `Reassigned to ${worker.name}`,
-      timestamp: "just now",
+      actor: "Agent",
+      actorInitials: "AG",
+      description: `Reassigned to ${emp.full_name}`,
+      timestamp: new Date().toLocaleString(),
     };
-    setAgent(worker.name);
+    setAgent(emp.full_name);
     setAuditLog((prev) => [newEntry, ...prev]);
+    setSaving(false);
+  }
+
+  async function handleResolve() {
+    if (!rawTicketId) return;
+    setSaving(true);
+    await supabase
+      .from("tickets")
+      .update({
+        status: "resolved",
+        resolved_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", rawTicketId);
+    onStatusChange("Resolved");
+    setSaving(false);
+    setOpenModal(false);
+    onClose();
   }
 
   if (!openModal) return null;
@@ -164,7 +268,7 @@ export const TicketModal = ({
     <>
       {showAssign && (
         <AssignAgentModal
-          currentAgent={agent}
+          currentAgentName={agent}
           onAssign={handleAssign}
           onClose={() => setShowAssign(false)}
         />
@@ -172,12 +276,7 @@ export const TicketModal = ({
 
       <div
         className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) {
-            setOpenModal(false);
-            onClose();
-          }
-        }}
+        onClick={(e) => { if (e.target === e.currentTarget) { setOpenModal(false); onClose(); } }}
       >
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 w-full max-w-lg overflow-hidden shadow-xl flex flex-col max-h-[90vh]">
 
@@ -185,9 +284,7 @@ export const TicketModal = ({
           <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
             <div>
               <p className="text-xs text-slate-400 mb-1">{selectedTicket?.id}</p>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                {selectedTicket?.subject}
-              </h2>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{selectedTicket?.subject}</h2>
             </div>
             <button
               onClick={() => { setOpenModal(false); onClose(); }}
@@ -231,13 +328,20 @@ export const TicketModal = ({
               ))}
             </div>
 
-            {/* Audit log */}
+            {/* Audit log — real data */}
             <div className="border-b border-slate-200 dark:border-slate-800">
-              <TicketAuditLog entries={auditLog} />
+              {loadingAudit ? (
+                <div className="px-6 py-6 flex items-center gap-2 text-sm text-slate-400">
+                  <span className="size-4 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+                  Loading history…
+                </div>
+              ) : (
+                <TicketAuditLog entries={auditLog} />
+              )}
             </div>
           </div>
 
-          {/* Actions — always pinned to bottom */}
+          {/* Actions */}
           <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-200 dark:border-slate-800 flex-shrink-0">
             <button
               onClick={() => { setOpenModal(false); onClose(); }}
@@ -247,20 +351,18 @@ export const TicketModal = ({
             </button>
             <button
               onClick={() => setShowAssign(true)}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-1.5"
+              disabled={saving}
+              className="px-4 py-2 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-base leading-none">person_add</span>
               Assign agent
             </button>
             <button
-              onClick={() => {
-                onStatusChange("Resolved");
-                setOpenModal(false);
-                onClose();
-              }}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity shadow-sm"
+              onClick={handleResolve}
+              disabled={saving || selectedTicket?.status === "Resolved"}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50"
             >
-              Mark resolved
+              {saving ? "Saving…" : "Mark resolved"}
             </button>
           </div>
         </div>
@@ -270,31 +372,29 @@ export const TicketModal = ({
 };
 
 // ─── Ticket Table ─────────────────────────────────────────────────────────────
-export default function TicketTable({ tickets, total, page, pageCount, role}: TicketsTableProps) {
+export default function TicketTable({ tickets, rawTickets, total, page, pageCount, role }: TicketsTableProps) {
   const start = tickets.length > 0 ? (page - 1) * tickets.length + 1 : 0;
   const end = start + tickets.length - (tickets.length > 0 ? 1 : 0);
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [rawTicketId, setRawTicketId] = useState("");
   const [, setStatus] = useState<TicketStatus>("Open");
 
+  const filteredColumns: Record<string, string[]> = {
+    admin:      ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"],
+    sales_agent:["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"],
+    customer:   ["Ticket ID", "Subject", "Status", "Priority", "SLA Status"],
+  };
 
-  // table column values
-  const TABLE_COLUMNS = [
-    "Ticket ID",
-    "Subject",
-    "Status",
-    "Priority",
-    "SLA Status",
-    "Agent",
-  ];
-
-  type FilterColumns = (typeof TABLE_COLUMNS)[number]
-  
-  const filteredColumns: Record<string, FilterColumns[]> ={
-    admin: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"],
-    sales_agent: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"],
-    customer: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status"],
+  function openTicketModal(ticket: Ticket) {
+    // Look up the raw UUID using the display ID prefix
+    const raw = rawTickets.find(
+      (r) => `#${r.id.slice(0, 8).toUpperCase()}` === ticket.id
+    );
+    setSelectedTicket(ticket);
+    setRawTicketId(raw?.id ?? "");
+    setOpenModal(true);
   }
 
   return (
@@ -303,13 +403,8 @@ export default function TicketTable({ tickets, total, page, pageCount, role}: Ti
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/50">
-              {[
-                ...filteredColumns[role]
-              ].map((col) => (
-                <th
-                  key={col}
-                  className="px-6 py-4 text-xs font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800"
-                >
+              {filteredColumns[role].map((col) => (
+                <th key={col} className="px-6 py-4 text-xs font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                   {col}
                 </th>
               ))}
@@ -321,10 +416,7 @@ export default function TicketTable({ tickets, total, page, pageCount, role}: Ti
                 <tr
                   key={ticket.id}
                   className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
-                  onClick={() => {
-                    setOpenModal(true);
-                    setSelectedTicket(ticket);
-                  }}
+                  onClick={() => openTicketModal(ticket)}
                 >
                   <td className="px-6 py-4 text-sm font-bold">{ticket.id}</td>
                   <td className="px-6 py-4">
@@ -385,9 +477,10 @@ export default function TicketTable({ tickets, total, page, pageCount, role}: Ti
         <TicketModal
           openModal={openModal}
           selectedTicket={selectedTicket}
+          rawTicketId={rawTicketId}
           setOpenModal={setOpenModal}
           onStatusChange={setStatus}
-          onClose={() => setSelectedTicket(null)}
+          onClose={() => { setSelectedTicket(null); setRawTicketId(""); }}
         />
       )}
     </div>

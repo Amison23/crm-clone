@@ -227,6 +227,7 @@ export default function AdminPage() {
         <TicketModal
           openModal={openModal}
           selectedTicket={selectedTicket}
+          rawTicketId=""
           setOpenModal={setOpenModal}
           onStatusChange={setStatus}
           onClose={() => setSelectedTicket(null)}
