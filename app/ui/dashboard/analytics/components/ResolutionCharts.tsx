@@ -78,7 +78,7 @@ export default function ResolutionChart() {
 
       {/* CHART CONTAINER */}
       <div className="flex-1 w-full">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           <BarChart data={data} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
             <CartesianGrid 
                 strokeDasharray="4 4" 

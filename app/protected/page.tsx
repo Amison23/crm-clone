@@ -33,20 +33,26 @@ async function DashboardContent() {
 
   if (!user) redirect("/sign-in");
 
-  // 1. EXTRACT ROLE & IDENTITY
-  const role = user.user_metadata?.role || 'sales_agent';
-  const fullName = user.user_metadata?.full_name || user.email?.split('@')[0];
+  // 1. EXTRACT ROLE & IDENTITY (Standardized to employees table)
+  const { data: profile } = await supabase
+    .from("employees")
+    .select("role, full_name")
+    .eq("id", user.id)
+    .single();
+
+  const role = profile?.role || 'sales_agent';
+  const fullName = profile?.full_name || user.email?.split('@')[0];
 
   // 2. DEFINE DYNAMIC QUICK LINKS (Role-Aware)
   const allLinks = [
-    { name: "Executive Dashboard", href: "/protected/executive-dashboard", icon: BarChart3, color: "text-primary", bg: "bg-primary/10", roles: ['admin', 'super_admin'] },
-    { name: "CRM Leads", href: "/protected/crm-leads-table", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10", roles: ['sales_agent', 'admin', 'super_admin'] },
-    { name: "Support Tickets", href: "/protected/support-tickets-list", icon: Headset, color: "text-rose-500", bg: "bg-rose-500/10", roles: ['sales_agent', 'admin', 'super_admin'] },
-    { name: "Analytics Engine", href: "/protected/analytics-and-reporting", icon: Zap, color: "text-amber-500", bg: "bg-amber-500/10", roles: ['admin', 'super_admin'] },
-    { name: "Task Management", href: "/protected/task-management-board", icon: Target, color: "text-emerald-500", bg: "bg-emerald-500/10", roles: ['sales_agent', 'admin', 'super_admin'] },
-    { name: "System Command", href: "/protected/server-admin", icon: ShieldCheck, color: "text-purple-500", bg: "bg-purple-500/10", roles: ['super_admin'] },
-    { name: "Bot Builder", href: "/protected/visual-bot-builder", icon: Bot, color: "text-indigo-500", bg: "bg-indigo-500/10", roles: ['admin', 'super_admin'] },
-    { name: "Admin Matrix", href: "/protected/admin-permissions-matrix", icon: Settings, color: "text-slate-500", bg: "bg-slate-500/10", roles: ['super_admin'] },
+    { name: "Executive Dashboard", href: "/protected/executive-dashboard", icon: BarChart3, color: "text-primary", bg: "bg-primary/10", roles: ['admin', 'superadmin'] },
+    { name: "CRM Leads", href: "/protected/crm-leads-table", icon: Users, color: "text-blue-500", bg: "bg-blue-500/10", roles: ['sales_agent', 'admin', 'superadmin'] },
+    { name: "Support Tickets", href: "/protected/support-tickets-list", icon: Headset, color: "text-rose-500", bg: "bg-rose-500/10", roles: ['sales_agent', 'admin', 'superadmin'] },
+    { name: "Analytics Engine", href: "/protected/analytics-and-reporting", icon: Zap, color: "text-amber-500", bg: "bg-amber-500/10", roles: ['admin', 'superadmin'] },
+    { name: "Task Management", href: "/protected/task-management-board", icon: Target, color: "text-emerald-500", bg: "bg-emerald-500/10", roles: ['sales_agent', 'admin', 'superadmin'] },
+    { name: "System Command", href: "/protected/super-admin", icon: ShieldCheck, color: "text-purple-500", bg: "bg-purple-500/10", roles: ['superadmin'] },
+    { name: "Bot Builder", href: "/protected/visual-bot-builder", icon: Bot, color: "text-indigo-500", bg: "bg-indigo-500/10", roles: ['admin', 'superadmin'] },
+    { name: "Admin Matrix", href: "/protected/super-admin/permissions", icon: Settings, color: "text-slate-500", bg: "bg-slate-500/10", roles: ['superadmin'] },
   ];
 
   const quickLinks = allLinks.filter(link => link.roles.includes(role));

@@ -39,7 +39,7 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
         </div>
 
         <div className="h-[350px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart data={filteredData} margin={{ left: -20 }}>
               <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" />
               <XAxis dataKey="date" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontWeight: 800 }} dy={10} />
