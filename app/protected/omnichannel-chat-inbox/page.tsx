@@ -16,7 +16,7 @@ type ChatSession = {
   source: string
   created_at: string
   is_lead: boolean
-  tenant_id: string
+  company_id: string
 }
 
 type Message = {
@@ -38,6 +38,7 @@ export default function OmnichannelChatInbox() {
   const [messageInput, setMessageInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [employeeName, setEmployeeName] = useState<string>('')
   const [filter, setFilter] = useState<FilterTab>('unassigned')
   const [searchQuery, setSearchQuery] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -46,6 +47,17 @@ export default function OmnichannelChatInbox() {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUser(user)
+
+      // Fetch and cache employee full_name once — employees.id === auth.uid()
+      if (user) {
+        const { data: employee } = await supabase
+          .from('employees')
+          .select('full_name')
+          .eq('id', user.id)
+          .single()
+        setEmployeeName(employee?.full_name || user.email || '')
+      }
+
       await loadChats('unassigned', user?.id)
       setLoading(false)
     }
@@ -153,13 +165,14 @@ export default function OmnichannelChatInbox() {
     if (!messageInput.trim() || !selectedChat || !currentUser) return
     const content = messageInput.trim()
     setMessageInput('')
+
     await supabase.from('messages').insert({
       chat_session_id: selectedChat.id,
-      tenant_id: selectedChat.tenant_id,
+      company_id: selectedChat.company_id,
       content,
       role: 'agent',
       sender_id: currentUser.id,
-      sender_name: currentUser.email,
+      sender_name: employeeName,
     })
   }
 
