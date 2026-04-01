@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { 
   BarChart, 
   Bar, 
@@ -10,47 +11,41 @@ import {
   ResponsiveContainer, 
   Cell 
 } from 'recharts';
+import { Timer, Clock } from 'lucide-react';
 
-// --- 1. DATA DEFINITION ---
-const data = [
-  { name: '< 24h', count: 42, color: '#10b981' }, // Emerald
-  { name: '1-3 Days', count: 28, color: '#3b82f6' }, // Blue
-  { name: '3-7 Days', count: 12, color: '#f59e0b' }, // Amber
-  { name: '7+ Days', count: 4, color: '#ef4444' },  // Red
-];
-
-// --- 2. SAFE TYPESCRIPT INTERFACE ---
-// We define our own interface to bypass Recharts' generic TooltipProps issues.
-interface KpiTooltipProps {
-  active?: boolean;
-  payload?: Array<{
-    value: number;
-    payload: {
-      name: string;
-      count: number;
-      color: string;
-    };
-  }>;
+// --- 1. INTERFACES & CONFIG ---
+interface ResolutionData {
+  name: string; // e.g., '< 24h', '1-3 Days'
+  count: number;
 }
 
-/**
- * Custom Tooltip Component
- * Optimized for Dark/Light mode and mobile-ready spacing.
- */
-const CustomTooltip = ({ active, payload }: KpiTooltipProps) => {
+interface ResolutionChartProps {
+  data?: ResolutionData[];
+}
+
+// HCI: Semantic Color Mapping based on SLA (Service Level Agreement) Risk
+const SLA_COLORS: Record<string, string> = {
+  '< 24h': '#10b981',   // Emerald (Healthy)
+  '1-3 Days': '#3b82f6', // Blue (Standard)
+  '3-7 Days': '#f59e0b', // Amber (Warning)
+  '7+ Days': '#f43f5e',  // Rose (Critical SLA Breach)
+};
+
+// --- 2. CUSTOM TOOLTIP ---
+const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const rawData = payload[0].payload;
 
     return (
-      <div className="bg-white dark:bg-slate-800 p-4 border border-gray-100 dark:border-slate-700 rounded-2xl shadow-xl animate-in fade-in zoom-in-95 duration-200">
-        <p className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest mb-1">
+      <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-2xl backdrop-blur-md">
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
           {rawData.name} Bucket
         </p>
-        <div className="flex items-baseline gap-2">
-          <p className="text-xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">
-            {payload[0].value}
+        <div className="flex items-center gap-3">
+          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: rawData.color }} />
+          <p className="text-xl font-black text-white uppercase tracking-tighter">
+            {payload[0].value} <span className="text-[10px] opacity-50">Tickets</span>
           </p>
-          <span className="text-[10px] font-bold text-gray-400 uppercase">Tickets</span>
         </div>
       </div>
     );
@@ -59,83 +54,105 @@ const CustomTooltip = ({ active, payload }: KpiTooltipProps) => {
 };
 
 // --- 3. MAIN COMPONENT ---
-export default function ResolutionChart() {
+export default function ResolutionChart({ data = [] }: ResolutionChartProps) {
+  
+  // Map the incoming data to our strict SLA color codes
+  const chartData = useMemo(() => {
+    if (!data || data.length === 0) return [];
+    return data.map(item => ({
+      ...item,
+      color: SLA_COLORS[item.name] || '#64748b' // Fallback to Slate if unknown bucket
+    }));
+  }, [data]);
+
   return (
-    <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm h-[400px] flex flex-col group/chart">
+    <div className="w-full bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col group/chart transition-all hover:shadow-md">
       
-      {/* HEADER */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-          <h3 className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
-              Resolution Lifecycle
-          </h3>
+      {/* --- HEADER --- */}
+      <div className="flex items-start gap-4 mb-10">
+        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+          <Timer className="w-6 h-6 text-primary" />
         </div>
-        <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter">
-            Duration Distribution
-        </p>
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] leading-none">Resolution Lifecycle</h3>
+            <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+          </div>
+          <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">
+            Duration <span className="text-primary">Distribution</span>
+          </p>
+        </div>
       </div>
 
-      {/* CHART CONTAINER */}
-      <div className="flex-1 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
-            <CartesianGrid 
+      {/* --- CHART CONTAINER --- */}
+      <div className="flex-1 w-full min-h-[300px]">
+        {chartData.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
+              <CartesianGrid 
                 strokeDasharray="4 4" 
                 vertical={false} 
-                stroke="#e2e8f0" 
-                className="dark:stroke-slate-800/50" 
-            />
-            <XAxis 
+                stroke="currentColor" 
+                className="text-slate-100 dark:text-slate-800/50" 
+              />
+              <XAxis 
                 dataKey="name" 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} 
-                dy={10}
-            />
-            <YAxis 
+                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
+                dy={15}
+              />
+              <YAxis 
                 axisLine={false} 
                 tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 800 }} 
-            />
-            <Tooltip 
+                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
+              />
+              <Tooltip 
                 cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }} 
                 content={<CustomTooltip />} 
-            />
-            <Bar 
+              />
+              <Bar 
                 dataKey="count" 
-                radius={[12, 12, 0, 0]} 
-                barSize={44}
-            >
-              {data.map((entry, index) => (
-                <Cell 
+                radius={[8, 8, 0, 0]} 
+                barSize={40}
+                animationDuration={1500}
+              >
+                {chartData.map((entry, index) => (
+                  <Cell 
                     key={`cell-${index}`} 
                     fill={entry.color} 
-                    fillOpacity={0.7}
-                    className="hover:fill-opacity-100 transition-all duration-500 cursor-crosshair"
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+                    fillOpacity={0.8}
+                    className="hover:fill-opacity-100 transition-all duration-300 cursor-crosshair"
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-full w-full flex flex-col items-center justify-center space-y-4 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl min-h-[250px]">
+             <Clock className="w-8 h-8 text-slate-300 animate-pulse" />
+             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Awaiting Lifecycle Telemetry...</p>
+          </div>
+        )}
       </div>
 
-      {/* FOOTER / LEGEND */}
-      <div className="mt-6 pt-6 border-t border-gray-50 dark:border-slate-800/60 flex justify-between items-center">
-        <p className="text-[9px] font-bold text-gray-400 dark:text-slate-600 uppercase tracking-widest italic">
-            * Automated Node Analysis
+      {/* --- FOOTER / LEGEND --- */}
+      <div className="mt-8 pt-6 border-t border-slate-50 dark:border-slate-800/60 flex justify-between items-center">
+        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest italic">
+          * Automated Workspace Analysis
         </p>
         <div className="flex gap-4">
-            <div className="flex items-center gap-1.5 group cursor-help">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 group-hover:scale-125 transition-transform" />
-                <span className="text-[9px] font-black text-gray-400 group-hover:text-emerald-500 transition-colors uppercase tracking-tighter">Healthy</span>
-            </div>
-            <div className="flex items-center gap-1.5 group cursor-help">
-                <span className="h-1.5 w-1.5 rounded-full bg-red-500 group-hover:scale-125 transition-transform" />
-                <span className="text-[9px] font-black text-gray-400 group-hover:text-red-500 transition-colors uppercase tracking-tighter">SLA Risk</span>
-            </div>
+          <div className="flex items-center gap-1.5 group cursor-help">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="text-[9px] font-black text-slate-400 group-hover:text-emerald-500 transition-colors uppercase tracking-tighter">Healthy SLA</span>
+          </div>
+          <div className="flex items-center gap-1.5 group cursor-help">
+            <span className="h-2 w-2 rounded-full bg-rose-500 animate-ping" />
+            <span className="text-[9px] font-black text-slate-400 group-hover:text-rose-500 transition-colors uppercase tracking-tighter">SLA Risk</span>
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

@@ -1,94 +1,144 @@
 'use client';
 
-import { useState } from 'react';
+import { Trophy, AlertTriangle, Users, Minus, TrendingUp, Target } from 'lucide-react';
 
-interface AgentPerformance {
+export interface AgentPerformance {
   agent_name: string;
   total_leads: number;
   closed_deals: number;
   win_rate: number;
-  trend: number;
-  precision_rate: number;
 }
 
 export default function AgentReport({ agents = [] }: { agents: AgentPerformance[] }) {
+  
+  // Logic: Identify top performer and the baseline for the "Standard" range
+  const maxWinRate = agents.length > 0 ? Math.max(...agents.map(a => a.win_rate)) : 0;
+  
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div className="p-8 border-b border-gray-50 dark:border-slate-800 flex justify-between items-end">
-        <div>
-          <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-tighter text-xl">
-            Human Capital <span className="text-blue-600">Velocity</span>
-          </h4>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
-            Ranking agents by conversion precision and lead throughput.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-           <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-           <p className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Live Audit</p>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
+    <div className="w-full">
+      <div className="overflow-x-auto min-h-[300px]">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest bg-gray-50/50 dark:bg-slate-800/30">
-              <th className="px-8 py-5">Rank & Agent Node</th>
-              <th className="px-8 py-5 text-center">Acquisitions</th>
-              <th className="px-8 py-5 text-center">Conversions</th>
-              <th className="px-8 py-5 text-center">Win Rate</th>
-              <th className="px-8 py-5 text-right">Performance Node</th>
+            <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+              <th className="px-6 py-5">Rank & Agent Identity</th>
+              <th className="px-6 py-5 text-center">Acquisitions</th>
+              <th className="px-6 py-5 text-center">Conversions</th>
+              <th className="px-6 py-5 text-center">Win Rate Precision</th>
+              <th className="px-6 py-5 text-right">Performance Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
-            {agents.length > 0 ? agents.map((agent, index) => (
-              <tr key={agent.agent_name} className="group hover:bg-blue-50/20 dark:hover:bg-blue-900/10 transition-colors">
-                <td className="px-8 py-6">
-                  <div className="flex items-center gap-4">
-                    <span className="text-lg font-black text-gray-300 dark:text-slate-700 tabular-nums">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <div>
-                      <p className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition-colors">
-                        {agent.agent_name}
-                      </p>
-                      <p className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase">
-                        Active Lead Specialist
-                      </p>
+          <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+            {agents.length > 0 ? agents.map((agent, index) => {
+              
+              // Semantic Status Logic
+              const isTop = agent.win_rate === maxWinRate && agent.win_rate > 0;
+              const isStruggling = agent.win_rate < 20 && agent.total_leads > 5;
+              const isElite = agent.win_rate >= 50; // Elite threshold
+              
+              return (
+                <tr key={agent.agent_name} className="group hover:bg-slate-50/80 dark:hover:bg-slate-800/30 transition-all duration-300">
+                  
+                  {/* 1. RANK & IDENTITY */}
+                  <td className="px-6 py-6">
+                    <div className="flex items-center gap-4">
+                      <div className={`flex items-center justify-center h-10 w-10 rounded-2xl font-black text-xs transition-transform group-hover:scale-110 ${
+                        isTop 
+                          ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200/50' 
+                          : 'bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-transparent'
+                      }`}>
+                        {isTop ? <Trophy size={16} /> : String(index + 1).padStart(2, '0')}
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-tighter group-hover:text-primary transition-colors">
+                          {agent.agent_name}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <span className={`h-1.5 w-1.5 rounded-full ${isTop ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                          <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+                             Certified Operator
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-8 py-6 text-center font-mono font-bold text-gray-600 dark:text-slate-400">
-                  {agent.total_leads}
-                </td>
-                <td className="px-8 py-6 text-center font-mono font-bold text-emerald-600">
-                  {agent.closed_deals}
-                </td>
-                <td className="px-8 py-6">
-                  <div className="flex flex-col items-center gap-1">
-                     <span className="text-sm font-black text-gray-900 dark:text-white">{agent.win_rate}%</span>
-                     <div className="w-16 h-1 bg-gray-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-blue-600 transition-all duration-1000" 
-                          style={{ width: `${agent.win_rate}%` }}
-                        />
+                  </td>
+
+                  {/* 2. ACQUISITIONS */}
+                  <td className="px-6 py-6 text-center">
+                    <div className="inline-flex flex-col items-center">
+                      <span className="font-mono font-black text-lg text-slate-700 dark:text-slate-300 tracking-tighter">
+                        {agent.total_leads}
+                      </span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Leads</span>
+                    </div>
+                  </td>
+
+                  {/* 3. CONVERSIONS */}
+                  <td className="px-6 py-6 text-center">
+                    <div className="inline-flex flex-col items-center">
+                      <span className={`font-mono font-black text-lg tracking-tighter ${agent.closed_deals > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                        {agent.closed_deals}
+                      </span>
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Wins</span>
+                    </div>
+                  </td>
+
+                  {/* 4. WIN RATE PRECISION (IMPROVED BAR) */}
+                  <td className="px-6 py-6">
+                    <div className="flex flex-col items-center gap-2 min-w-[140px]">
+                       <div className="flex items-center gap-2 w-full justify-between">
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${isTop ? 'text-amber-600' : 'text-slate-500'}`}>
+                            {agent.win_rate}%
+                          </span>
+                          <Target size={10} className="text-slate-300 dark:text-slate-700" />
+                       </div>
+                       <div className="w-full h-2 bg-slate-100 dark:bg-slate-800/80 rounded-full overflow-hidden p-[2px]">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                              isTop ? 'bg-gradient-to-r from-amber-400 to-amber-600' : 
+                              isStruggling ? 'bg-rose-500' : 
+                              isElite ? 'bg-emerald-500' : 'bg-primary'
+                            }`} 
+                            style={{ width: `${agent.win_rate}%` }}
+                          />
+                       </div>
+                    </div>
+                  </td>
+
+                  {/* 5. STATUS BADGE */}
+                  <td className="px-6 py-6 text-right">
+                    <div className={`inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.15em] px-3 py-2 rounded-xl border-2 transition-all group-hover:scale-105 ${
+                      isTop 
+                        ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800/50 shadow-sm shadow-amber-500/10' 
+                        : isStruggling
+                        ? 'bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-800/50'
+                        : isElite
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800/50'
+                        : 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                    }`}>
+                      {isTop && <Trophy size={10} className="animate-bounce" />}
+                      {isStruggling && <AlertTriangle size={10} />}
+                      {!isTop && !isStruggling && isElite && <TrendingUp size={10} />}
+                      {!isTop && !isStruggling && !isElite && <Minus size={10} />}
+                      
+                      {isTop ? 'Top Yield' : isStruggling ? 'Review Required' : isElite ? 'Elite Yield' : 'Standard Yield'}
+                    </div>
+                  </td>
+
+                </tr>
+              );
+            }) : (
+              // ZERO-STATE FALLBACK
+              <tr>
+                <td colSpan={5} className="py-20">
+                  <div className="flex flex-col items-center justify-center space-y-4 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[3rem] min-h-[250px] bg-slate-50/30 dark:bg-slate-800/10">
+                     <div className="p-5 bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800">
+                        <Users className="w-8 h-8 text-primary animate-pulse" />
+                     </div>
+                     <div className="text-center">
+                        <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] mb-1">Awaiting Operator Telemetry</p>
+                        <p className="text-xs text-slate-400 italic">Establishing secure node connection...</p>
                      </div>
                   </div>
-                </td>
-                <td className="px-8 py-6 text-right">
-                  <span className={`text-[10px] font-black px-3 py-1 rounded-xl border ${
-                    agent.win_rate >= 50 
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                      : 'bg-amber-50 text-amber-600 border-amber-100'
-                  }`}>
-                    {agent.win_rate >= 50 ? 'HIGH YIELD' : 'EVALUATING'}
-                  </span>
-                </td>
-              </tr>
-            )) : (
-              <tr>
-                <td colSpan={5} className="py-20 text-center text-gray-300 italic text-sm">
-                  No performance data recorded for this cycle.
                 </td>
               </tr>
             )}

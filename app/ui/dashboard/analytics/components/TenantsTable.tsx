@@ -1,93 +1,185 @@
 'use client';
 
-// Aligned with public.tenants SQL Schema
-interface Tenant {
+import { 
+  Building2, 
+  Globe, 
+  ShieldCheck, 
+  Zap, 
+  ExternalLink, 
+  Activity,
+  AlertCircle,
+  Database,
+  Lock,
+  Unlock,
+  TrendingUp
+} from 'lucide-react';
+import Link from 'next/link';
+
+// Perfectly aligned with your Intelligence Engine v3.0 Schema
+export interface Tenant {
   id: string;
   name: string;
   slug: string;
   pricing_tier: 'free' | 'starter' | 'pro' | 'enterprise';
+  plan_type: string | null;
   is_active: boolean;
-  email: string;
-  created_at: string; // ISO timestamp
-  updated_at?: string; // Optional: helps track the last config change
-  total_revenue: number;
+  email: string | null;
+  website: string | null;
+  total_revenue?: number; // Calculated via view_company_revenue_by_product
+  created_at: string;
 }
 
 export default function TenantTable({ tenants }: { tenants: Tenant[] }) {
+  
+  // Logic: Unified Currency Formatter for KES
+  const formatYield = (value: any) => {
+    const amount = Number(value) || 0;
+    return new Intl.NumberFormat('en-KE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
+  console.log('Rendering TenantTable with tenants:', tenants); // Debugging log to verify data structure
+
   return (
-    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-xl shadow-gray-100/40 dark:shadow-none transition-all">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[3.5rem] overflow-hidden shadow-2xl transition-all selection:bg-primary selection:text-white">
       
-      {/* --- TABLE HEADER --- */}
-      <div className="px-8 py-6 border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/50 flex justify-between items-center">
-        <div>
-          <h3 className="font-black text-gray-900 dark:text-white tracking-tight text-xl">Global Tenant Registry</h3>
-          <p className="text-[10px] font-bold text-gray-400 dark:text-slate-500 uppercase tracking-widest mt-1">
-            System Infrastructure & Tier Audit
+      {/* --- 1. INFRASTRUCTURE HEADER --- */}
+      <div className="px-12 py-10 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
+        <div className="space-y-1">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-slate-900 dark:bg-white rounded-2xl shadow-xl">
+              <Database className="w-6 h-6 text-white dark:text-slate-900" />
+            </div>
+            <h3 className="font-black text-slate-900 dark:text-white tracking-tighter text-3xl uppercase leading-none">
+              Node Registry
+            </h3>
+          </div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] ml-14 italic">
+            Global Infrastructure Audit • af-south-1
           </p>
         </div>
-        <span className="px-3 py-1 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-xl text-[10px] font-black text-gray-500 dark:text-slate-300 shadow-sm">
-          {tenants.length} NODES ACTIVE
-        </span>
+
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm">
+            <Activity className="w-4 h-4 text-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-widest leading-none">
+              {tenants.length} Workspaces Mounted
+            </span>
+          </div>
+          <button className="px-6 py-3 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95 transition-all">
+            + Provision Node
+          </button>
+        </div>
       </div>
 
+      {/* --- 2. DATA GRID --- */}
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-50/50 dark:bg-slate-800/30 border-b border-gray-100 dark:border-slate-800">
-            <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-[0.2em]">
-              <th className="px-8 py-4">Company & Slug</th>
-              <th className="px-8 py-4">Service Tier</th>
-              <th className="px-8 py-4">Operational Status</th>
-              <th className="px-8 py-4 text-right">MRR (KES)</th>
-              <th className="px-8 py-4 text-right">Config</th>
+          <thead>
+            <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em] border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/10">
+              <th className="px-12 py-6">Organization & Node ID</th>
+              <th className="px-12 py-6">Tier Architecture</th>
+              <th className="px-12 py-6">Protocol Status</th>
+              <th className="px-12 py-6 text-right">Settled Yield (KES)</th>
+              <th className="px-12 py-6 text-right">Operations</th>
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-800 text-sm">
+          <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
             {tenants.map((t) => (
               <tr 
                 key={t.id} 
-                className="group hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors duration-200"
+                className="group hover:bg-slate-50/50 dark:hover:bg-primary/5 transition-all cursor-default"
               >
-                <td className="px-8 py-5">
-                  <p className="font-bold text-gray-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {t.name}
-                  </p>
-                  <p className="text-[10px] text-gray-400 dark:text-slate-500 font-mono mt-0.5 uppercase">
-                    /{t.slug} • {t.email}
-                  </p>
-                </td>
-
-                <td className="px-8 py-5">
-                  <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
-                    t.pricing_tier === 'enterprise' 
-                      ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-800/50' 
-                      : t.pricing_tier === 'pro'
-                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/50'
-                      : t.pricing_tier === 'starter'
-                      ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50'
-                      : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700'
-                  }`}>
-                    {t.pricing_tier}
-                  </span>
-                </td>
-
-                <td className="px-8 py-5">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-1.5 w-1.5 rounded-full ${t.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                    <span className="text-[10px] font-bold text-gray-600 dark:text-slate-400 uppercase tracking-tight">
-                        {t.is_active ? 'System Active' : 'Suspended'}
-                    </span>
+                {/* COLUMN 1: IDENTITY */}
+                <td className="px-12 py-8">
+                  <div className="flex items-center gap-5">
+                    <div className="h-12 w-12 rounded-[1.25rem] bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-black text-slate-400 group-hover:bg-primary group-hover:text-white group-hover:rotate-6 transition-all duration-500 shadow-inner">
+                      {t.name.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 dark:text-white text-lg uppercase tracking-tighter leading-none mb-1.5 group-hover:text-primary transition-colors">
+                        {t.name}
+                      </p>
+                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono uppercase tracking-tight">
+                        <Globe className="w-3 h-3 text-slate-300" />
+                        <span className="bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded italic">node-{t.slug}</span>
+                        <span className="opacity-30">|</span>
+                        <span>{t.email || 'offline-node'}</span>
+                      </div>
+                    </div>
                   </div>
                 </td>
 
-                <td className="px-8 py-5 text-right font-mono font-bold text-gray-900 dark:text-slate-100">
-                  {t.total_revenue ? t.total_revenue.toLocaleString() : '0'}
+                {/* COLUMN 2: TIERING */}
+                <td className="px-12 py-8">
+                  <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border shadow-sm ${
+                    t.pricing_tier === 'enterprise' 
+                      ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-800/50' 
+                      : t.pricing_tier === 'pro'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-800/50'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                  }`}>
+                    {t.pricing_tier === 'enterprise' ? <ShieldCheck className="w-3.5 h-3.5" /> : <Zap className="w-3.5 h-3.5" />}
+                    {t.pricing_tier}
+                  </div>
+                  <p className="text-[9px] font-bold text-slate-300 dark:text-slate-600 uppercase mt-2 ml-1">
+                    {t.plan_type || 'Custom Instance'}
+                  </p>
                 </td>
 
-                <td className="px-8 py-5 text-right">
-                  <button className="px-4 py-1.5 bg-white dark:bg-slate-800 hover:bg-gray-900 dark:hover:bg-white text-gray-600 dark:text-slate-300 hover:text-white dark:hover:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest border border-gray-200 dark:border-slate-700 transition-all active:scale-95 shadow-sm">
-                    Manage
-                  </button>
+                {/* COLUMN 3: SYSTEM PULSE */}
+                <td className="px-12 py-8">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-3 w-3 rounded-full ${t.is_active ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse' : 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.5)]'}`} />
+                    <div className="flex flex-col">
+                      <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 uppercase tracking-tighter leading-none">
+                        {t.is_active ? 'Nominal' : 'Lockdown'}
+                      </span>
+                      <span className="text-[9px] font-mono text-slate-400 uppercase italic mt-1">
+                        Node-{t.id.slice(0, 8)}
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                {/* COLUMN 4: REVENUE (YIELD) - LOGIC UPDATED */}
+                <td className="px-12 py-8 text-right">
+                  <div className="flex flex-col items-end group/yield">
+                    <div className="flex items-baseline gap-2">
+                       <span className="text-[10px] font-black text-slate-400 uppercase">Kes</span>
+                       <p className="font-mono font-black text-slate-900 dark:text-slate-100 text-2xl tracking-tighter leading-none group-hover/yield:text-emerald-500 transition-colors">
+                        {formatYield(t.total_revenue)}
+                       </p>
+                       <TrendingUp size={14} className="text-emerald-500 opacity-0 group-hover/yield:opacity-100 transition-opacity ml-1" />
+                    </div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2 opacity-60 italic border-t border-slate-100 dark:border-slate-800 pt-1">
+                      Settled Acquisition
+                    </p>
+                  </div>
+                </td>
+
+                {/* COLUMN 5: CONTROL ACTIONS */}
+                <td className="px-12 py-8 text-right">
+                  <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                    <button 
+                      className={`p-3 rounded-xl border transition-all ${
+                        t.is_active 
+                          ? 'bg-rose-50 border-rose-100 text-rose-500 hover:bg-rose-500 hover:text-white' 
+                          : 'bg-emerald-50 border-emerald-100 text-emerald-500 hover:bg-emerald-500 hover:text-white'
+                      }`}
+                      title={t.is_active ? "Initiate Lockdown" : "Authorize Node"}
+                    >
+                      {t.is_active ? <Lock size={16} /> : <Unlock size={16} />}
+                    </button>
+                    <Link 
+                      href={`/protected/super-admin/tenants/${t.id}`}
+                      className="p-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl hover:shadow-xl transition-all active:scale-90"
+                    >
+                      <ExternalLink size={16} />
+                    </Link>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -95,10 +187,18 @@ export default function TenantTable({ tenants }: { tenants: Tenant[] }) {
         </table>
       </div>
 
-      <div className="px-8 py-4 bg-gray-50/30 dark:bg-slate-800/30 text-center">
-        <p className="text-[10px] font-bold text-gray-300 dark:text-slate-600 uppercase tracking-widest">
-          SaaS Infrastructure Audit Pool • {new Date().getFullYear()}
-        </p>
+      {/* --- 3. SYSTEM LOGS FOOTER --- */}
+      <div className="px-12 py-6 bg-slate-50/30 dark:bg-slate-800/30 flex justify-between items-center border-t border-slate-50 dark:border-slate-800">
+        <div className="flex items-center gap-4">
+           <Activity size={12} className="text-emerald-500" />
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">
+             Verified Node Cluster af-south-1 • Security Protocol v3.4.2
+           </p>
+        </div>
+        <div className="flex items-center gap-2 text-rose-500/40">
+           <AlertCircle size={12} />
+           <p className="text-[9px] font-mono uppercase tracking-tighter italic">SuperAdmin Credentials Verified</p>
+        </div>
       </div>
     </div>
   );

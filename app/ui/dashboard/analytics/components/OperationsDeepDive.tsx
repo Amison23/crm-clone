@@ -1,9 +1,19 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import { 
+  Search, 
+  Target, 
+  Ticket as TicketIcon, 
+  ChevronDown, 
+  Clock, 
+  CheckCircle2, 
+  Inbox 
+} from 'lucide-react';
 
 const ITEMS_PER_PAGE = 5;
 
+// --- 1. INTERFACES ---
 interface Task {
   id: string;
   name: string;
@@ -30,7 +40,8 @@ interface OperationsProps {
   viewMode: 'agent' | 'admin';
 }
 
-export default function OperationsDeepDive({ tasks, tickets, viewMode }: OperationsProps) {
+// --- 2. MAIN COMPONENT ---
+export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode }: OperationsProps) {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   
   // Search States
@@ -41,7 +52,7 @@ export default function OperationsDeepDive({ tasks, tickets, viewMode }: Operati
   const [taskPage, setTaskPage] = useState(1);
   const [ticketPage, setTicketPage] = useState(1);
 
-  // --- 1. FILTERED DATA LOGIC ---
+  // --- FILTERED DATA LOGIC ---
   const filteredTasks = useMemo(() => {
     return tasks.filter(t => t.name.toLowerCase().includes(taskQuery.toLowerCase()));
   }, [tasks, taskQuery]);
@@ -50,212 +61,265 @@ export default function OperationsDeepDive({ tasks, tickets, viewMode }: Operati
     return tickets.filter(t => t.name.toLowerCase().includes(ticketQuery.toLowerCase()));
   }, [tickets, ticketQuery]);
 
-  // --- 2. PAGINATION CALCULATION ---
+  // --- PAGINATION CALCULATION ---
   const totalTaskPages = Math.max(1, Math.ceil(filteredTasks.length / ITEMS_PER_PAGE));
-  const paginatedTasks = filteredTasks.slice(
-    (taskPage - 1) * ITEMS_PER_PAGE,
-    taskPage * ITEMS_PER_PAGE
-  );
+  const paginatedTasks = filteredTasks.slice((taskPage - 1) * ITEMS_PER_PAGE, taskPage * ITEMS_PER_PAGE);
 
   const totalTicketPages = Math.max(1, Math.ceil(filteredTickets.length / ITEMS_PER_PAGE));
-  const paginatedTickets = filteredTickets.slice(
-    (ticketPage - 1) * ITEMS_PER_PAGE,
-    ticketPage * ITEMS_PER_PAGE
-  );
+  const paginatedTickets = filteredTickets.slice((ticketPage - 1) * ITEMS_PER_PAGE, ticketPage * ITEMS_PER_PAGE);
 
-  // Helper to handle search change & reset page
-  const handleTaskSearch = (val: string) => {
-    setTaskQuery(val);
-    setTaskPage(1); // Jump back to start
-  };
-
-  const handleTicketSearch = (val: string) => {
-    setTicketQuery(val);
-    setTicketPage(1); // Jump back to start
-  };
+  const handleTaskSearch = (val: string) => { setTaskQuery(val); setTaskPage(1); };
+  const handleTicketSearch = (val: string) => { setTicketQuery(val); setTicketPage(1); };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       
-      {/* --- TASK ANALYTICS --- */}
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+      {/* =========================================
+          LEFT COLUMN: TASK ANALYTICS
+          ========================================= */}
+      <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <div>
-                <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-tighter">Task Objective Precision</h4>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{filteredTasks.length} Found</p>
+          {/* HEADER & SEARCH */}
+          <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                <Target className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h4 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-1">Task Precision</h4>
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{filteredTasks.length} Found</p>
+                </div>
+              </div>
             </div>
-            {/* SEARCH INPUT */}
-            <input 
+            
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
+              <input 
                 type="text"
                 placeholder="Search tasks..."
                 value={taskQuery}
                 onChange={(e) => handleTaskSearch(e.target.value)}
-                className="px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl text-xs font-bold text-gray-700 dark:text-slate-200 outline-none focus:ring-2 ring-blue-500/20 transition-all w-32 md:w-48"
-            />
+                className="pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 outline-none focus:ring-2 ring-primary/20 transition-all w-full xl:w-48 shadow-inner"
+              />
+            </div>
           </div>
           
-          <div className="space-y-3 min-h-[400px]">
-            {paginatedTasks.length > 0 ? paginatedTasks.map((task) => (
-              <div 
-                key={task.id} 
-                className={`border rounded-2xl transition-all cursor-pointer ${
-                  expandedTask === task.id 
-                    ? 'border-blue-200 dark:border-blue-800 bg-blue-50/20 dark:bg-blue-900/10' 
-                    : 'border-gray-100 dark:border-slate-800 hover:border-gray-200 dark:hover:border-slate-700'
-                }`}
-                onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
-              >
-                <div className="p-4 flex justify-between items-center">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-sm text-gray-800 dark:text-slate-200">{task.name}</p>
-                      <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold ${
-                        viewMode === 'agent' 
-                          ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' 
-                          : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400'
-                      }`}>
-                        {viewMode === 'agent' ? 'You' : task.assigned_to}
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-gray-400 dark:text-slate-500 font-mono">Deadline: {task.deadline}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-black text-blue-600 dark:text-blue-400">{task.met}/{task.objectives}</span>
-                    <div className={`transition-transform text-gray-400 ${expandedTask === task.id ? 'rotate-180' : ''}`}>▾</div>
-                  </div>
-                </div>
-                
-                {expandedTask === task.id && (
-                  <div className="px-4 pb-4 pt-2 border-t border-blue-100/50 dark:border-blue-900/30 animate-in slide-in-from-top-1">
-                    <div className="flex justify-between items-center bg-white dark:bg-slate-800 p-3 rounded-xl border border-blue-100 dark:border-blue-900/30 shadow-sm">
-                      <div className="flex -space-x-2">
-                         {task.team.map((m, i) => (
-                           <div key={i} className="h-6 w-6 rounded-full bg-blue-600 border-2 border-white dark:border-slate-800 flex items-center justify-center text-[8px] font-bold text-white shadow-sm" title={m}>
-                             {m[0]}
-                           </div>
-                         ))}
+          {/* TASK LIST */}
+          <div className="space-y-3 min-h-[380px]">
+            {paginatedTasks.length > 0 ? paginatedTasks.map((task) => {
+              const isCompleted = task.met >= task.objectives;
+              
+              return (
+                <div 
+                  key={task.id} 
+                  className={`border rounded-2xl transition-all cursor-pointer overflow-hidden ${
+                    expandedTask === task.id 
+                      ? 'border-primary/30 bg-primary/5 dark:bg-primary/10 shadow-sm' 
+                      : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                  }`}
+                  onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
+                >
+                  <div className="p-5 flex justify-between items-center">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className={`font-black text-sm uppercase tracking-tight ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-900 dark:text-slate-100'}`}>
+                          {task.name}
+                        </p>
+                        <span className={`text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest ${
+                          viewMode === 'agent' 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                        }`}>
+                          {viewMode === 'agent' ? 'Personal' : task.assigned_to}
+                        </span>
                       </div>
-                      <p className="text-[10px] text-gray-500 dark:text-slate-400">Started: <span className="font-bold">{task.start}</span></p>
+                      <div className="flex items-center gap-1 text-[9px] text-slate-400 font-mono uppercase tracking-tighter">
+                        <Clock className="w-3 h-3" /> Deadline: {task.deadline}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {isCompleted ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      ) : (
+                        <span className="text-xs font-black text-primary bg-primary/10 px-2 py-1 rounded-lg">
+                          {task.met}/{task.objectives}
+                        </span>
+                      )}
+                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedTask === task.id ? 'rotate-180 text-primary' : ''}`} />
                     </div>
                   </div>
-                )}
-              </div>
-            )) : (
-                <div className="flex flex-col items-center justify-center h-[300px] text-gray-300 dark:text-slate-700 italic text-sm">
-                    No tasks match your search
+                  
+                  {/* EXPANDED VIEW */}
+                  {expandedTask === task.id && (
+                    <div className="px-5 pb-5 animate-in slide-in-from-top-2">
+                      <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                        <div>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Assigned Agent(s)</p>
+                          <div className="flex -space-x-2">
+                            {task.team.map((m, i) => (
+                              <div key={i} className="h-6 w-6 rounded-full bg-primary border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-bold text-white shadow-sm" title={m}>
+                                {m.charAt(0).toUpperCase()}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Initiated</p>
+                           <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 uppercase">{task.start}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              );
+            }) : (
+              // ZERO-STATE FALLBACK
+              <div className="h-full flex flex-col items-center justify-center space-y-4 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl min-h-[300px] bg-slate-50/50 dark:bg-slate-800/20">
+                <Target className="w-8 h-8 text-slate-300 animate-pulse" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Objectives Found</p>
+              </div>
             )}
           </div>
         </div>
 
-        {/* TASK PAGINATION CONTROLS */}
-        <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-50 dark:border-slate-800">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Page {taskPage} of {totalTaskPages}</p>
+        {/* TASK PAGINATION */}
+        <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {taskPage} of {totalTaskPages}</p>
           <div className="flex gap-2">
             <button 
               disabled={taskPage === 1}
               onClick={() => setTaskPage(p => p - 1)}
-              className="p-2 rounded-xl border border-gray-100 dark:border-slate-800 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[10px] font-black uppercase"
             >
-              <span className="text-xs font-bold text-gray-500">←</span>
+              Prev
             </button>
             <button 
               disabled={taskPage === totalTaskPages}
               onClick={() => setTaskPage(p => p + 1)}
-              className="p-2 rounded-xl border border-gray-100 dark:border-slate-800 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[10px] font-black uppercase"
             >
-              <span className="text-xs font-bold text-gray-500">→</span>
+              Next
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- TICKET ANALYTICS --- */}
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-gray-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+      {/* =========================================
+          RIGHT COLUMN: TICKET ANALYTICS
+          ========================================= */}
+      <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
         <div>
-          <div className="flex justify-between items-center mb-6">
-            <div>
-                <h4 className="font-black text-gray-900 dark:text-white uppercase tracking-tighter">Resolution Density</h4>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{filteredTickets.length} Entries</p>
+          {/* HEADER & SEARCH */}
+          <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
+                <TicketIcon className="w-5 h-5 text-emerald-500" />
+              </div>
+              <div>
+                <h4 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-1">Resolution Density</h4>
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{filteredTickets.length} Entries</p>
+                </div>
+              </div>
             </div>
-            {/* SEARCH INPUT */}
-            <input 
+            
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+              <input 
                 type="text"
                 placeholder="Search tickets..."
                 value={ticketQuery}
                 onChange={(e) => handleTicketSearch(e.target.value)}
-                className="px-4 py-2 bg-gray-50 dark:bg-slate-800 border border-gray-100 dark:border-slate-800 rounded-xl text-xs font-bold text-gray-700 dark:text-slate-200 outline-none focus:ring-2 ring-emerald-500/20 transition-all w-32 md:w-48"
-            />
+                className="pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 outline-none focus:ring-2 ring-emerald-500/20 transition-all w-full xl:w-48 shadow-inner"
+              />
+            </div>
           </div>
 
-          <div className="overflow-x-auto min-h-[400px]">
+          {/* TICKET TABLE */}
+          <div className="overflow-x-auto min-h-[380px]">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[10px] font-black text-gray-400 dark:text-slate-500 uppercase tracking-widest border-b border-gray-50 dark:border-slate-800">
+                <tr className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
                   <th className="pb-4">Incident Log</th>
-                  <th className="pb-4 text-center">In/Out</th>
+                  <th className="pb-4 text-center">Telemetry (In/Out)</th>
                   <th className="pb-4 text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-slate-800">
-                {paginatedTickets.length > 0 ? paginatedTickets.map((ticket, i) => (
-                  <tr key={i} className="group hover:bg-gray-50/50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="py-4">
-                      <p className="font-bold text-sm text-gray-800 dark:text-slate-200">{ticket.name}</p>
-                      <p className="text-[9px] font-bold text-gray-400 dark:text-slate-500 uppercase">
-                        {ticket.initiation} • {viewMode === 'agent' ? 'Personal' : ticket.assigned_to}
-                      </p>
-                    </td>
-                    <td className="py-4">
-                      <div className="flex items-center justify-center gap-3">
-                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded">↑ {ticket.outbound}</span>
-                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2 py-0.5 rounded">↓ {ticket.inbound}</span>
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                {paginatedTickets.length > 0 ? paginatedTickets.map((ticket, i) => {
+                  
+                  // Semantic coloring based on resolution status
+                  const isResolved = ticket.resolution.toLowerCase() === 'resolved';
+                  const isPending = ticket.resolution.toLowerCase() === 'pending';
+
+                  return (
+                    <tr key={i} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="py-4 pr-4">
+                        <p className="font-black text-sm uppercase tracking-tight text-slate-800 dark:text-slate-200">{ticket.name}</p>
+                        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-0.5">
+                          {ticket.initiation} <span className="opacity-50 mx-1">•</span> {viewMode === 'agent' ? 'Personal' : ticket.assigned_to}
+                        </p>
+                      </td>
+                      <td className="py-4 px-2">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-900/50">↑ {ticket.outbound}</span>
+                          <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-900/50">↓ {ticket.inbound}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 pl-4 text-right">
+                        <p className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg inline-block border ${
+                          isResolved 
+                            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-100 dark:border-emerald-800/50' 
+                            : isPending
+                            ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-100 dark:border-amber-800/50'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                        }`}>
+                          {ticket.resolution}
+                        </p>
+                      </td>
+                    </tr>
+                  );
+                }) : (
+                  // ZERO-STATE FALLBACK
+                  <tr>
+                    <td colSpan={3} className="py-10">
+                      <div className="flex flex-col items-center justify-center space-y-4 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl min-h-[250px] bg-slate-50/50 dark:bg-slate-800/20">
+                        <Inbox className="w-8 h-8 text-slate-300 animate-bounce" />
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Incident Telemetry Found</p>
                       </div>
                     </td>
-                    <td className="py-4 text-right">
-                      <p className={`text-[10px] font-black px-3 py-1 rounded-xl inline-block border ${
-                        ticket.resolution === 'Pending' 
-                          ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-100 dark:border-amber-800/50' 
-                          : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-700'
-                      }`}>
-                        {ticket.resolution}
-                      </p>
-                    </td>
                   </tr>
-                )) : (
-                    <tr>
-                        <td colSpan={3} className="py-20 text-center text-gray-300 dark:text-slate-700 italic text-sm">
-                            No tickets match your search
-                        </td>
-                    </tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* TICKET PAGINATION CONTROLS */}
-        <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-50 dark:border-slate-800">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Page {ticketPage} of {totalTicketPages}</p>
+        {/* TICKET PAGINATION */}
+        <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {ticketPage} of {totalTicketPages}</p>
           <div className="flex gap-2">
             <button 
               disabled={ticketPage === 1}
               onClick={() => setTicketPage(p => p - 1)}
-              className="p-2 rounded-xl border border-gray-100 dark:border-slate-800 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[10px] font-black uppercase"
             >
-              <span className="text-xs font-bold text-gray-500">←</span>
+              Prev
             </button>
             <button 
               disabled={ticketPage === totalTicketPages}
               onClick={() => setTicketPage(p => p + 1)}
-              className="p-2 rounded-xl border border-gray-100 dark:border-slate-800 disabled:opacity-30 hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[10px] font-black uppercase"
             >
-              <span className="text-xs font-bold text-gray-500">→</span>
+              Next
             </button>
           </div>
         </div>
       </div>
+      
     </div>
   );
 }
