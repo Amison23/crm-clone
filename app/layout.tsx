@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -10,7 +11,7 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "CRM Executive",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  description: "The fastest way to build apps with Next.js and Supabase"
 };
 
 const inter = Inter({
@@ -40,6 +41,17 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
+          <Toaster 
+            position="top-center"
+            containerClassName="lg:ml-64 mt-4"
+            toastOptions={{
+              className: "w-full shadow-xl !max-w-4xl",
+              style: {
+                maxWidth: "100%",
+                width: "100%",
+              }
+            }} 
+          />
         </ThemeProvider>
       </body>
     </html>
