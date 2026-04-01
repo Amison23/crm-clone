@@ -20,7 +20,7 @@ export default async function TicketsPage() {
       .eq("id", user.id)
       .single();
 
-    if (employee?.role === "super_admin" || employee?.role === "company_admin") {
+    if (employee?.role === "super_admin" || employee?.role === "admin") {
       role = "admin";
     } else if (employee?.role === "sales_agent") {
       role = "sales_agent";
@@ -31,12 +31,13 @@ export default async function TicketsPage() {
     companyId = employee?.company_id ?? "";
   }
 
-  // Fetch tickets with joined employee name for the assigned agent
+  // Fetch tickets with joined customer and employee data
   let ticketsQuery = supabase
     .from("tickets")
     .select(`
       *,
-      assigned_agent:employees!tickets_assigned_to_fkey(id, full_name, role)
+      assigned_agent:employees!tickets_assigned_to_fkey(id, full_name, role),
+      customer:customers!tickets_client_id_fkey(full_name)
     `)
     .order("created_at", { ascending: false });
 
@@ -49,6 +50,16 @@ export default async function TicketsPage() {
   }
 
   const { data: ticketsData } = await ticketsQuery;
+
+  // Fetch all employees for the company (to show workload even for those with 0 tickets)
+  let employees: any[] = [];
+  if (companyId && (role === "admin" || role === "sales_agent")) {
+    const { data: empData } = await supabase
+      .from("employees")
+      .select("id, full_name, role")
+      .eq("company_id", companyId);
+    employees = empData ?? [];
+  }
 
   return (
     <>
@@ -74,6 +85,7 @@ export default async function TicketsPage() {
       <TicketsClient
         role={role}
         ticketsData={ticketsData}
+        companyEmployees={employees}
         companyId={companyId}
         currentUserId={user?.id}
       />

@@ -430,7 +430,24 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
                   <td className="px-6 py-4"><StatusBadge status={ticket.status} /></td>
                   <td className="px-6 py-4"><PriorityBadge priority={ticket.priority} /></td>
                   <td className="px-6 py-4"><SlaBadge sla={ticket.sla} /></td>
-                  <td className="px-6 py-4 text-slate-600 dark:text-slate-400 text-sm font-medium">{ticket.agent}</td>
+                  <td className="px-6 py-4">
+                    {role !== "customer" && ticket.agentId ? (
+                      <div className="flex items-center gap-2.5">
+                        <div className="size-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                          {ticket.agentInitials}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{ticket.agent}</p>
+                          <div className="flex items-center gap-1">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            <span className="text-[10px] text-slate-400 font-medium">Active</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-slate-600 dark:text-slate-400 text-sm font-medium">{ticket.agent}</span>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (

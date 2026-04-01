@@ -48,7 +48,7 @@ export default function Home() {
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
             <Link 
-              href="/sign-in" 
+              href="/auth/sign-up" 
               className="px-8 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all flex items-center gap-2 group shadow-lg shadow-orange-500/20"
             >
               Start for free

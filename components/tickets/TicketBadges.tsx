@@ -19,6 +19,9 @@ export interface Ticket {
   priority: TicketPriority;
   sla: SlaStatus;
   agent: string;
+  agentId?: string;
+  agentInitials?: string;
+  rawId?: string;
 }
 
 export interface Worker {

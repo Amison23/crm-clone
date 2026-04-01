@@ -13,12 +13,12 @@ const navItems = [
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat" },
   { href: "/protected/tickets", icon: "support_agent", label: "Support" },
   { href: "/protected/analytics-and-reporting", icon: "insights", label: "Analytics" },
+  { href: "/protected/admin", icon: "admin_panel_settings", label: "Admin" },
 ];
 
 const systemItems = [
   { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder" },
   { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder" },
-  { href: "/protected/admin-permissions-matrix", icon: "admin_panel_settings", label: "Admin" },
   { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony" },
 ];
 

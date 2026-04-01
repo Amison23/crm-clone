@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 const mainNavItems = [
   { href: "/protected", icon: "dashboard", label: "Dashboard" },
@@ -11,17 +12,24 @@ const mainNavItems = [
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat" },
   { href: "/protected/tickets", icon: "support_agent", label: "Support" },
   { href: "/protected/analytics-and-reporting", icon: "insights", label: "Analytics" },
+  { href: "/protected/admin", icon: "admin_panel_settings", label: "Admin" },
 ];
 
 const systemNavItems = [
   { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder" },
   { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder" },
-  { href: "/protected/admin-permissions-matrix", icon: "admin_panel_settings", label: "Admin" },
   { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+  };
 
   return (
     <aside className="fixed inset-y-0 left-0 w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hidden lg:flex flex-col z-20">
@@ -57,7 +65,7 @@ export function Sidebar() {
         <div className="pt-4 pb-2">
           <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">System</p>
         </div>
-        
+{/*         
         {systemNavItems.map((item) => {
           const isActive = pathname === item.href;
           return (
@@ -74,7 +82,7 @@ export function Sidebar() {
               <span className="text-sm">{item.label}</span>
             </Link>
           );
-        })}
+        })} */}
       </nav>
       
       <div className="p-4 border-t border-slate-200 dark:border-slate-800">
@@ -84,7 +92,13 @@ export function Sidebar() {
             <p className="text-xs font-semibold truncate">Alex Director</p>
             <p className="text-[10px] text-slate-500 truncate">Global Admin</p>
           </div>
-          <span className="material-symbols-outlined text-slate-400 text-lg cursor-pointer hover:text-red-500 transition-colors">logout</span>
+          <button 
+            onClick={handleLogout}
+            className="flex items-center justify-center p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            title="Logout"
+          >
+            <span className="material-symbols-outlined text-slate-400 text-lg cursor-pointer hover:text-red-500 transition-colors">logout</span>
+          </button>
         </div>
       </div>
     </aside>
