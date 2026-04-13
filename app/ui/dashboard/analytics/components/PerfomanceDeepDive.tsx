@@ -8,7 +8,9 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer, 
+  ResponsiveContainer,
+  Bar, 
+  BarChart,
 } from 'recharts';
 import { Zap, Calendar } from 'lucide-react';
 
@@ -66,18 +68,16 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           </div>
         </div>
 
-        {/* --- CONTROLS --- */}
-        <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-2xl border border-slate-100 dark:border-slate-800">
-           <div className="flex gap-1 pr-3 border-r border-slate-200 dark:border-slate-700">
-              {['1m', '7d'].map((tf) => (
-                <button key={tf} onClick={() => setTimeFrame(tf as any)} className={`px-3 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${timeFrame === tf ? 'bg-white dark:bg-slate-900 text-primary shadow-sm' : 'text-slate-400'}`}>{tf}</button>
-              ))}
-           </div>
-           <div className="flex gap-1">
-              {['total', 'closed', 'failed'].map((type) => (
-                <button key={type} onClick={() => setView(type as any)} className={`px-4 py-1.5 text-[9px] font-black uppercase rounded-lg transition-all ${view === type ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900' : 'text-slate-400'}`}>{type}</button>
-              ))}
-           </div>
+        <div className="h-[350px] w-full">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+            <BarChart data={filteredData} margin={{ left: -20 }}>
+              <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#e2e8f0" />
+              <XAxis dataKey="date" fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontWeight: 800 }} dy={10} />
+              <YAxis fontSize={10} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontWeight: 800 }} />
+              <Tooltip cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }} />
+              <Bar dataKey={view} radius={[10, 10, 0, 0]} fill="#3b82f6" />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       </div>
 

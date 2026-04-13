@@ -84,50 +84,50 @@ export default function ResolutionChart({ data = [] }: ResolutionChartProps) {
         </div>
       </div>
 
-      {/* --- CHART CONTAINER --- */}
-      <div className="flex-1 w-full min-h-[300px]">
+      {/* CHART CONTAINER */}
+      <div className="flex-1 w-full">
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart data={chartData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
               <CartesianGrid 
-                strokeDasharray="4 4" 
-                vertical={false} 
-                stroke="currentColor" 
-                className="text-slate-100 dark:text-slate-800/50" 
-              />
-              <XAxis 
-                dataKey="name" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
-                dy={15}
-              />
-              <YAxis 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
-              />
-              <Tooltip 
-                cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }} 
-                content={<CustomTooltip />} 
-              />
-              <Bar 
-                dataKey="count" 
-                radius={[8, 8, 0, 0]} 
-                barSize={40}
-                animationDuration={1500}
-              >
-                {chartData.map((entry, index) => (
-                  <Cell 
-                    key={`cell-${index}`} 
-                    fill={entry.color} 
-                    fillOpacity={0.8}
-                    className="hover:fill-opacity-100 transition-all duration-300 cursor-crosshair"
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+                  strokeDasharray="4 4" 
+                  vertical={false} 
+                  stroke="currentColor" 
+                  className="text-slate-100 dark:text-slate-800/50" 
+                />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
+                  dy={15}
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} 
+                />
+                <Tooltip 
+                  cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }} 
+                  content={<CustomTooltip />} 
+                />
+                <Bar 
+                  dataKey="count" 
+                  radius={[8, 8, 0, 0]} 
+                  barSize={40}
+                  animationDuration={1500}
+                >
+                  {chartData.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.color} 
+                      fillOpacity={0.8}
+                      className="hover:fill-opacity-100 transition-all duration-300 cursor-crosshair"
+                    />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
         ) : (
           <div className="h-full w-full flex flex-col items-center justify-center space-y-4 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl min-h-[250px]">
              <Clock className="w-8 h-8 text-slate-300 animate-pulse" />
