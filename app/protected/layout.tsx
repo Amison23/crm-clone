@@ -1,20 +1,11 @@
-import Dashboard from "@/components/common/Dashboard";
-import { createClient } from "@/lib/supabase/server";
+import DashboardLayout from "@/components/common/DashboardLayout";
+import type { ReactNode } from "react";
 
 
-export default async function ProtectedLayout({
+export default function ProtectedLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getUser();
-
-  return (
-    <div className="flex min-h-screen">
-      <Dashboard role={data?.user?.role}>
-        {children}
-      </Dashboard>
-    </div>
-  );
+  return <DashboardLayout>{children}</DashboardLayout>;
 }
