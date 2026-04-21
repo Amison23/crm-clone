@@ -16,7 +16,9 @@ import {
   Activity,
   Headset,
   LayoutDashboard,
-  Cpu
+  Cpu,
+  MessageSquare,
+  PhoneCall
 } from "lucide-react";
 
 // Intelligence Engine Components
@@ -28,8 +30,6 @@ async function DashboardContent() {
 
   if (!user) redirect("/login");
 
-  // 1. IDENTITY & ROLE ESCALATION (Consolidated Source of Truth)
-  // We fetch from the 'employees' table as requested, with fallbacks to metadata
   const { data: profile } = await supabase
     .from("employees")
     .select("role, full_name")
@@ -39,16 +39,16 @@ async function DashboardContent() {
   const role = profile?.role || user.user_metadata?.role || 'sales_agent';
   const fullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || "Operator";
 
-  // 2. DYNAMIC MODULE ACCESS MATRIX (Cleaned: No Duplicates)
+  // --- DYNAMIC MODULE ACCESS MATRIX (Direct Folder Mapping) ---
   const allLinks = [
     { 
-      name: "Global Control Plane", 
+      name: "Global Command", 
       href: "/protected/super-admin", 
       icon: Globe, 
       color: "text-purple-500", 
       bg: "bg-purple-500/10", 
       roles: ['superadmin'],
-      desc: "Platform-wide tenant & node management"
+      desc: "Platform-wide management"
     },
     { 
       name: "Executive Console", 
@@ -57,11 +57,11 @@ async function DashboardContent() {
       color: "text-primary", 
       bg: "bg-primary/10", 
       roles: ['admin', 'superadmin'],
-      desc: "Strategic revenue & yield analytics"
+      desc: "Revenue & yield analytics"
     },
     { 
       name: "Agent Workspace", 
-      href: "/protected/agent-workspace", 
+      href: "/protected/sales-agent", // 🎯 FIXED: Mapped to 'sales-agent' folder
       icon: LayoutDashboard, 
       color: "text-emerald-500", 
       bg: "bg-emerald-500/10", 
@@ -78,6 +78,15 @@ async function DashboardContent() {
       desc: "Lead acquisition database"
     },
     { 
+      name: "Omnichannel Inbox", 
+      href: "/protected/omnichannel-chat-inbox", // 🎯 ADDED: Mapped to folder
+      icon: MessageSquare, 
+      color: "text-cyan-500", 
+      bg: "bg-cyan-500/10", 
+      roles: ['sales_agent', 'admin', 'superadmin'],
+      desc: "Live customer communication"
+    },
+    { 
       name: "Task Management", 
       href: "/protected/task-management-board", 
       icon: Target, 
@@ -88,7 +97,7 @@ async function DashboardContent() {
     },
     { 
       name: "Support Tickets", 
-      href: "/protected/support-tickets-list", 
+      href: "/protected/tickets", // 🎯 FIXED: Mapped to 'tickets' folder
       icon: Headset, 
       color: "text-rose-500", 
       bg: "bg-rose-500/10", 
@@ -96,13 +105,22 @@ async function DashboardContent() {
       desc: "Incident resolution node"
     },
     { 
-      name: "Visual Bot Builder", 
+      name: "Bot Builder", 
       href: "/protected/visual-bot-builder", 
       icon: Bot, 
       color: "text-indigo-500", 
       bg: "bg-indigo-500/10", 
       roles: ['admin', 'superadmin'],
-      desc: "AI routing & automated FAQs"
+      desc: "AI routing & automation"
+    },
+    { 
+      name: "Infrastructure", 
+      href: "/protected/server-admin", 
+      icon: Cpu, 
+      color: "text-orange-500", 
+      bg: "bg-orange-500/10", 
+      roles: ['server_admin', 'superadmin'],
+      desc: "Node health & server logs"
     },
     { 
       name: "Admin Matrix", 
@@ -115,7 +133,6 @@ async function DashboardContent() {
     },
   ];
 
-  // Filtering based on active user role
   const quickLinks = allLinks.filter(link => link.roles.includes(role));
 
   return (
@@ -125,7 +142,7 @@ async function DashboardContent() {
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-slate-100 dark:border-slate-800 pb-10">
         <div className="space-y-2">
           <div className="flex items-center gap-3 mb-2">
-             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+             <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
              <p className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.4em]">Node Connection: af-south-1 Online</p>
           </div>
           <h1 className="text-6xl font-black tracking-tighter text-slate-900 dark:text-slate-100 uppercase leading-none">
@@ -142,6 +159,10 @@ async function DashboardContent() {
            </div>
         </div>
       </header>
+
+      {/* --- INTELLIGENCE SUMMARY --- */}
+    
+
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         
         {/* --- DYNAMIC MODULE DIRECTORY --- */}
@@ -201,7 +222,6 @@ async function DashboardContent() {
               </div>
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -209,13 +229,17 @@ async function DashboardContent() {
 
 export default function ProtectedPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-[#f8fafc] dark:bg-[#020617]">
-         <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] animate-pulse">Establishing Node Link...</p>
-      </div>
-    }>
+    <Suspense fallback={<EstablishingNodeLoader />}>
       <DashboardContent />
     </Suspense>
+  );
+}
+
+function EstablishingNodeLoader() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-[#f8fafc] dark:bg-[#020617]">
+       <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] animate-pulse">Establishing Node Link...</p>
+    </div>
   );
 }

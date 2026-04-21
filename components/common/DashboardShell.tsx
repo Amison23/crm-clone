@@ -13,7 +13,6 @@ const navItems = [
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks" },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat" },
   { href: "/protected/tickets", icon: "support_agent", label: "Support" },
-  { href: "/protected/analytics-and-reporting", icon: "insights", label: "Analytics" },
   { href: "/protected/admin", icon: "admin_panel_settings", label: "Admin" },
 ];
 

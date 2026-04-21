@@ -112,7 +112,7 @@ export default async function SalesAgentPage() {
         </header>
 
         {/* --- TIER 2: ANALYTICAL & TASK SECTION --- */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className=" gap-8">
            
            {/* LEFT: PERSONAL THROUGHPUT & SECURITY */}
            <div className="lg:col-span-4 space-y-8">
@@ -157,6 +157,7 @@ export default async function SalesAgentPage() {
                  </div>
               </div>
            </div>
+           </div>
 
            {/* RIGHT: RESOLUTION DEEP DIVE (Analytical) */}
            <div className="lg:col-span-8 bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
@@ -181,7 +182,6 @@ export default async function SalesAgentPage() {
               </div>
            </div>
 
-        </div>
 
         {/* --- SYSTEM FOOTER --- */}
         <footer className="mt-20 pt-10 border-t border-slate-200 dark:border-slate-800">
