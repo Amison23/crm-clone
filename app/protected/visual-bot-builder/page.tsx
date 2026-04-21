@@ -1,152 +1,354 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+const supabase = createClient()
+
+type FAQ = {
+  id: string
+  question: string
+  answer: string
+  keywords: string[]
+  category: string | null
+  department: string | null
+  triggers_routing: boolean
+  is_active: boolean
+  usage_count: number
+  company_id: string
+}
+
+const emptyFAQ = {
+  question: '',
+  answer: '',
+  keywords: '',
+  category: '',
+  department: 'general' as const,
+  triggers_routing: false,
+}
+
 export default function VisualBotBuilder() {
+  const [faqs, setFaqs] = useState<FAQ[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isAdding, setIsAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState(emptyFAQ)
+  const [saving, setSaving] = useState(false)
+  const [tenantId, setTenantId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const init = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      // Derive company_id from user metadata if available
+      // const tid = user?.user_metadata?.company_id || user?.id || null
+      const tid = 'c2b4fc9e-b23e-450a-9f33-0edca935d1ac' // Hardcoded the company id for now until auth.id is wired up
+      setTenantId(tid)
+      await loadFAQs()
+      setLoading(false)
+    }
+    init()
+  }, [])
+
+  const loadFAQs = async () => {
+    const { data } = await supabase
+      .from('faq_entries')
+      .select('*')
+      .order('priority', { ascending: false })
+    setFaqs(data || [])
+  }
+
+  const handleSave = async () => {
+    if (!form.question.trim() || !form.answer.trim() || !form.keywords.trim()) return
+    setSaving(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      const payload = {
+        question: form.question.trim(),
+        answer: form.answer.trim(),
+        keywords: form.keywords.split(',').map((k) => k.trim()).filter(Boolean),
+        category: form.category.trim() || null,
+        department: form.department,
+        triggers_routing: form.triggers_routing,
+        company_id: tenantId,
+        created_by: null, // null for now until auth.id is wired up
+        // created_by: user?.id,
+        is_active: true,
+      }
+
+      if (editingId) {
+        await supabase.from('faq_entries').update(payload).eq('id', editingId)
+      } else {
+        await supabase.from('faq_entries').insert(payload)
+      }
+
+      setForm(emptyFAQ)
+      setIsAdding(false)
+      setEditingId(null)
+      await loadFAQs()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEdit = (faq: FAQ) => {
+    setForm({
+      question: faq.question,
+      answer: faq.answer,
+      keywords: faq.keywords.join(', '),
+      category: faq.category || '',
+      department: (faq.department as any) || 'general',
+      triggers_routing: faq.triggers_routing,
+    })
+    setEditingId(faq.id)
+    setIsAdding(true)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this FAQ entry?')) return
+    await supabase.from('faq_entries').delete().eq('id', id)
+    await loadFAQs()
+  }
+
+  const toggleActive = async (id: string, current: boolean) => {
+    await supabase.from('faq_entries').update({ is_active: !current }).eq('id', id)
+    await loadFAQs()
+  }
+
+  const cancelForm = () => {
+    setForm(emptyFAQ)
+    setIsAdding(false)
+    setEditingId(null)
+  }
+
+  const categoryColors: Record<string, string> = {
+    pricing: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+    features: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    support: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+    general: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
+  }
+
   return (
-    <>
-      
-<div className="flex h-screen w-full flex-col">
-{/*  Top Navigation Bar  */}
+    <div className="flex h-full w-full flex-col overflow-hidden">
+      {/* Top Bar */}
+      <div className="border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0 bg-white dark:bg-slate-900">
+        <div>
+          <h1 className="text-lg font-bold">Bot FAQ Builder</h1>
+          <p className="text-xs text-slate-400 mt-0.5">Manage chatbot responses and routing rules</p>
+        </div>
+        <button
+          onClick={() => { setIsAdding(true); setEditingId(null); setForm(emptyFAQ) }}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Add FAQ Entry
+        </button>
+      </div>
 
-<div className="flex flex-1 overflow-hidden">
-{/*  Sidebar: Building Blocks  */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Main FAQ List */}
+        <div className="flex-1 overflow-y-auto p-6">
+          {/* Stats Row */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            {[
+              { label: 'Total FAQs', value: faqs.length, icon: 'chat_bubble', color: 'text-primary' },
+              { label: 'Active', value: faqs.filter(f => f.is_active).length, icon: 'check_circle', color: 'text-green-500' },
+              { label: 'Routes to Agent', value: faqs.filter(f => f.triggers_routing).length, icon: 'transfer_within_a_station', color: 'text-amber-500' },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 flex items-center gap-4">
+                <span className={`material-symbols-outlined text-3xl ${stat.color}`}>{stat.icon}</span>
+                <div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-slate-400">{stat.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
 
-{/*  Main Canvas Area  */}
-<div className="w-full flex-1 relative flex flex-col">
-{/*  Canvas Toolbar (Zoom/Controls)  */}
-<div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-4 py-2 flex items-center gap-4 shadow-xl z-10">
-<button className="p-1 hover:text-primary transition-colors"><span className="material-symbols-outlined">zoom_in</span></button>
-<span className="text-xs font-bold text-slate-500">100%</span>
-<button className="p-1 hover:text-primary transition-colors"><span className="material-symbols-outlined">zoom_out</span></button>
-<div className="w-[1px] h-4 bg-slate-200 dark:border-slate-800"></div>
-<button className="p-1 hover:text-primary transition-colors"><span className="material-symbols-outlined">filter_center_focus</span></button>
-<button className="p-1 hover:text-primary transition-colors"><span className="material-symbols-outlined">open_with</span></button>
-</div>
-{/*  Canvas Nodes Example  */}
-<div className="p-20 flex flex-col items-center min-w-[1200px]">
-{/*  Node 1: Trigger  */}
-<div className="relative mb-16">
-<div className="w-64 bg-white dark:bg-slate-900 rounded-xl shadow-lg border-2 border-primary overflow-hidden">
-<div className="bg-primary/10 p-3 flex items-center gap-2 border-b border-primary/20">
-<span className="material-symbols-outlined text-primary text-sm">bolt</span>
-<span className="text-xs font-bold uppercase text-primary">Trigger</span>
-</div>
-<div className="p-4">
-<p className="text-sm font-medium text-slate-900 dark:text-slate-100">When user says "Hi" or "Help"</p>
-</div>
-</div>
-<div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-[2px] h-16 bg-slate-300 dark:bg-slate-700"></div>
-</div>
-{/*  Node 2: Bot Reply  */}
-<div className="relative mb-16">
-<div className="w-64 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-<div className="bg-primary/10 p-3 flex items-center gap-2 border-b border-primary/20">
-<span className="material-symbols-outlined text-primary text-sm">chat_bubble</span>
-<span className="text-xs font-bold uppercase text-primary">Bot Reply</span>
-</div>
-<div className="p-4 space-y-2">
-<p className="text-sm">"Hello! How can I assist you today?"</p>
-<div className="flex flex-wrap gap-1 mt-3">
-<span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-[10px] rounded border border-slate-200 dark:border-slate-700">Quick Reply</span>
-</div>
-</div>
-</div>
-<div className="absolute -bottom-16 left-1/2 -translate-x-1/2 w-[2px] h-16 bg-slate-300 dark:bg-slate-700"></div>
-</div>
-{/*  Split Layout: Condition  */}
-<div className="relative flex gap-32">
-{/*  Connector Lines for Branching  */}
-<svg className="absolute top-0 left-1/2 -translate-x-1/2 w-[calc(100%+8rem)] h-16 pointer-events-none overflow-visible" fill="none">
-<path className="text-slate-300 dark:text-slate-700" d="M 50% 0 L 50% 32 L 0% 32 L 0% 64" stroke="currentColor" strokeWidth="2"></path>
-<path className="text-slate-300 dark:text-slate-700" d="M 50% 32 L 100% 32 L 100% 64" stroke="currentColor" strokeWidth="2"></path>
-</svg>
-{/*  Left Branch  */}
-<div className="flex flex-col items-center">
-<div className="w-64 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-<div className="bg-purple-400/10 p-3 flex items-center gap-2 border-b border-purple-100 dark:border-purple-900/30">
-<span className="material-symbols-outlined text-purple-600 text-sm">call_split</span>
-<span className="text-xs font-bold uppercase text-purple-700 dark:text-purple-400">Condition</span>
-</div>
-<div className="p-4">
-<p className="text-sm font-medium">Is existing customer?</p>
-<div className="mt-3 space-y-2">
-<div className="flex justify-between items-center text-[11px] font-bold text-slate-400 uppercase">
-<span>Yes</span>
-<span className="material-symbols-outlined !text-xs">chevron_right</span>
-</div>
-<div className="flex justify-between items-center text-[11px] font-bold text-slate-400 uppercase">
-<span>No</span>
-<span className="material-symbols-outlined !text-xs">chevron_right</span>
-</div>
-</div>
-</div>
-</div>
-</div>
-{/*  Right Branch  */}
-<div className="flex flex-col items-center">
-<div className="w-64 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 overflow-hidden opacity-80">
-<div className="bg-emerald-400/10 p-3 flex items-center gap-2 border-b border-emerald-100 dark:border-emerald-900/30">
-<span className="material-symbols-outlined text-emerald-600 text-sm">contact_page</span>
-<span className="text-xs font-bold uppercase text-emerald-700 dark:text-emerald-400">Collect Lead</span>
-</div>
-<div className="p-4">
-<p className="text-sm">Capture email and company name</p>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-{/*  Node Configuration Panel  */}
-<aside className="w-80 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0 overflow-y-auto">
-<div className="p-6 border-b border-slate-200 dark:border-slate-800">
-<div className="flex items-center justify-between mb-2">
-<h3 className="text-sm font-bold">Bot Reply Settings</h3>
-<button className="text-slate-400 hover:text-slate-600"><span className="material-symbols-outlined !text-xl">close</span></button>
-</div>
-<p className="text-xs text-slate-500">Configure what the bot says to the user</p>
-</div>
-<div className="p-6 space-y-6">
-<div>
-<label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Message Text</label>
-<textarea className="w-full h-32 text-sm rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:ring-primary focus:border-primary p-3" placeholder="Type message here...">Hello! How can I assist you today?</textarea>
-<div className="flex gap-2 mt-2">
-<button className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary"><span className="material-symbols-outlined !text-lg">alternate_email</span></button>
-<button className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-primary"><span className="material-symbols-outlined !text-lg">add_reaction</span></button>
-</div>
-</div>
-<div>
-<label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Replies</label>
-<div className="space-y-2">
-<div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2">
-<span className="material-symbols-outlined !text-sm text-slate-400">drag_indicator</span>
-<span className="text-sm flex-1">Pricing</span>
-<button className="text-slate-400"><span className="material-symbols-outlined !text-sm">delete</span></button>
-</div>
-<div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg p-2">
-<span className="material-symbols-outlined !text-sm text-slate-400">drag_indicator</span>
-<span className="text-sm flex-1">Technical Support</span>
-<button className="text-slate-400"><span className="material-symbols-outlined !text-sm">delete</span></button>
-</div>
-<button className="w-full flex items-center justify-center gap-2 p-2 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
-<span className="material-symbols-outlined !text-sm">add</span>
-                            Add Option
-                        </button>
-</div>
-</div>
-<div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-<div className="flex items-center justify-between">
-<span className="text-sm font-medium">Wait for user input</span>
-<div className="relative inline-flex h-5 w-9 items-center rounded-full bg-primary">
-<span className="inline-block h-3.5 w-3.5 translate-x-4 rounded-full bg-white transition"></span>
-</div>
-</div>
-</div>
-</div>
-<div className="mt-auto p-6 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800">
-<button className="w-full py-2 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 transition-colors">Apply Changes</button>
-</div>
-</aside>
-</div>
-</div>
+          {/* FAQ Cards */}
+          {loading && <div className="text-center text-slate-400 py-12">Loading FAQs...</div>}
+          {!loading && faqs.length === 0 && (
+            <div className="text-center text-slate-400 py-16">
+              <span className="material-symbols-outlined text-5xl mb-3 block">quiz</span>
+              <p className="font-medium">No FAQ entries yet</p>
+              <p className="text-sm mt-1">Add your first entry to start configuring the chatbot</p>
+            </div>
+          )}
 
-    </>
-  );
+          <div className="space-y-3">
+            {faqs.map((faq) => (
+              <div
+                key={faq.id}
+                className={`bg-white dark:bg-slate-900 rounded-xl border transition-all ${
+                  faq.is_active
+                    ? 'border-slate-200 dark:border-slate-800'
+                    : 'border-dashed border-slate-200 dark:border-slate-700 opacity-60'
+                }`}
+              >
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <p className="font-semibold text-sm truncate">{faq.question}</p>
+                        {faq.category && (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${categoryColors[faq.category] || categoryColors.general}`}>
+                            {faq.category}
+                          </span>
+                        )}
+                        {faq.triggers_routing && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">transfer_within_a_station</span>
+                            Routes to agent
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2">{faq.answer}</p>
+                      <div className="flex items-center gap-3 mt-2">
+                        <div className="flex flex-wrap gap-1">
+                          {faq.keywords.slice(0, 4).map((kw) => (
+                            <span key={kw} className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] rounded font-medium">
+                              {kw}
+                            </span>
+                          ))}
+                          {faq.keywords.length > 4 && (
+                            <span className="text-[10px] text-slate-400">+{faq.keywords.length - 4} more</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-slate-400 ml-auto">Used {faq.usage_count}×</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => toggleActive(faq.id, faq.is_active)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase transition-colors ${
+                          faq.is_active
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 hover:bg-green-200'
+                            : 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 hover:bg-red-200'
+                        }`}
+                      >
+                        {faq.is_active ? 'Active' : 'Inactive'}
+                      </button>
+                      <button onClick={() => handleEdit(faq)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                        <span className="material-symbols-outlined text-[18px] text-slate-400">edit</span>
+                      </button>
+                      <button onClick={() => handleDelete(faq.id)} className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors">
+                        <span className="material-symbols-outlined text-[18px] text-slate-400 hover:text-red-500">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right Panel: Form */}
+        {isAdding && (
+          <aside className="w-96 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shrink-0 overflow-y-auto">
+            <div className="p-6 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-sm font-bold">{editingId ? 'Edit FAQ Entry' : 'New FAQ Entry'}</h3>
+                <button onClick={cancelForm} className="text-slate-400 hover:text-slate-600">
+                  <span className="material-symbols-outlined text-xl">close</span>
+                </button>
+              </div>
+              <p className="text-xs text-slate-400">Configure the bot's response to matching messages</p>
+            </div>
+
+            <div className="p-6 space-y-5 flex-1">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Question</label>
+                <input
+                  type="text"
+                  placeholder="e.g. What is your pricing?"
+                  value={form.question}
+                  onChange={(e) => setForm({ ...form, question: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Bot Answer</label>
+                <textarea
+                  placeholder="Type what the bot should reply..."
+                  value={form.answer}
+                  onChange={(e) => setForm({ ...form, answer: e.target.value })}
+                  rows={4}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                  Trigger Keywords <span className="normal-case font-normal">(comma-separated)</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. price, pricing, cost, how much"
+                  value={form.keywords}
+                  onChange={(e) => setForm({ ...form, keywords: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">Bot matches if any keyword appears in the customer's message</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Category</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. pricing"
+                    value={form.category}
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Department</label>
+                  <select
+                    value={form.department}
+                    onChange={(e) => setForm({ ...form, department: e.target.value as any })}
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="general">General</option>
+                    <option value="sales">Sales</option>
+                    <option value="support">Support</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.triggers_routing}
+                    onChange={(e) => setForm({ ...form, triggers_routing: e.target.checked })}
+                    className="mt-0.5 accent-primary"
+                  />
+                  <div>
+                    <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">Route to human agent after reply</p>
+                    <p className="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+                      After sending this FAQ answer, the bot will queue the chat for an agent
+                    </p>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+              <button
+                onClick={handleSave}
+                disabled={saving || !form.question.trim() || !form.answer.trim() || !form.keywords.trim()}
+                className="w-full py-2.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary/90 disabled:opacity-40 transition-colors"
+              >
+                {saving ? 'Saving...' : editingId ? 'Update Entry' : 'Save Entry'}
+              </button>
+            </div>
+          </aside>
+        )}
+      </div>
+    </div>
+  )
 }

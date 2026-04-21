@@ -1,0 +1,232 @@
+"use client";
+
+import { useState } from "react";
+import { 
+  Search, 
+  MoreHorizontal, 
+  Archive, 
+  RotateCcw, 
+  Trash2, 
+  Edit,
+  Filter,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Users,
+  Hash
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { archiveTenant, restoreTenant, purgeTenant } from "../../actions";
+import { toast } from "react-hot-toast";
+import TenantDialog from "./TenantDialog";
+
+interface Tenant {
+  id: string;
+  name: string;
+  created_at: string;
+  deleted_at: string | null;
+  user_count?: number;
+  number_count?: number;
+}
+
+export default function SuperAdminTenantTable({ initialTenants }: { initialTenants: Tenant[] }) {
+  const [tenants, setTenants] = useState(initialTenants);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "archived">("all");
+
+  const filteredTenants = tenants.filter(t => {
+    const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = 
+        filter === "all" ? true :
+        filter === "active" ? !t.deleted_at :
+        !!t.deleted_at;
+    return matchesSearch && matchesFilter;
+  });
+
+  const handleArchive = async (id: string) => {
+    const result = await archiveTenant(id);
+    if (result.success) {
+      setTenants(prev => prev.map(t => t.id === id ? { ...t, deleted_at: new Date().toISOString() } : t));
+      toast.success("Tenant archived successfully");
+    } else {
+      toast.error(result.error || "Failed to archive tenant");
+    }
+  };
+
+  const handleRestore = async (id: string) => {
+    const result = await restoreTenant(id);
+    if (result.success) {
+      setTenants(prev => prev.map(t => t.id === id ? { ...t, deleted_at: null } : t));
+      toast.success("Tenant restored successfully");
+    } else {
+      toast.error(result.error || "Failed to restore tenant");
+    }
+  };
+
+  const handlePurge = async (id: string) => {
+    if (!confirm("Are you sure you want to PERMANENTLY delete this tenant? This action cannot be undone.")) return;
+    const result = await purgeTenant(id);
+    if (result.success) {
+      setTenants(prev => prev.filter(t => t.id !== id));
+      toast.success("Tenant purged from system registry");
+    } else {
+      toast.error(result.error || "Failed to purge tenant");
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200/50 dark:shadow-none">
+      
+      {/* Search and Filters */}
+      <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/50 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="relative w-full md:w-96">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+          <input 
+            type="text"
+            placeholder="Search infrastructure nodes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none text-slate-900 dark:text-white"
+          />
+        </div>
+
+        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800">
+            {[
+                { id: "all", label: "All Nodes" },
+                { id: "active", label: "Active" },
+                { id: "archived", label: "Archived" }
+            ].map((f) => (
+                <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id as any)}
+                    className={cn(
+                        "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                        filter === f.id 
+                            ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg" 
+                            : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                    )}
+                >
+                    {f.label}
+                </button>
+            ))}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
+            <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
+              <th className="px-8 py-4">Node Profile</th>
+              <th className="px-8 py-4">Provisioned At</th>
+              <th className="px-8 py-4">Health Status</th>
+              <th className="px-8 py-4 text-right">Administrative Actions</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
+            {filteredTenants.length > 0 ? filteredTenants.map((t) => (
+              <tr 
+                key={t.id} 
+                className="group hover:bg-orange-50/30 dark:hover:bg-orange-950/10 transition-colors duration-200"
+              >
+                <td className="px-8 py-5">
+                  <p className="font-bold text-slate-900 dark:text-white group-hover:text-orange-600 transition-colors">
+                    {t.name}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700">
+                        <Users className="size-3 text-slate-400" />
+                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-tighter">{t.user_count} Users</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700">
+                        <Hash className="size-3 text-slate-400" />
+                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-400 uppercase tracking-tighter">{t.number_count} Numbers</span>
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5 uppercase tracking-tighter">
+                    UUID: {t.id}
+                  </p>
+                </td>
+
+                <td className="px-8 py-5">
+                  <div className="flex items-center gap-2">
+                    <Clock className="size-3.5 text-slate-400" />
+                    <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
+                        {new Date(t.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                </td>
+
+                <td className="px-8 py-5">
+                  <div className="flex items-center gap-2">
+                    {t.deleted_at ? (
+                        <div className="flex items-center gap-2 px-3 py-1 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/50 rounded-lg">
+                            <XCircle className="size-3 text-rose-600 dark:text-rose-400" />
+                            <span className="text-[9px] font-black text-rose-700 dark:text-rose-400 uppercase tracking-widest">Archived</span>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg">
+                            <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+                            <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase tracking-widest">Operational</span>
+                        </div>
+                    )}
+                  </div>
+                </td>
+
+                <td className="px-8 py-5 text-right">
+                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+                        <TenantDialog mode="edit" tenant={t} onSuccess={() => window.location.reload()}>
+                            <button className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-all active:scale-95 shadow-sm overflow-hidden">
+                                <Edit className="size-4" />
+                            </button>
+                        </TenantDialog>
+
+                        {t.deleted_at ? (
+                            <button 
+                                onClick={() => handleRestore(t.id)}
+                                className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-emerald-50 hover:text-emerald-600 transition-all active:scale-95 shadow-sm"
+                            >
+                                <RotateCcw className="size-4" />
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={() => handleArchive(t.id)}
+                                className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition-all active:scale-95 shadow-sm"
+                            >
+                                <Archive className="size-4" />
+                            </button>
+                        )}
+                        
+                        <button 
+                            onClick={() => handlePurge(t.id)}
+                            className="p-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-all active:scale-95 shadow-lg shadow-rose-200 dark:shadow-none"
+                        >
+                            <Trash2 className="size-4" />
+                        </button>
+                    </div>
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan={4} className="px-8 py-20 text-center">
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full">
+                            <Search className="size-8 text-slate-300 dark:text-slate-600" />
+                        </div>
+                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No matching infrastructure nodes found</p>
+                    </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="px-8 py-4 bg-slate-50/30 dark:bg-slate-800/30 text-center">
+        <p className="text-[10px] font-bold text-slate-300 dark:text-slate-600 uppercase tracking-widest">
+          Platform Infrastructure Registry Pool • Total Count: {filteredTenants.length}
+        </p>
+      </div>
+    </div>
+  );
+}

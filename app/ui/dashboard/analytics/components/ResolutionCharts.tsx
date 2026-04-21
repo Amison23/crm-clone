@@ -13,40 +13,24 @@ import {
 } from 'recharts';
 import { Timer, Clock, Zap } from 'lucide-react';
 
-/**
- * --- 1. INTERFACES & CONFIG ---
- * Standardized buckets for the SLA Intelligence Node.
- */
+// --- 1. CONFIGURATION ---
 interface ResolutionData {
-  name: string; // e.g., '< 24h', '1-3 Days'
+  name: string; 
   count: number;
 }
 
-interface ResolutionChartProps {
-  data?: ResolutionData[];
-}
-
-/**
- * HCI: Semantic Color Mapping
- * Maps specific resolution buckets to psychological risk colors.
- */
 const SLA_COLORS: Record<string, string> = {
-  '< 24h': '#10b981',    // Emerald (Healthy Flow)
-  '1-3 Days': '#3b82f6',  // Blue (Nominal Operations)
-  '3-7 Days': '#f59e0b',  // Amber (SLA Warning)
-  '7+ Days': '#f43f5e',   // Rose (Critical Breach)
+  '< 24h': '#10b981',    // Emerald (Optimal)
+  '1-3 Days': '#3b82f6',  // Blue (Nominal)
+  '3-7 Days': '#f59e0b',  // Amber (Warning)
+  '7+ Days': '#f43f5e',   // Rose (Breach)
 };
 
-/**
- * --- 2. CUSTOM TOOLTIP ---
- * Styled to match the Executive Dashboard "Black-box" aesthetic.
- */
 const CustomTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const rawData = payload[0].payload;
-
     return (
-      <div className="bg-slate-900 border border-slate-800 p-5 rounded-[1.5rem] shadow-2xl backdrop-blur-md">
+      <div className="bg-slate-900 border border-slate-800 p-5 rounded-[1.5rem] shadow-2xl backdrop-blur-md z-50">
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 border-b border-white/5 pb-2">
           SLA Bucket: {rawData.name}
         </p>
@@ -65,27 +49,21 @@ const CustomTooltip = ({ active, payload }: any) => {
   return null;
 };
 
-/**
- * --- 3. MAIN COMPONENT ---
- */
-export default function ResolutionChart({ data = [] }: ResolutionChartProps) {
+// --- 2. MAIN COMPONENT ---
+export default function ResolutionChart({ data = [] }: { data?: ResolutionData[] }) {
   
-  /**
-   * 🧠 DATA MAPPING LAYER
-   * Injects semantic coloring based on the SLA bucket names.
-   */
   const chartData = useMemo(() => {
     if (!data || data.length === 0) return [];
     return data.map(item => ({
       ...item,
-      color: SLA_COLORS[item.name] || '#64748b' // Default to Slate if data is malformed
+      color: SLA_COLORS[item.name] || '#64748b'
     }));
   }, [data]);
 
   return (
     <div className="w-full bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col group/chart transition-all duration-500 hover:border-primary/20 h-[500px]">
       
-      {/* --- HEADER --- */}
+      {/* HEADER SECTION */}
       <div className="flex justify-between items-start mb-12">
         <div className="flex items-start gap-5">
           <div className="p-4 bg-primary/10 text-primary rounded-[1.2rem] shadow-inner group-hover/chart:rotate-12 transition-transform duration-500">
@@ -104,17 +82,16 @@ export default function ResolutionChart({ data = [] }: ResolutionChartProps) {
           </div>
         </div>
 
-        {/* NODE TELEMETRY BADGE */}
         <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-full border border-slate-100 dark:border-slate-700">
            <Zap size={12} className="text-amber-500" fill="currentColor" />
            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">SLA Node Active</span>
         </div>
       </div>
 
-      {/* --- CHART INTERFACE --- */}
-      <div className="flex-1 w-full relative">
+      {/* CHART INTERFACE */}
+      <div className="flex-1 w-full">
         {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart 
               data={chartData} 
               margin={{ top: 0, right: 0, left: -25, bottom: 0 }}
@@ -160,40 +137,31 @@ export default function ResolutionChart({ data = [] }: ResolutionChartProps) {
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          /* EMPTY STATE telemetery */
           <div className="h-full w-full flex flex-col items-center justify-center space-y-6 border-4 border-dashed border-slate-50 dark:border-slate-800/50 rounded-[2.5rem] min-h-[300px]">
              <div className="p-6 bg-slate-50 dark:bg-slate-800 rounded-full animate-bounce">
                <Clock className="w-10 h-10 text-slate-300" />
              </div>
-             <div className="text-center space-y-2">
-               <p className="text-xs font-black text-slate-400 uppercase tracking-[0.5em]">
-                 Awaiting Stream
-               </p>
-               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest italic">
-                 Analyzing Ticket Durations...
-               </p>
-             </div>
+             <p className="text-xs font-black text-slate-400 uppercase tracking-[0.5em] italic">Awaiting Telemetry Stream...</p>
           </div>
         )}
       </div>
 
-      {/* --- FOOTER / LEGEND --- */}
+      {/* FOOTER LEGEND */}
       <div className="mt-10 pt-8 border-t border-slate-50 dark:border-slate-800/60 flex flex-col sm:flex-row justify-between items-center gap-6">
         <p className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.4em] italic">
           * Unit: Time-to-Resolution (TTR)
         </p>
         <div className="flex gap-6">
-          <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full group cursor-help transition-all hover:bg-emerald-500/20">
+          <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 rounded-full group cursor-help transition-all">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            <span className="text-[9px] font-black text-emerald-600 transition-colors uppercase tracking-widest">Healthy SLA</span>
+            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Healthy SLA</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-1 bg-rose-500/10 rounded-full group cursor-help transition-all hover:bg-rose-500/20">
+          <div className="flex items-center gap-2 px-3 py-1 bg-rose-500/10 rounded-full group cursor-help transition-all">
             <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-[9px] font-black text-rose-600 transition-colors uppercase tracking-widest">Risk Breach</span>
+            <span className="text-[9px] font-black text-rose-600 uppercase tracking-widest">Risk Breach</span>
           </div>
         </div>
       </div>
-
     </div>
   );
 }

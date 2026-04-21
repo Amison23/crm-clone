@@ -8,17 +8,17 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer, 
+  ResponsiveContainer,
 } from 'recharts';
-import { Zap, Calendar, TrendingUp } from 'lucide-react';
+import { Zap, Calendar } from 'lucide-react';
 
-// Standardized mapping for the Intelligence Node telemetry
+// --- 1. TELEMETRY CONFIGURATION ---
 const viewConfig = {
   total: { color: '#3b82f6', label: 'Gross Volume', unit: 'Total Units' },
   closed: { color: '#10b981', label: 'Resolution Yield', unit: 'Resolved Units' },
   ongoing: { color: '#f59e0b', label: 'Active Pipeline', unit: 'Active Units' },
   failed: { color: '#f43f5e', label: 'System Drop-off', unit: 'Dropped Units' },
-  revenue: { color: '#8b5cf6', label: 'Financial Yield', unit: 'KES' } // NEW: Financial Layer
+  revenue: { color: '#8b5cf6', label: 'Financial Yield', unit: 'KES' }
 };
 
 type ViewType = keyof typeof viewConfig;
@@ -27,18 +27,21 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
   const [timeFrame, setTimeFrame] = useState<'1m' | '7d'>('1m');
   const [view, setView] = useState<ViewType>('total');
 
+  // --- 2. DATA PROCESSING ---
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return [];
-    return timeFrame === '7d' ? data.slice(-7) : data.slice(-30);
+    const sliceAmount = timeFrame === '7d' ? 7 : 30;
+    return data.slice(-sliceAmount);
   }, [data, timeFrame]);
 
+  // --- 3. CUSTOM COMPONENTS ---
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const value = payload[0].value;
       const isRevenue = view === 'revenue';
 
       return (
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-[1.5rem] shadow-2xl space-y-3">
+        <div className="bg-slate-950 border border-slate-800 p-5 rounded-[1.5rem] shadow-2xl space-y-3 z-50">
           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] border-b border-white/5 pb-2">
             Audit Point: {label}
           </p>
@@ -65,8 +68,8 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
   return (
     <div className="w-full bg-white dark:bg-slate-900 p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
       
-      {/* --- HEADER --- */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-12 gap-8 relative z-10">
+      {/* --- HEADER & CONTROLS --- */}
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-12 gap-8 relative z-20">
         <div className="flex items-center gap-5">
           <div className="p-4 bg-primary/10 text-primary rounded-[1.5rem] shadow-inner group-hover:rotate-12 transition-transform duration-500">
             <Zap className="w-7 h-7" />
@@ -78,22 +81,22 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
               </h3>
               <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
-            <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">
+            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">
               Operational <span className="text-primary italic">Throughput</span>
             </p>
           </div>
         </div>
 
-        {/* --- CONTROLS --- */}
-        <div className="flex flex-wrap items-center gap-4 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-[1.5rem] border border-slate-100 dark:border-slate-800">
-          <div className="flex gap-1 pr-4 border-r border-slate-200 dark:border-slate-700">
-            {['1m', '7d'].map((tf) => (
+        {/* --- INTERACTIVE CONTROL PANEL --- */}
+        <div className="flex flex-wrap items-center gap-3 bg-slate-50 dark:bg-slate-800/40 p-2 rounded-[1.5rem] border border-slate-100 dark:border-slate-800">
+          <div className="flex gap-1 pr-3 border-r border-slate-200 dark:border-slate-700">
+            {(['1m', '7d'] as const).map((tf) => (
               <button 
                 key={tf} 
-                onClick={() => setTimeFrame(tf as any)} 
-                className={`px-4 py-2 text-[10px] font-black uppercase rounded-xl transition-all ${timeFrame === tf ? 'bg-white dark:bg-slate-900 text-primary shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                onClick={() => setTimeFrame(tf)} 
+                className={`px-4 py-2 text-[9px] font-black uppercase rounded-xl transition-all ${timeFrame === tf ? 'bg-white dark:bg-slate-900 text-primary shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
               >
-                {tf}
+                {tf === '1m' ? '30 Days' : '7 Days'}
               </button>
             ))}
           </div>
@@ -102,7 +105,7 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
               <button 
                 key={type} 
                 onClick={() => setView(type)} 
-                className={`px-4 py-2 text-[10px] font-black uppercase rounded-xl transition-all ${view === type ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`px-4 py-2 text-[9px] font-black uppercase rounded-xl transition-all ${view === type ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 {type}
               </button>
@@ -111,13 +114,13 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
         </div>
       </div>
 
-      {/* --- CHART --- */}
-      <div className="h-[450px] w-full relative z-10">
+      {/* --- CHART INTERFACE --- */}
+      <div className="h-[400px] w-full relative z-10">
         {filteredData.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+            <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
-                <linearGradient id="colorView" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="colorPrimary" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={viewConfig[view].color} stopOpacity={0.3} />
                   <stop offset="95%" stopColor={viewConfig[view].color} stopOpacity={0} />
                 </linearGradient>
@@ -130,7 +133,7 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
                 tickLine={false} 
                 tick={{ fill: '#94a3b8', fontWeight: 900, fontFamily: 'monospace' }} 
                 dy={15} 
-                interval={timeFrame === '1m' ? 5 : 0}
+                interval={timeFrame === '1m' ? 4 : 0}
               />
               <YAxis 
                 fontSize={10} 
@@ -138,15 +141,19 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
                 tickLine={false} 
                 tick={{ fill: '#94a3b8', fontWeight: 900, fontFamily: 'monospace' }} 
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: viewConfig[view].color, strokeWidth: 1, strokeDasharray: '5 5' }} />
+              <Tooltip 
+                content={<CustomTooltip />} 
+                cursor={{ stroke: viewConfig[view].color, strokeWidth: 1, strokeDasharray: '5 5' }} 
+              />
               <Area 
                 type="monotone" 
                 dataKey={view} 
                 stroke={viewConfig[view].color} 
-                strokeWidth={5} 
+                strokeWidth={4} 
                 fillOpacity={1} 
-                fill="url(#colorView)" 
+                fill="url(#colorPrimary)" 
                 animationDuration={1500} 
+                animationEasing="ease-in-out"
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -160,11 +167,17 @@ export default function PerformanceDeepDive({ data = [] }: { data: any[] }) {
         )}
       </div>
 
-      {/* --- FOOTER LABEL --- */}
-      <div className="mt-8 flex justify-center">
+      {/* --- LEGEND FOOTER --- */}
+      <div className="mt-10 flex justify-between items-center border-t border-slate-50 dark:border-slate-800 pt-6">
         <p className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.6em]">
-          Temporal Horizon • Secure Audit Node af-south-1
+          Secure Audit Node af-south-1
         </p>
+        <div className="flex items-center gap-4">
+           <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: viewConfig[view].color }} />
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{viewConfig[view].label}</span>
+           </div>
+        </div>
       </div>
     </div>
   );
