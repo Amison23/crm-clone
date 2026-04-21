@@ -8,30 +8,31 @@ import {
   ChevronDown, 
   Clock, 
   CheckCircle2, 
-  Inbox 
+  Inbox,
+  ArrowUpRight,
+  User
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 5;
 
 // --- 1. INTERFACES ---
-interface Task {
+export interface Task {
   id: string;
   name: string;
   assigned_to: string;
   deadline: string;
-  start: string;
   met: number;
   objectives: number;
   team: string[];
 }
 
-interface Ticket {
+export interface Ticket {
   name: string;
   assigned_to: string;
   initiation: string;
   resolution: string;
-  inbound: number;
-  outbound: number;
+  inbound?: number;
+  outbound?: number;
 }
 
 interface OperationsProps {
@@ -40,15 +41,12 @@ interface OperationsProps {
   viewMode: 'agent' | 'admin';
 }
 
-// --- 2. MAIN COMPONENT ---
 export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode }: OperationsProps) {
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   
-  // Search States
+  // Search & Pagination States
   const [taskQuery, setTaskQuery] = useState('');
   const [ticketQuery, setTicketQuery] = useState('');
-
-  // Pagination States
   const [taskPage, setTaskPage] = useState(1);
   const [ticketPage, setTicketPage] = useState(1);
 
@@ -61,35 +59,32 @@ export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode 
     return tickets.filter(t => t.name.toLowerCase().includes(ticketQuery.toLowerCase()));
   }, [tickets, ticketQuery]);
 
-  // --- PAGINATION CALCULATION ---
-  const totalTaskPages = Math.max(1, Math.ceil(filteredTasks.length / ITEMS_PER_PAGE));
+  // --- PAGINATION SPLICING ---
   const paginatedTasks = filteredTasks.slice((taskPage - 1) * ITEMS_PER_PAGE, taskPage * ITEMS_PER_PAGE);
+  const totalTaskPages = Math.max(1, Math.ceil(filteredTasks.length / ITEMS_PER_PAGE));
 
-  const totalTicketPages = Math.max(1, Math.ceil(filteredTickets.length / ITEMS_PER_PAGE));
   const paginatedTickets = filteredTickets.slice((ticketPage - 1) * ITEMS_PER_PAGE, ticketPage * ITEMS_PER_PAGE);
-
-  const handleTaskSearch = (val: string) => { setTaskQuery(val); setTaskPage(1); };
-  const handleTicketSearch = (val: string) => { setTicketQuery(val); setTicketPage(1); };
+  const totalTicketPages = Math.max(1, Math.ceil(filteredTickets.length / ITEMS_PER_PAGE));
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
       
       {/* =========================================
-          LEFT COLUMN: TASK ANALYTICS
+          LEFT COLUMN: TASK PRECISION (CRM/OPS)
           ========================================= */}
-      <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-all duration-500 hover:border-primary/20">
         <div>
           {/* HEADER & SEARCH */}
-          <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-8">
+          <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-10">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                <Target className="w-5 h-5 text-primary" />
+              <div className="p-3 bg-primary/10 text-primary rounded-2xl shadow-inner">
+                <Target size={20} />
               </div>
               <div>
                 <h4 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-1">Task Precision</h4>
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{filteredTasks.length} Found</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{filteredTasks.length} Live Objectives</p>
                 </div>
               </div>
             </div>
@@ -98,130 +93,112 @@ export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode 
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-primary transition-colors" />
               <input 
                 type="text"
-                placeholder="Search tasks..."
+                placeholder="Search Objectives..."
                 value={taskQuery}
-                onChange={(e) => handleTaskSearch(e.target.value)}
-                className="pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 outline-none focus:ring-2 ring-primary/20 transition-all w-full xl:w-48 shadow-inner"
+                onChange={(e) => { setTaskQuery(e.target.value); setTaskPage(1); }}
+                className="pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 outline-none focus:ring-2 ring-primary/20 transition-all w-full xl:w-52"
               />
             </div>
           </div>
           
           {/* TASK LIST */}
-          <div className="space-y-3 min-h-[380px]">
+          <div className="space-y-3 min-h-[400px]">
             {paginatedTasks.length > 0 ? paginatedTasks.map((task) => {
               const isCompleted = task.met >= task.objectives;
+              const isExpanded = expandedTask === task.id;
               
               return (
                 <div 
                   key={task.id} 
-                  className={`border rounded-2xl transition-all cursor-pointer overflow-hidden ${
-                    expandedTask === task.id 
-                      ? 'border-primary/30 bg-primary/5 dark:bg-primary/10 shadow-sm' 
-                      : 'border-slate-100 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
+                  className={`border rounded-[1.5rem] transition-all cursor-pointer overflow-hidden ${
+                    isExpanded 
+                      ? 'border-primary/30 bg-primary/[0.02] dark:bg-primary/[0.05] shadow-sm' 
+                      : 'border-slate-50 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
                   }`}
-                  onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
+                  onClick={() => setExpandedTask(isExpanded ? null : task.id)}
                 >
                   <div className="p-5 flex justify-between items-center">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className={`font-black text-sm uppercase tracking-tight ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-900 dark:text-slate-100'}`}>
+                    <div className="flex-1 min-w-0 pr-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <p className={`font-black text-sm uppercase tracking-tight truncate ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-900 dark:text-slate-100'}`}>
                           {task.name}
                         </p>
-                        <span className={`text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest ${
-                          viewMode === 'agent' 
-                            ? 'bg-primary/10 text-primary' 
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                        <span className={`flex-shrink-0 text-[8px] px-2 py-0.5 rounded-md font-black uppercase tracking-widest ${
+                          viewMode === 'agent' ? 'bg-primary/10 text-primary' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'
                         }`}>
                           {viewMode === 'agent' ? 'Personal' : task.assigned_to}
                         </span>
                       </div>
-                      <div className="flex items-center gap-1 text-[9px] text-slate-400 font-mono uppercase tracking-tighter">
-                        <Clock className="w-3 h-3" /> Deadline: {task.deadline}
+                      <div className="flex items-center gap-2 text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                        <Clock size={12} className={isCompleted ? 'text-emerald-500' : 'text-slate-300'} /> 
+                        Deadline: <span className="font-mono">{task.deadline}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
                       {isCompleted ? (
                         <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                       ) : (
-                        <span className="text-xs font-black text-primary bg-primary/10 px-2 py-1 rounded-lg">
+                        <span className="text-[10px] font-black text-primary bg-primary/5 px-2.5 py-1 rounded-lg border border-primary/10">
                           {task.met}/{task.objectives}
                         </span>
                       )}
-                      <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${expandedTask === task.id ? 'rotate-180 text-primary' : ''}`} />
+                      <ChevronDown size={16} className={`text-slate-300 transition-transform duration-300 ${isExpanded ? 'rotate-180 text-primary' : ''}`} />
                     </div>
                   </div>
                   
-                  {/* EXPANDED VIEW */}
-                  {expandedTask === task.id && (
-                    <div className="px-5 pb-5 animate-in slide-in-from-top-2">
-                      <div className="flex justify-between items-center bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                  {isExpanded && (
+                    <div className="px-5 pb-5 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <div className="flex justify-between items-end bg-white dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-inner">
                         <div>
-                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Assigned Agent(s)</p>
+                          <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2.5">Assigned Force</p>
                           <div className="flex -space-x-2">
                             {task.team.map((m, i) => (
-                              <div key={i} className="h-6 w-6 rounded-full bg-primary border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-bold text-white shadow-sm" title={m}>
+                              <div key={i} className="h-7 w-7 rounded-full bg-slate-900 dark:bg-white border-2 border-white dark:border-slate-900 flex items-center justify-center text-[8px] font-black text-white dark:text-slate-900 shadow-md" title={m}>
                                 {m.charAt(0).toUpperCase()}
                               </div>
                             ))}
                           </div>
                         </div>
-                        <div className="text-right">
-                           <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Initiated</p>
-                           <p className="text-[10px] font-mono text-slate-700 dark:text-slate-300 uppercase">{task.start}</p>
-                        </div>
+                        <button className="text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1.5 hover:gap-2 transition-all">
+                          Update Progress <ArrowUpRight size={12} />
+                        </button>
                       </div>
                     </div>
                   )}
                 </div>
               );
             }) : (
-              // ZERO-STATE FALLBACK
-              <div className="h-full flex flex-col items-center justify-center space-y-4 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl min-h-[300px] bg-slate-50/50 dark:bg-slate-800/20">
-                <Target className="w-8 h-8 text-slate-300 animate-pulse" />
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Objectives Found</p>
-              </div>
+              <EmptyState icon={<Target className="w-8 h-8 text-slate-200 animate-pulse" />} label="No Objectives Found" />
             )}
           </div>
         </div>
 
         {/* TASK PAGINATION */}
-        <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {taskPage} of {totalTaskPages}</p>
+        <div className="flex justify-between items-center mt-10 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Page {taskPage} / {totalTaskPages}</p>
           <div className="flex gap-2">
-            <button 
-              disabled={taskPage === 1}
-              onClick={() => setTaskPage(p => p - 1)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[10px] font-black uppercase"
-            >
-              Prev
-            </button>
-            <button 
-              disabled={taskPage === totalTaskPages}
-              onClick={() => setTaskPage(p => p + 1)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[10px] font-black uppercase"
-            >
-              Next
-            </button>
+            <PaginationButton label="Prev" disabled={taskPage === 1} onClick={() => setTaskPage(p => p - 1)} />
+            <PaginationButton label="Next" disabled={taskPage === totalTaskPages} onClick={() => setTaskPage(p => p + 1)} />
           </div>
         </div>
       </div>
 
       {/* =========================================
-          RIGHT COLUMN: TICKET ANALYTICS
+          RIGHT COLUMN: RESOLUTION DENSITY (SUPPORT)
           ========================================= */}
-      <div className="bg-white dark:bg-slate-900 p-8 md:p-10 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-all hover:shadow-md">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-[3rem] border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between transition-all duration-500 hover:border-emerald-500/20">
         <div>
           {/* HEADER & SEARCH */}
-          <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-8">
+          <div className="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-4 mb-10">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                <TicketIcon className="w-5 h-5 text-emerald-500" />
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-500 rounded-2xl shadow-inner">
+                <TicketIcon size={20} />
               </div>
               <div>
                 <h4 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter leading-none mb-1">Resolution Density</h4>
                 <div className="flex items-center gap-2">
                   <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{filteredTickets.length} Entries</p>
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">{filteredTickets.length} Incident Entries</p>
                 </div>
               </div>
             </div>
@@ -230,66 +207,62 @@ export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode 
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
               <input 
                 type="text"
-                placeholder="Search tickets..."
+                placeholder="Filter Incidents..."
                 value={ticketQuery}
-                onChange={(e) => handleTicketSearch(e.target.value)}
-                className="pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 outline-none focus:ring-2 ring-emerald-500/20 transition-all w-full xl:w-48 shadow-inner"
+                onChange={(e) => { setTicketQuery(e.target.value); setTicketPage(1); }}
+                className="pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200 outline-none focus:ring-2 ring-emerald-500/20 transition-all w-full xl:w-52"
               />
             </div>
           </div>
 
           {/* TICKET TABLE */}
-          <div className="overflow-x-auto min-h-[380px]">
+          <div className="overflow-x-auto min-h-[400px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
-                  <th className="pb-4">Incident Log</th>
-                  <th className="pb-4 text-center">Telemetry (In/Out)</th>
-                  <th className="pb-4 text-right">Status</th>
+                  <th className="pb-5">Incident Log</th>
+                  <th className="pb-5 text-center">Telemetry</th>
+                  <th className="pb-5 text-right">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                 {paginatedTickets.length > 0 ? paginatedTickets.map((ticket, i) => {
-                  
-                  // Semantic coloring based on resolution status
                   const isResolved = ticket.resolution.toLowerCase() === 'resolved';
                   const isPending = ticket.resolution.toLowerCase() === 'pending';
 
                   return (
-                    <tr key={i} className="group hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="py-4 pr-4">
-                        <p className="font-black text-sm uppercase tracking-tight text-slate-800 dark:text-slate-200">{ticket.name}</p>
-                        <p className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase mt-0.5">
-                          {ticket.initiation} <span className="opacity-50 mx-1">•</span> {viewMode === 'agent' ? 'Personal' : ticket.assigned_to}
-                        </p>
-                      </td>
-                      <td className="py-4 px-2">
-                        <div className="flex items-center justify-center gap-2">
-                          <span className="text-[9px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-1 rounded-md border border-emerald-100 dark:border-emerald-900/50">↑ {ticket.outbound}</span>
-                          <span className="text-[9px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 px-2 py-1 rounded-md border border-blue-100 dark:border-blue-900/50">↓ {ticket.inbound}</span>
+                    <tr key={i} className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                      <td className="py-5 pr-4">
+                        <p className="font-black text-sm uppercase tracking-tight text-slate-800 dark:text-slate-200 mb-0.5">{ticket.name}</p>
+                        <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                          <span className="font-mono">{ticket.initiation}</span>
+                          <span className="opacity-30">•</span> 
+                          <span className="flex items-center gap-1"><User size={10} /> {viewMode === 'agent' ? 'Me' : ticket.assigned_to}</span>
                         </div>
                       </td>
-                      <td className="py-4 pl-4 text-right">
-                        <p className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg inline-block border ${
+                      <td className="py-5 px-2">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <TelemetryBadge value={ticket.outbound || 0} direction="up" color="emerald" />
+                          <TelemetryBadge value={ticket.inbound || 0} direction="down" color="blue" />
+                        </div>
+                      </td>
+                      <td className="py-5 pl-4 text-right">
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg inline-block border ${
                           isResolved 
-                            ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 border-emerald-100 dark:border-emerald-800/50' 
+                            ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 border-emerald-100 dark:border-emerald-900/50' 
                             : isPending
-                            ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 border-amber-100 dark:border-amber-800/50'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700'
+                            ? 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 border-amber-100 dark:border-amber-900/50'
+                            : 'bg-slate-100 text-slate-500 border-slate-200'
                         }`}>
                           {ticket.resolution}
-                        </p>
+                        </span>
                       </td>
                     </tr>
                   );
                 }) : (
-                  // ZERO-STATE FALLBACK
                   <tr>
-                    <td colSpan={3} className="py-10">
-                      <div className="flex flex-col items-center justify-center space-y-4 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl min-h-[250px] bg-slate-50/50 dark:bg-slate-800/20">
-                        <Inbox className="w-8 h-8 text-slate-300 animate-bounce" />
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No Incident Telemetry Found</p>
-                      </div>
+                    <td colSpan={3} className="py-20">
+                      <EmptyState icon={<Inbox className="w-8 h-8 text-slate-200 animate-bounce" />} label="Zero Incident Packets Found" />
                     </td>
                   </tr>
                 )}
@@ -299,27 +272,52 @@ export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode 
         </div>
 
         {/* TICKET PAGINATION */}
-        <div className="flex justify-between items-center mt-8 pt-6 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Page {ticketPage} of {totalTicketPages}</p>
+        <div className="flex justify-between items-center mt-10 pt-6 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Node Page {ticketPage} / {totalTicketPages}</p>
           <div className="flex gap-2">
-            <button 
-              disabled={ticketPage === 1}
-              onClick={() => setTicketPage(p => p - 1)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[10px] font-black uppercase"
-            >
-              Prev
-            </button>
-            <button 
-              disabled={ticketPage === totalTicketPages}
-              onClick={() => setTicketPage(p => p + 1)}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-[10px] font-black uppercase"
-            >
-              Next
-            </button>
+            <PaginationButton label="Prev" disabled={ticketPage === 1} onClick={() => setTicketPage(p => p - 1)} />
+            <PaginationButton label="Next" disabled={ticketPage === totalTicketPages} onClick={() => setTicketPage(p => p + 1)} />
           </div>
         </div>
       </div>
       
+    </div>
+  );
+}
+
+// --- SUB-COMPONENTS FOR CLEANER CODE ---
+
+function PaginationButton({ label, disabled, onClick }: { label: string, disabled: boolean, onClick: () => void }) {
+  return (
+    <button 
+      disabled={disabled}
+      onClick={onClick}
+      className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 disabled:opacity-30 hover:bg-slate-900 hover:text-white dark:hover:bg-white dark:hover:text-slate-900 transition-all duration-300 text-[10px] font-black uppercase tracking-widest active:scale-95 shadow-sm"
+    >
+      {label}
+    </button>
+  );
+}
+
+function TelemetryBadge({ value, direction, color }: { value: number, direction: 'up' | 'down', color: 'emerald' | 'blue' }) {
+  const colors = {
+    emerald: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50',
+    blue: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/50'
+  };
+  return (
+    <span className={`text-[9px] font-black ${colors[color]} px-2 py-1 rounded-md border font-mono`}>
+      {direction === 'up' ? '↑' : '↓'} {value}
+    </span>
+  );
+}
+
+function EmptyState({ icon, label }: { icon: React.ReactNode, label: string }) {
+  return (
+    <div className="h-full flex flex-col items-center justify-center space-y-4 border-2 border-dashed border-slate-50 dark:border-slate-800/50 rounded-[2.5rem] min-h-[300px] bg-slate-50/20 dark:bg-slate-800/10">
+      <div className="p-4 bg-white dark:bg-slate-900 rounded-full shadow-sm">
+        {icon}
+      </div>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic">{label}</p>
     </div>
   );
 }

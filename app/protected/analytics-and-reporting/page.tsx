@@ -1,19 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useIntelligence } from '@/hooks/useIntelligence';
 import { 
-  Activity, 
-  Zap, 
-  Users, 
-  Target, 
-  Layers, 
-  ShieldCheck, 
-  BarChart3,
-  ChevronRight,
-  TrendingUp,
-  Database
+  Activity, Zap, Users, ShieldCheck, 
+  ChevronRight, TrendingUp, Database 
 } from 'lucide-react';
+
+// Intelligence Node Utilities
 import { transformAgentData, transformPipelineData } from '@/utils/transformAgentData';
 
 // Intelligence Engine Components
@@ -28,19 +22,30 @@ import { SummarySkeleton } from '@/app/ui/dashboard/analytics/components/Summary
 
 export default function AnalyticsAndReporting() {
   const { intelligence, isLoading } = useIntelligence();
+  
+  // 1. HYDRATION GUARD: Prevents the System Time mismatch
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  // 1. DATA TRANSFORMATION LAYER
-  // These utilities convert raw lead arrays into chart-ready objects
-  const rawLeads = intelligence?.rawLeads || [];
-  const funnelData = useMemo(() => transformPipelineData(rawLeads), [rawLeads]);
-  const agentPerformance = useMemo(() => transformAgentData(rawLeads), [rawLeads]);
+  // 2. DATA TRANSFORMATION LAYER
+  const rawLeads = useMemo(() => intelligence?.rawLeads || [], [intelligence]);
+  
+  const funnelData = useMemo(() => 
+    transformPipelineData(rawLeads), [rawLeads]
+  );
+  
+  const agentPerformance = useMemo(() => 
+    transformAgentData(rawLeads), [rawLeads]
+  );
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] p-4 lg:p-10 space-y-12 pb-32 animate-in fade-in duration-1000">
       
-      {/* --- MASTER COMMAND HEADER --- */}
-      <header className="flex flex-col xl:flex-row justify-between items-center bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-10 opacity-5 dark:opacity-10 pointer-events-none">
+      {/* --- TIER 0: MASTER COMMAND HEADER --- */}
+      <header className="flex flex-col xl:flex-row justify-between items-center bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-10 opacity-5 dark:opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
           <Database size={140} />
         </div>
         
@@ -57,36 +62,40 @@ export default function AnalyticsAndReporting() {
                Intelligence <span className="text-primary italic">Node</span>
              </h1>
              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-2">
-               Infrastructure ID: {intelligence?.meta.nodeId || 'af-south-1'} • Context: {intelligence?.meta.tenantContext}
+               Infrastructure ID: {intelligence?.meta?.nodeId || 'af-south-1'} • Context: {intelligence?.meta?.tenantContext || '---'}
              </p>
            </div>
         </div>
 
         <div className="flex items-center gap-4 relative z-10 mt-6 xl:mt-0">
-          <button className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
+          <button className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-primary hover:text-white dark:hover:bg-primary transition-all active:scale-95">
             Export Audit Trail
           </button>
         </div>
       </header>
 
-      {/* --- SECTION 1: OPERATIONAL VITALS --- */}
+      {/* --- TIER 1: OPERATIONAL VITALS --- */}
       <section className="space-y-6">
         <div className="flex items-center gap-3 px-6">
           <Zap className="w-4 h-4 text-primary animate-pulse" />
           <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Real-Time Vitals</h2>
         </div>
+        
         {isLoading ? <SummarySkeleton /> : (
           <div className="space-y-10">
-            <SummaryCards />
+            <SummaryCards 
+               sales={intelligence?.sales} 
+               productivity={intelligence?.productivity} 
+               nodeId={intelligence?.meta?.nodeId}
+            />
             <TaskStats productivity={intelligence?.productivity} />
           </div>
         )}
       </section>
 
-      {/* --- SECTION 2: PERFORMANCE & PIPELINE --- */}
+      {/* --- TIER 2: PERFORMANCE & PIPELINE --- */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
         <div className="xl:col-span-2">
-          {/* Daily Resolution Units (24h Snapshots) */}
           <PerformanceDeepDive data={intelligence?.trends || []} />
         </div>
         <div className="xl:col-span-1">
@@ -94,12 +103,10 @@ export default function AnalyticsAndReporting() {
         </div>
       </div>
 
-      {/* --- SECTION 3: YIELD & SOURCES --- */}
+      {/* --- TIER 3: YIELD & SOURCES --- */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
-        {/* Marketing ROI breakdown */}
         <SourceAnalytics data={intelligence?.sourceDistribution || []} />
         
-        {/* Productivity Efficiency Card */}
         <div className="bg-primary p-12 rounded-[3.5rem] text-white flex flex-col justify-between shadow-2xl relative overflow-hidden group">
           <ShieldCheck className="absolute -bottom-8 -right-8 w-48 h-48 opacity-10 rotate-12 group-hover:scale-110 transition-transform duration-1000" />
           <div className="relative z-10 space-y-4">
@@ -114,13 +121,13 @@ export default function AnalyticsAndReporting() {
           <div className="relative z-10 pt-10 border-t border-white/10 mt-8">
             <p className="text-[11px] font-medium opacity-70 italic leading-relaxed max-w-sm">
               Node status: <span className="font-black not-italic text-white underline decoration-emerald-400 decoration-2">{intelligence?.throughput?.node_status || 'Optimal'}</span>. <br/>
-              Current System Velocity: {intelligence?.throughput?.system_velocity} units/sec verified.
+              Current System Velocity: {intelligence?.throughput?.system_velocity || 0} units/sec verified.
             </p>
           </div>
         </div>
       </div>
 
-      {/* --- SECTION 4: AGENT PERFORMANCE --- */}
+      {/* --- TIER 4: AGENT HIERARCHY --- */}
       <section className="space-y-6">
         <div className="flex items-center gap-3 px-6">
           <Users className="w-5 h-5 text-primary" />
@@ -131,18 +138,17 @@ export default function AnalyticsAndReporting() {
         </div>
       </section>
 
-      {/* --- SECTION 5: FINANCIAL AUDIT (Section 5.1) --- */}
+      {/* --- TIER 5: FINANCIAL AUDIT --- */}
       <section className="space-y-6">
         <div className="flex items-center justify-between px-6">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-5 h-5 text-emerald-500" />
             <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Verified Acquisition Log (KES)</h3>
           </div>
-          <button className="text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1 hover:gap-2 transition-all">
+          <button className="text-[9px] font-black text-primary uppercase tracking-widest flex items-center gap-1 hover:translate-x-2 transition-transform">
             Full Audit Trail <ChevronRight size={12} />
           </button>
         </div>
-        {/* Bug-fixed table with composite keys and defensive type casting */}
         <RevenueAuditTable data={intelligence?.revenueAudit || []} />
       </section>
 
@@ -155,7 +161,7 @@ export default function AnalyticsAndReporting() {
         <div className="flex items-center gap-2">
            <Activity size={10} className="text-emerald-500" />
            <p className="text-[8px] font-mono text-slate-400 uppercase italic tracking-tighter">
-             Secure Multi-Tenant Node af-south-1 • System Time: {new Date().toLocaleTimeString()}
+             Secure Multi-Tenant Node af-south-1 • System Time: {mounted ? new Date().toLocaleTimeString() : 'SYNCING...'}
            </p>
         </div>
       </footer>

@@ -3,52 +3,44 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { 
   ShieldCheck, 
-  Users, 
   Target, 
   ChevronRight, 
-  Database, 
+  BarChart3, 
   Activity,
-  AlertTriangle,
   Lock,
-  BarChart3,
-  TrendingUp
+  TrendingUp,
+  Zap,
+  Briefcase,
+  Layers
 } from 'lucide-react';
 
 // Intelligence Engine Components
 import SummaryCards from '@/app/ui/dashboard/analytics/components/SummaryCards';
 import AgentReport from '@/app/ui/dashboard/analytics/components/AgentReport';
-import OperationsDeepDive from '@/app/ui/dashboard/analytics/components/OperationsDeepDive';
 import PerformanceDeepDive from '@/app/ui/dashboard/analytics/components/PerfomanceDeepDive';
 import RevenueAuditTable from '@/app/ui/dashboard/analytics/components/RevenueAuditTable';
 import SourceAnalytics from '@/app/ui/dashboard/analytics/components/SourceAnalytics';
-import { transformAgentData } from '@/utils/transformAgentData';
+import PipelineFunnel from '@/app/ui/dashboard/analytics/components/PipelineFunnel';
+
+// Utilities
+import { transformAgentData, transformPipelineData } from '@/utils/transformAgentData';
 
 export default async function ExecutiveDashboard() {
   const supabase = await createClient();
 
-  // 1. IDENTITY & SECURITY GATE
+  // 1. IDENTITY & ACL GATE (Section 1.2 & 6.3)
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
   const tenantId = user.user_metadata?.tenant_id;
-  
-  // PROTOCOL BREAK: Lockdown if no tenant context
-  if (!tenantId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#020617] p-10">
-        <div className="max-w-md w-full bg-white dark:bg-slate-900 p-12 rounded-[3rem] border-2 border-dashed border-red-100 dark:border-red-900/30 text-center space-y-6">
-          <div className="inline-flex h-20 w-20 bg-red-50 dark:bg-red-950/30 text-red-500 rounded-full items-center justify-center text-4xl animate-pulse">
-            <Lock />
-          </div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Node Isolated</h1>
-          <p className="text-slate-500 text-sm font-medium italic">Security Protocol: Null Tenant Context.</p>
-          <Link href="/login" className="block w-full py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-widest text-[10px]">Re-Authenticate</Link>
-        </div>
-      </div>
-    );
-  }
+  const userRole = user.user_metadata?.role;
 
-  // 2. PARALLEL SCOPED DATA FETCHING (Section 5.1 & 5.2)
+  // Security Protocol: Only Managerial roles (Merchant Pro Managers)
+  if (userRole === 'sales_agent') redirect('/protected/agent-workspace');
+  
+  if (!tenantId) return <NodeIsolatedError />;
+
+  // 2. PARALLEL BUSINESS DATA FETCHING (Section 1.3 & 5.0)
   const [
     companyReq, 
     leadsReq, 
@@ -60,231 +52,188 @@ export default async function ExecutiveDashboard() {
     trendsReq
   ] = await Promise.all([
     supabase.from('companies').select('*').eq('id', tenantId).single(),
-    
-    // FETCH LEADS: Includes potential_value for Potential Yield
-    supabase.from('leads')
-      .select('id, status, potential_value, employee_id, created_at, updated_at, source, employees!leads_employee_id_fkey(full_name)')
-      .eq('company_id', tenantId),
-
-    // FETCH DEALS: Includes amount for Settled Yield
-    supabase.from('deals')
-      .select('amount, status')
-      .eq('company_id', tenantId)
-      .eq('status', 'won'),
-
-    // FETCH REVENUE AUDIT: Flat transaction log using our fixed View
-    supabase.from('view_detailed_revenue_audit')
-      .select('*')
-      .eq('company_id', tenantId)
-      .limit(10),
-
-    // FETCH SOURCE DISTRIBUTION: Marketing analytics
-    supabase.from('view_lead_source_distribution')
-      .select('*')
-      .eq('company_id', tenantId),
-
-    supabase.from('tasks')
-      .select('*, employees!tasks_assigned_to_fkey(full_name)')
-      .eq('company_id', tenantId)
-      .order('due_date', { ascending: true })
-      .limit(5),
-
-    supabase.from('tickets').select('*').eq('company_id', tenantId).limit(10),
-
-    supabase.from('analytics_snapshots')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('recorded_at', { ascending: true })
+    supabase.from('leads').select('*, employees(full_name)').eq('company_id', tenantId),
+    supabase.from('deals').select('amount, status').eq('company_id', tenantId).eq('status', 'won'),
+    supabase.from('view_detailed_revenue_audit').select('*').eq('company_id', tenantId).limit(10),
+    supabase.from('view_lead_source_distribution').select('*').eq('company_id', tenantId),
+    supabase.from('tasks').select('*').eq('company_id', tenantId),
+    supabase.from('tickets').select('*').eq('company_id', tenantId),
+    supabase.from('analytics_snapshots').select('*').eq('tenant_id', tenantId).order('recorded_at', { ascending: true })
   ]);
 
-  // 3. FINANCIAL INTELLIGENCE CALCULATIONS
+  // 3. BUSINESS LOGIC PROCESSING (Section 5.1 & 5.2)
   const rawLeads = leadsReq.data || [];
   const rawDeals = dealsReq.data || [];
+  const snapshots = trendsReq.data || [];
 
-  // 🎯 CALC: Settled Yield (Money in bank)
-  const settledYield = rawDeals.reduce((sum, deal) => sum + (Number(deal.amount) || 0), 0);
-
-  // 🎯 CALC: Potential Yield (Money in pipeline - 'new', 'contacted', 'qualified')
+  // Financial KPIs
+  const settledYield = rawDeals.reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
   const potentialYield = rawLeads
     .filter(l => l.status !== 'won' && l.status !== 'lost')
-    .reduce((sum, lead) => sum + (Number(lead.potential_value) || 0), 0);
+    .reduce((sum, l) => sum + (Number(l.potential_value) || 0), 0);
 
-  // 4. TRANSFORMATION LAYER
-  const unassignedLeads = rawLeads.filter((lead: any) => !lead.employee_id && !lead.employees?.full_name);
-  const unassignedLeadsCount = unassignedLeads.length;
-  const unassignedYieldAtRisk = unassignedLeads.reduce((sum, lead) => sum + (Number(lead.potential_value) || 0), 0);
+  // Growth & Velocity Math
+  const latestSnapshot = snapshots[snapshots.length - 1];
+  const conversionVelocity = latestSnapshot?.conversion_rate || 0;
+  const resolutionRate = ticketsReq.data?.length 
+    ? Math.round((ticketsReq.data.filter(t => t.status === 'resolved').length / ticketsReq.data.length) * 100) 
+    : 100;
 
-  const agentPerformance = transformAgentData(rawLeads.filter(l => !!l.employee_id));
-  
-  const performanceHistory = (trendsReq.data || []).map(s => ({
+  // Data Transformations for Charts
+  const funnelData = transformPipelineData(rawLeads);
+  const agentPerformance = transformAgentData(rawLeads);
+  const performanceHistory = snapshots.map(s => ({
     date: new Date(s.recorded_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-    total: s.leads_count,
-    closed: s.tasks_completed_count,
-    failed: 0,
+    total: s.total_leads_count,
+    closed: s.closed_leads_count,
+    revenue: s.total_revenue_won,
     efficiency: s.conversion_rate
   }));
 
-  const mappedTasks = (tasksReq.data || []).map(t => ({
-    id: t.id,
-    name: t.title,
-    assigned_to: (t as any).employees?.full_name || 'Unassigned',
-    deadline: new Date(t.due_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-    start: new Date(t.created_at).toLocaleDateString('en-GB'),
-    met: t.status === 'completed' ? 1 : 0,
-    objectives: 1,
-    team: [(t as any).employees?.full_name || 'Agent']
-  }));
-
-  const mappedTickets = (ticketsReq.data || []).map(t => ({
-    name: t.title || 'Support Incident',
-    assigned_to: 'Support Agent',
-    initiation: new Date(t.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-    resolution: t.status === 'resolved' || t.status === 'closed' ? 'Resolved' : 'Pending',
-    inbound: Math.floor(Math.random() * 4) + 1,
-    outbound: Math.floor(Math.random() * 2)
-  }));
-
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-32">
-      <div className="max-w-[1400px] mx-auto p-4 lg:p-10 space-y-12 animate-in fade-in duration-1000">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-32 font-sans">
+      <div className="max-w-[1600px] mx-auto p-4 lg:p-10 space-y-10 animate-in fade-in duration-1000">
         
-        {/* --- ROW 1: COMMAND HEADER --- */}
+        {/* --- TIER 1: BRANDED PRODUCT HEADER --- */}
         <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-8 bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 pointer-events-none">
-            <Database size={140} />
+            <Layers size={140} />
           </div>
           <div className="relative z-10 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="h-3 w-3 rounded-full bg-emerald-500 animate-ping" />
-              <h2 className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.5em]">Isolated Workspace Protocol</h2>
+              <div className="h-2 w-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+              <h2 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.5em]">Product Intelligence: {companyReq.data?.plan_type || 'Pro Node'}</h2>
             </div>
             <h1 className="text-6xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
-              {companyReq.data?.name || "Workspace Console"}
+              {companyReq.data?.name || "Merchant Pro"} <span className="text-primary italic">Console</span>
             </h1>
-            <p className="text-slate-500 font-medium italic text-lg">Secure Operational Command • af-south-1 Node</p>
+            <p className="text-slate-500 font-medium italic text-lg max-w-xl">
+              Strategic overview of lead conversion, agent throughput, and settled KES acquisitions.
+            </p>
           </div>
           
           <div className="flex items-center gap-4 relative z-10">
-            <button className="px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:scale-[1.02] active:scale-95 transition-all">
-              Export Tenant Audit
-            </button>
-            <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group cursor-pointer hover:bg-primary hover:text-white transition-all shadow-inner">
-              <Activity className="w-7 h-7 group-hover:rotate-12 transition-transform" />
+            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700">
+               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Node ID</p>
+               <p className="text-xs font-mono font-bold text-slate-900 dark:text-white uppercase tracking-tighter">
+                  {tenantId.slice(0, 14)}...
+               </p>
             </div>
+            <button className="px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.8rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.03] transition-all">
+              Export Audit Trail
+            </button>
           </div>
         </header>
 
-        {/* --- ROW 2: LIVE YIELD VITALS --- */}
-        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
-           {/* Settled Yield Card */}
-           <div className="p-8 bg-emerald-500 text-white rounded-[2.5rem] shadow-xl relative overflow-hidden group">
-              <TrendingUp className="absolute -right-4 -bottom-4 w-24 h-24 opacity-20 rotate-12 group-hover:scale-110 transition-transform" />
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-1">Settled Yield</p>
-              <p className="text-4xl font-black tracking-tighter">
-                {new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(settledYield)}
-              </p>
-              <p className="text-[9px] font-bold mt-4 uppercase opacity-60">Verified Liquid Capital</p>
-           </div>
+        {/* --- TIER 2: BUSINESS MODEL VITALS --- */}
+    {/* --- TIER 2: BUSINESS MODEL VITALS --- */}
+<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+  
+  {/* 1. Settled Revenue - Using Emerald Theme */}
+  <div className="p-6 lg:p-8 bg-emerald-600 text-white rounded-[2.2rem] shadow-xl group flex flex-col justify-between min-w-0">
+    <div className="flex justify-between items-start mb-4">
+      <TrendingUp className="opacity-40 group-hover:scale-110 transition-transform" size={22} />
+      <span className="text-[8px] font-black bg-white/20 px-2 py-1 rounded-md uppercase tracking-widest">Audited</span>
+    </div>
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-1 truncate">Settled Revenue</p>
+      <div className="flex items-baseline gap-1">
+        <span className="text-xs font-bold opacity-60">KES</span>
+        <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black tracking-tighter leading-none truncate">
+          {new Intl.NumberFormat('en-KE').format(settledYield)}
+        </h3>
+      </div>
+    </div>
+  </div>
 
-           {/* Potential Yield Card */}
-           <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] shadow-sm group">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Potential Yield</p>
-              <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter group-hover:text-primary transition-colors">
-                {new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES' }).format(potentialYield)}
-              </p>
-              <p className="text-[9px] font-bold mt-4 uppercase text-primary">Active Pipeline Valuation</p>
-           </div>
-            </div>
+  {/* 2. Pipeline Value - Using Dark/Light Adaptive Theme */}
+  <div className="p-6 lg:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.2rem] shadow-sm flex flex-col justify-between min-w-0">
+    <Target className="text-primary mb-4" size={22} />
+    <div>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 truncate">Pipeline Valuation</p>
+      <div className="flex items-baseline gap-1">
+        <span className="text-xs font-bold text-slate-400">KES</span>
+        <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none truncate">
+          {new Intl.NumberFormat('en-KE').format(potentialYield)}
+        </h3>
+      </div>
+    </div>
+  </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-      
-                <SummaryCards 
-      hideFinancials 
-      className="lg:col-span-2" // 🎯 This matches the 4-col math: 1 + 1 + 2 = 4
-    />
-        </div>
-     
-           
-       
+  {/* 3. Conversion Velocity */}
+  <div className="p-6 lg:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.2rem] shadow-sm flex flex-col justify-between min-w-0">
+    <Zap className="text-amber-500 mb-4" size={22} />
+    <div>
+      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1 truncate">Conv. Velocity</p>
+      <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black text-slate-900 dark:text-white tracking-tighter leading-none">
+        {conversionVelocity}<span className="text-lg ml-0.5 opacity-40">%</span>
+      </h3>
+    </div>
+  </div>
 
-        {/* --- ROW 3: PERFORMANCE & SOURCES --- */}
+  {/* 4. SLA Support Efficiency */}
+  <div className="p-6 lg:p-8 bg-slate-900 text-white rounded-[2.2rem] border border-slate-800 flex flex-col justify-between min-w-0">
+    <BarChart3 className="text-blue-400 mb-4" size={22} />
+    <div>
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mb-1 truncate">SLA Resolution</p>
+      <h3 className="text-2xl sm:text-3xl xl:text-4xl font-black tracking-tighter leading-none">
+        {resolutionRate}<span className="text-lg ml-0.5 opacity-40">%</span>
+      </h3>
+    </div>
+  </div>
+</div>
+
+        {/* --- TIER 3: REVENUE & PIPELINE ANALYTICS (Section 5.0) --- */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
           <div className="xl:col-span-2">
             <PerformanceDeepDive data={performanceHistory} />
           </div>
           <div className="xl:col-span-1">
+            <PipelineFunnel funnelData={funnelData} />
+          </div>
+        </div>
+
+        {/* --- TIER 4: ACQUISITION & SOURCE AUDIT --- */}
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+          <div className="xl:col-span-8">
+             <RevenueAuditTable data={revenueAuditReq.data || []} />
+          </div>
+          <div className="xl:col-span-4">
              <SourceAnalytics data={sourceDistReq.data || []} />
           </div>
         </div>
 
-        {/* --- ROW 4: HUMAN CAPITAL & QUEUE --- */}
-        <section className="space-y-4">
-           {/* UNASSIGNED QUEUE ALERT */}
-           {unassignedLeadsCount > 0 && (
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-10 rounded-[3rem] bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 shadow-sm relative overflow-hidden group">
-              <div className="flex items-center gap-6 relative z-10">
-                <div className="p-4 bg-amber-100 dark:bg-amber-500/20 rounded-2xl text-amber-600 animate-pulse"><AlertTriangle size={28} /></div>
-                <div>
-                  <h3 className="text-2xl font-black text-amber-900 dark:text-amber-400 uppercase tracking-tighter">Unassigned Yield at Risk</h3>
-                  <p className="text-[11px] font-black text-amber-700/70 dark:text-amber-500/70 uppercase tracking-widest mt-1 italic">Immediate Routing Required for {unassignedLeadsCount} Nodes</p>
-                </div>
+        {/* --- TIER 5: AGENT PRODUCTIVITY HIERARCHY --- */}
+        <section className="bg-white dark:bg-slate-900 p-10 rounded-[4rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+           <div className="flex items-center justify-between mb-10">
+              <div className="flex items-center gap-4">
+                 <div className="p-3 bg-primary/10 text-primary rounded-2xl">
+                    <ShieldCheck size={24} />
+                 </div>
+                 <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white italic">Agent Throughput Audit</h2>
               </div>
-              <div className="flex items-center gap-1.5 relative z-10">
-                <span className="text-sm font-black text-rose-500 uppercase">KES</span>
-                <p className="text-5xl font-black text-rose-600 dark:text-rose-400 tracking-tighter leading-none">
-                  {new Intl.NumberFormat('en-KE').format(unassignedYieldAtRisk)}
-                </p>
+              <div className="text-right">
+                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Sales Nodes</p>
+                 <p className="text-xl font-bold text-slate-900 dark:text-white">{agentPerformance.length}</p>
               </div>
-            </div>
-          )}
-
-           <div className="bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-             <AgentReport agents={agentPerformance} />
            </div>
+           <AgentReport agents={agentPerformance} />
         </section>
 
-        {/* --- ROW 5: FINANCIAL AUDIT (Section 5.1) --- */}
-        <RevenueAuditTable data={revenueAuditReq.data || []} />
+      </div>
+    </div>
+  );
+}
 
-        {/* --- ROW 6: TACTICAL & OPERATIONAL (Section 5.2) --- */}
-        <section className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-           <div className="lg:col-span-8 bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-              <div className="flex items-center justify-between mb-10">
-                <div className="flex items-center gap-3">
-                  <Target className="w-5 h-5 text-primary" />
-                  <h3 className="text-2xl font-black uppercase tracking-tighter text-slate-900 dark:text-white leading-none">Workspace Objectives</h3>
-                </div>
-                <Link href="/protected/task-management-board" className="text-[10px] font-black text-primary uppercase flex items-center gap-1 hover:gap-2 transition-all">
-                  Open Board <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {mappedTasks.map((task) => (
-                  <div key={task.id} className="p-6 rounded-[2.2rem] bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 flex items-center justify-between group hover:border-primary/50 transition-all shadow-inner">
-                    <div>
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">{task.name}</p>
-                      <p className="text-[10px] font-black uppercase text-slate-400 mt-1">{task.assigned_to}</p>
-                    </div>
-                    <div className={`h-2.5 w-2.5 rounded-full ${task.met ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-amber-500'}`} />
-                  </div>
-                ))}
-              </div>
-           </div>
-
-           <div className="lg:col-span-4 bg-primary p-12 rounded-[3.5rem] text-white flex flex-col justify-between shadow-2xl relative overflow-hidden">
-              <ShieldCheck className="absolute -bottom-6 -right-6 w-48 h-48 opacity-10 rotate-12" />
-              <div className="relative z-10 space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.4em] opacity-70">Infrastructure Pulse</p>
-                <h3 className="text-4xl font-black uppercase tracking-tighter leading-tight">Node<br/>Operational</h3>
-              </div>
-              <p className="relative z-10 text-[11px] font-medium opacity-80 italic leading-relaxed text-blue-50 pt-10">
-                Instance: {tenantId.slice(0, 16)}...<br/>
-                Throughput Velocity: Optimal<br/>
-                Section 5.2 Compliance: Verified
-              </p>
-           </div>
-        </section>
-
+// Error Boundary for Tenant Isolation Failure
+function NodeIsolatedError() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#020617] p-10 text-center">
+      <div className="max-w-md space-y-6 bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] border-2 border-dashed border-rose-100">
+        <Lock size={64} className="mx-auto text-rose-500 animate-pulse mb-2" />
+        <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white leading-none">Security Loop Isolated</h1>
+        <p className="text-slate-500 text-sm italic">Multi-tenant context missing. Access denied to Merchant Pro analytics node.</p>
+        <Link href="/login" className="block w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px]">Re-Validate Session</Link>
       </div>
     </div>
   );
