@@ -17,7 +17,7 @@ const sidebarItems = [
   { href: "/protected/crm-leads-table", icon: "groups", label: "CRM Leads", roles: ["sales_agent", "admin", "superadmin"] },
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "superadmin"] },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat Inbox", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/support-tickets-list", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "superadmin"] },
+  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "superadmin"] },
 ];
 
 const systemItems = [
