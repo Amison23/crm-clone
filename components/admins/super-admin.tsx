@@ -46,7 +46,7 @@ export function SuperAdmin({ user: authUser }: { user: { id: string; role: strin
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-10">
       {/* Header */}
-      <div className="max-w-7xl mx-auto mb-10">
+      <div className="w-full mb-10">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl md:text-4xl font-black tracking-tight text-slate-900 dark:text-white">
@@ -74,7 +74,7 @@ export function SuperAdmin({ user: authUser }: { user: { id: string; role: strin
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">Active Companies</h2>

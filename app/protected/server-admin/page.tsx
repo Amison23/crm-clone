@@ -67,7 +67,7 @@ const healthData = {
 };
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-10 animate-in fade-in duration-1000 pb-24">
+    <div className="p-8 w-full space-y-10 animate-in fade-in duration-1000 pb-24">
       
       {/* --- BREADCRUMBS --- */}
       <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest px-2">

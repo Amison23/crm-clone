@@ -71,7 +71,7 @@ export default async function SalesAgentPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] p-4 lg:p-10">
-      <div className="max-w-[1500px] mx-auto space-y-10 animate-in fade-in duration-1000">
+      <div className="w-full space-y-10 animate-in fade-in duration-1000">
         
         {/* --- TIER 1: PERSONAL NODE HEADER --- */}
         <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-8 bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">

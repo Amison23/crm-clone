@@ -15,7 +15,7 @@ export default function ThroughputAuditPage() {
   ];
 
   return (
-    <div className="p-8 lg:p-12 space-y-12 max-w-[1400px] mx-auto animate-in slide-in-from-bottom-4 duration-1000">
+    <div className="p-8 lg:p-12 space-y-12 w-full animate-in slide-in-from-bottom-4 duration-1000">
       <header className="space-y-2">
         <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em]">Section 5.2: Node Throughput</h2>
         <h1 className="text-5xl font-black tracking-tighter uppercase text-slate-900 dark:text-white">Platform <span className="text-primary italic">Velocity</span></h1>

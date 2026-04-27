@@ -99,7 +99,7 @@ supabase.from('view_expansive_revenue_audit')
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-32 font-sans">
-      <div className="max-w-[1600px] mx-auto p-4 lg:p-10 space-y-10 animate-in fade-in duration-1000">
+      <div className="w-full p-4 lg:p-10 space-y-10 animate-in fade-in duration-1000">
         
         {/* --- TIER 1: HEADER --- */}
         <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-8 bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">

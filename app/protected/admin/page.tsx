@@ -19,7 +19,7 @@ export default async function AdminPage() {
     .single();
 
   return (
-    <div>
+    <div className="flex-1 w-full mx-auto px-10 py-10 space-y-10 animate-in fade-in duration-700">
       <AdminTabs user={employee} company={company} />
     </div>
   );

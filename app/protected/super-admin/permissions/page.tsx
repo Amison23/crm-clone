@@ -26,7 +26,7 @@ export default async function PermissionsPage() {
   const modules = moduleRows || [];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="w-full space-y-8 animate-in fade-in duration-500">
       <div className="mb-8">
         <h1 className="text-4xl font-black tracking-tighter mb-2 text-slate-900 dark:text-white uppercase">
             Permissions <span className="text-orange-600">Matrix</span>

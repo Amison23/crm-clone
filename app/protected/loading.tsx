@@ -3,7 +3,7 @@
 
 export default function DashboardLoading() {
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-12 pb-20 animate-pulse">
+    <div className="p-8 w-full space-y-12 pb-20 animate-pulse">
       
       {/* --- 1. HEADER SKELETON --- */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-gray-100 dark:border-slate-800 pb-8">

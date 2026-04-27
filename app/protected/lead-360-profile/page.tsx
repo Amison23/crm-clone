@@ -8,7 +8,7 @@ export default function Lead360Profile() {
 
 <div className="w-full flex-1 relative flex flex-col">
 <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 p-6">
-<div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4">
 <div className="flex items-center gap-4">
 <div className="size-16 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-500 overflow-hidden">
 <img alt="" className="object-cover w-full h-full" data-alt="Portrait of a professional man" src="https://ui-avatars.com/api/?name=User&background=random" />
@@ -43,7 +43,7 @@ export default function Lead360Profile() {
 </div>
 </div>
 </div>
-<div className="max-w-7xl mx-auto p-6 grid grid-cols-12 gap-6">
+<div className="w-full p-6 grid grid-cols-12 gap-6">
 <div className="col-span-12 lg:col-span-3 space-y-6">
 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5">
 <h3 className="font-bold text-sm mb-4">Profile Information</h3>

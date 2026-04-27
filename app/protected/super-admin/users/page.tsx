@@ -19,7 +19,7 @@ export default async function UsersPage() {
   ]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="w-full space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <header>
         <h1 className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none italic">
           User <span className="text-orange-600">Governance</span>

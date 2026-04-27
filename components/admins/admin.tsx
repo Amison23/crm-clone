@@ -180,7 +180,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-10">
       {/* Header */}
-      <div className="max-w-7xl mx-auto mb-8">
+      <div className="w-full mb-8">
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="size-14 rounded-2xl overflow-hidden ring-4 ring-white dark:ring-slate-800 shadow-lg bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center">
@@ -219,7 +219,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
       </div>
 
       {/* Tab Bar */}
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <div className="flex gap-1 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm w-fit mb-8">
           {tabs.map((t) => (
             <button

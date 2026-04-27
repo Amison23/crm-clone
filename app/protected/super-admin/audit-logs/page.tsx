@@ -17,7 +17,7 @@ export default async function AuditLogsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+    <div className="w-full space-y-8 animate-in fade-in duration-500">
       <div>
         <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">
             Audit <span className="text-orange-600">Intelligence</span>

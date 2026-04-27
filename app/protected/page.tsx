@@ -2,31 +2,29 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { 
-  Users, 
-  BarChart3, 
+import {
+  Users,
+  BarChart3,
   Settings,
   Bot,
-  ArrowRight,
+  ChevronRight,
   Target,
   ShieldCheck,
-  Zap,
   Globe,
-  Terminal,
   Activity,
   Headset,
   LayoutDashboard,
   Cpu,
   MessageSquare,
-  PhoneCall
 } from "lucide-react";
 
-// Intelligence Engine Components
 import SummaryCards from "@/app/ui/dashboard/analytics/components/SummaryCards";
 
 async function DashboardContent() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
@@ -36,192 +34,243 @@ async function DashboardContent() {
     .eq("id", user.id)
     .single();
 
-  const role = profile?.role || user.user_metadata?.role || 'sales_agent';
-  const fullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || "Operator";
+  const role =
+    profile?.role || user.user_metadata?.role || "sales_agent";
+  const fullName =
+    profile?.full_name ||
+    user.user_metadata?.full_name ||
+    user.email?.split("@")[0] ||
+    "Operator";
 
-  // --- DYNAMIC MODULE ACCESS MATRIX (Direct Folder Mapping) ---
+  const firstName = fullName.split(" ")[0];
+
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
+  const roleLabel = role.replace(/_/g, " ");
+
+  // Module access matrix
   const allLinks = [
-    { 
-      name: "Global Command", 
-      href: "/protected/super-admin", 
-      icon: Globe, 
-      color: "text-purple-500", 
-      bg: "bg-purple-500/10", 
-      roles: ['superadmin'],
-      desc: "Platform-wide management"
+    {
+      name: "Global command",
+      href: "/protected/super-admin",
+      icon: Globe,
+      bg: "bg-purple-100 dark:bg-purple-900/40",
+      iconColor: "text-purple-600 dark:text-purple-400",
+      roles: ["superadmin"],
+      desc: "Platform-wide management",
     },
-    { 
-      name: "Executive Console", 
-      href: "/protected/executive-dashboard", 
-      icon: BarChart3, 
-      color: "text-primary", 
-      bg: "bg-primary/10", 
-      roles: ['admin', 'superadmin'],
-      desc: "Revenue & yield analytics"
+    {
+      name: "Executive console",
+      href: "/protected/executive-dashboard",
+      icon: BarChart3,
+      bg: "bg-blue-100 dark:bg-blue-900/40",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      roles: ["admin", "superadmin"],
+      desc: "Revenue & yield analytics",
     },
-    { 
-      name: "Agent Workspace", 
-      href: "/protected/sales-agent", // 🎯 FIXED: Mapped to 'sales-agent' folder
-      icon: LayoutDashboard, 
-      color: "text-emerald-500", 
-      bg: "bg-emerald-500/10", 
-      roles: ['sales_agent', 'admin', 'superadmin'],
-      desc: "Personal task & pipeline queue"
+    {
+      name: "My workspace",
+      href: "/protected/sales-agent",
+      icon: LayoutDashboard,
+      bg: "bg-green-100 dark:bg-green-900/40",
+      iconColor: "text-green-600 dark:text-green-400",
+      roles: ["sales_agent", "admin", "superadmin"],
+      desc: "Tasks & pipeline queue",
     },
-    { 
-      name: "CRM Leads", 
-      href: "/protected/crm-leads-table", 
-      icon: Users, 
-      color: "text-blue-500", 
-      bg: "bg-blue-500/10", 
-      roles: ['sales_agent', 'admin', 'superadmin'],
-      desc: "Lead acquisition database"
+    {
+      name: "CRM leads",
+      href: "/protected/crm-leads-table",
+      icon: Users,
+      bg: "bg-sky-100 dark:bg-sky-900/40",
+      iconColor: "text-sky-600 dark:text-sky-400",
+      roles: ["sales_agent", "admin", "superadmin"],
+      desc: "Lead acquisition database",
     },
-    { 
-      name: "Omnichannel Inbox", 
-      href: "/protected/omnichannel-chat-inbox", // 🎯 ADDED: Mapped to folder
-      icon: MessageSquare, 
-      color: "text-cyan-500", 
-      bg: "bg-cyan-500/10", 
-      roles: ['sales_agent', 'admin', 'superadmin'],
-      desc: "Live customer communication"
+    {
+      name: "Inbox",
+      href: "/protected/omnichannel-chat-inbox",
+      icon: MessageSquare,
+      bg: "bg-teal-100 dark:bg-teal-900/40",
+      iconColor: "text-teal-600 dark:text-teal-400",
+      roles: ["sales_agent", "admin", "superadmin"],
+      desc: "Live customer communication",
     },
-    { 
-      name: "Task Management", 
-      href: "/protected/task-management-board", 
-      icon: Target, 
-      color: "text-emerald-500", 
-      bg: "bg-emerald-500/10", 
-      roles: ['sales_agent', 'admin', 'superadmin'],
-      desc: "SLA objective board"
+    {
+      name: "Tasks",
+      href: "/protected/task-management-board",
+      icon: Target,
+      bg: "bg-orange-100 dark:bg-orange-900/40",
+      iconColor: "text-orange-600 dark:text-orange-400",
+      roles: ["sales_agent", "admin", "superadmin"],
+      desc: "SLA objective board",
     },
-    { 
-      name: "Support Tickets", 
-      href: "/protected/tickets", // 🎯 FIXED: Mapped to 'tickets' folder
-      icon: Headset, 
-      color: "text-rose-500", 
-      bg: "bg-rose-500/10", 
-      roles: ['sales_agent', 'admin', 'server_admin', 'superadmin'],
-      desc: "Incident resolution node"
+    {
+      name: "Support tickets",
+      href: "/protected/tickets",
+      icon: Headset,
+      bg: "bg-red-100 dark:bg-red-900/40",
+      iconColor: "text-red-600 dark:text-red-400",
+      roles: ["sales_agent", "admin", "server_admin", "superadmin"],
+      desc: "Incident resolution queue",
     },
-    { 
-      name: "Bot Builder", 
-      href: "/protected/visual-bot-builder", 
-      icon: Bot, 
-      color: "text-indigo-500", 
-      bg: "bg-indigo-500/10", 
-      roles: ['admin', 'superadmin'],
-      desc: "AI routing & automation"
+    {
+      name: "Bot builder",
+      href: "/protected/visual-bot-builder",
+      icon: Bot,
+      bg: "bg-indigo-100 dark:bg-indigo-900/40",
+      iconColor: "text-indigo-600 dark:text-indigo-400",
+      roles: ["admin", "superadmin"],
+      desc: "AI routing & automation",
     },
-    { 
-      name: "Infrastructure", 
-      href: "/protected/server-admin", 
-      icon: Cpu, 
-      color: "text-orange-500", 
-      bg: "bg-orange-500/10", 
-      roles: ['server_admin', 'superadmin'],
-      desc: "Node health & server logs"
+    {
+      name: "Infrastructure",
+      href: "/protected/server-admin",
+      icon: Cpu,
+      bg: "bg-amber-100 dark:bg-amber-900/40",
+      iconColor: "text-amber-600 dark:text-amber-400",
+      roles: ["server_admin", "superadmin"],
+      desc: "Node health & server logs",
     },
-    { 
-      name: "Admin Matrix", 
-      href: "/protected/admin-permissions-matrix", 
-      icon: Settings, 
-      color: "text-slate-500", 
-      bg: "bg-slate-500/10", 
-      roles: ['superadmin'],
-      desc: "Global ACL & role provisioning"
+    {
+      name: "Admin matrix",
+      href: "/protected/admin-permissions-matrix",
+      icon: Settings,
+      bg: "bg-slate-100 dark:bg-slate-800",
+      iconColor: "text-slate-600 dark:text-slate-400",
+      roles: ["superadmin"],
+      desc: "Global ACL & role provisioning",
     },
   ];
 
-  const quickLinks = allLinks.filter(link => link.roles.includes(role));
+  const quickLinks = allLinks.filter((link) => link.roles.includes(role));
 
   return (
-    <div className="flex-1 w-full flex flex-col gap-10 p-6 lg:p-12 max-w-7xl mx-auto animate-in fade-in duration-1000">
-      
-      {/* --- PORTAL HEADER --- */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-slate-100 dark:border-slate-800 pb-10">
-        <div className="space-y-2">
-          <div className="flex items-center gap-3 mb-2">
-             <div className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-             <p className="text-[10px] font-black uppercase text-emerald-600 tracking-[0.4em]">Node Connection: af-south-1 Online</p>
-          </div>
-          <h1 className="text-6xl font-black tracking-tighter text-slate-900 dark:text-slate-100 uppercase leading-none">
-            Welcome, {fullName.split(' ')[0]}<span className="text-primary">.</span>
-          </h1>
-          <p className="text-slate-500 dark:text-slate-400 font-medium italic text-lg">
-            Authorized: <span className="font-bold text-slate-700 dark:text-slate-200 uppercase not-italic">{role.replace('_', ' ')}</span> protocol active.
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-           <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
-              <Activity size={20} className="text-primary" />
-           </div>
+    <div className="flex-1 w-full px-10 py-10 space-y-10 animate-in fade-in duration-700">
+
+      {/* ── HEADER ── */}
+      <header className="space-y-3">
+        <p className="text-xs font-medium tracking-widest uppercase text-slate-400 dark:text-slate-500">
+          {today}
+        </p>
+        <h1 className="text-4xl font-semibold tracking-tight text-slate-900 dark:text-white">
+          {greeting}, {firstName}.
+        </h1>
+        <div className="flex items-center gap-2">
+          <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+          <span className="text-sm text-slate-500 dark:text-slate-400 capitalize">
+            {roleLabel} · Active
+          </span>
         </div>
       </header>
 
-      {/* --- INTELLIGENCE SUMMARY --- */}
-    
+      {/* ── STATS ROW ── */}
+      <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Open leads", value: "—", sub: null },
+          { label: "Tasks due today", value: "—", sub: null },
+          { label: "Open tickets", value: "—", sub: null },
+          { label: "Unread messages", value: "—", sub: null },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 space-y-1"
+          >
+            <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+              {stat.label}
+            </p>
+            <p className="text-3xl font-semibold tracking-tight text-slate-800 dark:text-white">
+              {stat.value}
+            </p>
+          </div>
+        ))}
+      </section>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
-        
-        {/* --- DYNAMIC MODULE DIRECTORY --- */}
-        <div className="xl:col-span-2 space-y-8">
-          <h2 className="text-2xl font-black tracking-tight uppercase text-slate-900 dark:text-white flex items-center gap-3">
-            <ShieldCheck className="text-primary" size={24} /> Authorized Protocols
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+      {/* ── MAIN LAYOUT ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {/* ── MODULE GRID ── */}
+        <section className="xl:col-span-2 space-y-4">
+          <p className="text-xs font-medium tracking-widest uppercase text-slate-400 dark:text-slate-500">
+            Quick access
+          </p>
+          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
             {quickLinks.map((link) => {
               const Icon = link.icon;
               return (
                 <Link key={link.href} href={link.href}>
-                  <div className="group flex flex-col p-8 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-primary/50 hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer relative overflow-hidden h-full">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className={`p-4 rounded-2xl ${link.bg} ${link.color} group-hover:scale-110 transition-transform duration-500 relative z-10`}>
-                        <Icon className="w-7 h-7" />
-                      </div>
-                      <ArrowRight className="w-5 h-5 text-slate-300 group-hover:text-primary opacity-0 group-hover:opacity-100 -translate-x-4 group-hover:translate-x-0 transition-all relative z-10" />
+                  <div className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${link.bg}`}
+                    >
+                      <Icon className={`w-5 h-5 ${link.iconColor}`} />
                     </div>
-                    
-                    <div className="relative z-10">
-                      <h3 className="font-black text-lg uppercase tracking-tight text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-slate-800 dark:text-slate-100 capitalize">
                         {link.name}
-                      </h3>
-                      <p className="text-[11px] font-medium text-slate-400 mt-1 italic">{link.desc}</p>
+                      </p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                        {link.desc}
+                      </p>
                     </div>
-                    
-                    <div className={`absolute -right-4 -bottom-4 w-24 h-24 rounded-full opacity-0 group-hover:opacity-5 transition-opacity ${link.bg}`} />
+                    <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-400 dark:group-hover:text-slate-400 transition-colors shrink-0" />
                   </div>
                 </Link>
               );
             })}
           </div>
-        </div>
+        </section>
 
-        {/* --- SYSTEM TELEMETRY SIDEBAR --- */}
-        <div className="space-y-8">
-          <h2 className="text-2xl font-black tracking-tight uppercase text-slate-900 dark:text-white flex items-center gap-3">
-            <Terminal size={24} className="text-emerald-500" /> Node Status
-          </h2>
-          <div className="bg-[#050505] p-10 rounded-[3rem] border border-slate-800 shadow-2xl font-mono text-[11px] space-y-4 text-slate-400 relative overflow-hidden">
-              <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]" />
-              
-              <div className="flex items-center gap-3 border-b border-white/5 pb-4 mb-2 text-emerald-500">
-                <p className="font-bold tracking-[0.3em] uppercase">// Session_Audit</p>
+        {/* ── SESSION SIDEBAR ── */}
+        <section className="space-y-4">
+          <p className="text-xs font-medium tracking-widest uppercase text-slate-400 dark:text-slate-500">
+            Session
+          </p>
+          <div className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden">
+            {[
+              { key: "User ID", value: user.id.slice(0, 8) },
+              { key: "Role", value: roleLabel },
+              { key: "Access", value: "Verified", green: true },
+              { key: "Region", value: "af-south-1" },
+            ].map((row) => (
+              <div
+                key={row.key}
+                className="flex items-center justify-between px-5 py-3.5"
+              >
+                <span className="text-sm text-slate-400 dark:text-slate-500">
+                  {row.key}
+                </span>
+                <span
+                  className={`text-sm font-medium capitalize ${
+                    row.green
+                      ? "text-green-500"
+                      : "text-slate-700 dark:text-slate-200"
+                  }`}
+                >
+                  {row.value}
+                </span>
               </div>
-              
-              <p className="flex gap-4"><span className="text-slate-600 shrink-0">[INIT]</span> <span className="text-blue-500 font-bold w-12">UID</span> {user.id.slice(0,8)}</p>
-              <p className="flex gap-4"><span className="text-slate-600 shrink-0">[SYNC]</span> <span className="text-emerald-500 font-bold w-12">ROLE</span> {role}</p>
-              <p className="flex gap-4"><span className="text-slate-600 shrink-0">[AUTH]</span> <span className="text-amber-500 font-bold w-12">ACL</span> Verified_V3</p>
-              
-              <div className="flex items-center gap-3 pt-6 border-t border-white/5 mt-4">
-                <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-ping" />
-                <p className="italic text-[9px] text-emerald-500/50 uppercase tracking-widest" suppressHydrationWarning>
-                  Sync_Time: {new Date().toLocaleTimeString()}
-                </p>
-              </div>
+            ))}
           </div>
-        </div>
+
+          {/* Live indicator */}
+          <div className="flex items-center gap-2.5 px-1">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+            </span>
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Connected · af-south-1
+            </p>
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -229,17 +278,19 @@ async function DashboardContent() {
 
 export default function ProtectedPage() {
   return (
-    <Suspense fallback={<EstablishingNodeLoader />}>
+    <Suspense fallback={<PageLoader />}>
       <DashboardContent />
     </Suspense>
   );
 }
 
-function EstablishingNodeLoader() {
+function PageLoader() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center space-y-4 bg-[#f8fafc] dark:bg-[#020617]">
-       <div className="h-12 w-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-       <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.5em] animate-pulse">Establishing Node Link...</p>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-3">
+      <div className="h-8 w-8 border-2 border-slate-200 dark:border-slate-700 border-t-slate-500 dark:border-t-slate-300 rounded-full animate-spin" />
+      <p className="text-xs text-slate-400 dark:text-slate-500 tracking-widest uppercase">
+        Loading
+      </p>
     </div>
   );
 }

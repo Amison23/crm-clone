@@ -43,7 +43,7 @@ export default async function SuperAdminOverview() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in duration-700">
+    <div className="w-full space-y-10 animate-in fade-in duration-700">
       <header>
         <h1 className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
           Command <span className="text-orange-600">Center</span>
