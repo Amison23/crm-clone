@@ -46,6 +46,11 @@ export async function updateSession(request: NextRequest) {
   // with the Supabase client, your users may be randomly logged out.
   const { data: { user } } = await supabase.auth.getUser();
 
+  // If user is logged in and trying to access the landing page, send them to dashboard
+  if (user && request.nextUrl.pathname === "/") {
+    return NextResponse.redirect(new URL("/protected", request.url));
+  }
+
   if (
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
