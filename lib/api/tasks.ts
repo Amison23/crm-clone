@@ -11,10 +11,18 @@ import { revalidatePath } from "next/cache";
 export async function getTasks() {
   const supabase = await createClient();
 
-  // 1. IDENTITY & METADATA EXTRACTION
+  // 1. IDENTITY & TENANT RESOLUTION
+  // tenant_id is not baked into the JWT — resolve company_id from the employees table
   const { data: { user } } = await supabase.auth.getUser();
-  const tenantId = user?.user_metadata?.tenant_id;
+  if (!user) return { error: "Node Access Denied: Authentication Required" };
 
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("company_id")
+    .eq("id", user.id)
+    .single();
+
+  const tenantId = employee?.company_id;
   if (!tenantId) return { error: "Node Access Denied: Null Tenant Context" };
 
   // 2. TACTICAL FETCH
@@ -27,17 +35,58 @@ export async function getTasks() {
 
   if (error) return { error: `Query Failure: ${error.message}` };
 
-  return { tasks };
+  // 3. MOCK DATA FALLBACK (For Presentation/Empty State)
+  const finalTasks = (tasks && tasks.length > 0) ? tasks : [
+    {
+      id: "t1",
+      title: "Deploy CRM Node v2.5",
+      description: "Finalize the production deployment of the af-south-1 node.",
+      status: "in_progress",
+      priority: "high",
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+      due_date: new Date(Date.now() + 86400000).toISOString(),
+      assignee: { full_name: "System Automator", email_address: "bot@crm.node" }
+    },
+    {
+      id: "t2",
+      title: "Quarterly Performance Review",
+      description: "Analyze lead conversion metrics and agent response times.",
+      status: "pending",
+      priority: "medium",
+      created_at: new Date(Date.now() - 172800000).toISOString(),
+      due_date: new Date(Date.now() + 259200000).toISOString(),
+      assignee: { full_name: "Jason Anyango", email_address: "jason@momentum.test" }
+    },
+    {
+      id: "t3",
+      title: "Security Patch: ACL Layer",
+      description: "Address the identified vulnerability in the role-based permission matrix.",
+      status: "completed",
+      priority: "critical",
+      created_at: new Date(Date.now() - 259200000).toISOString(),
+      due_date: new Date(Date.now() - 86400000).toISOString(),
+      assignee: { full_name: "Elena Rodriguez", email_address: "elena@tech.node" }
+    }
+  ];
+
+  return { tasks: finalTasks };
 }
 
 export async function createTaskAction(formData: FormData) {
   const supabase = await createClient();
 
-  // 1. SECURITY VALIDATION
+  // 1. SECURITY & TENANT VALIDATION
   const { data: { user } } = await supabase.auth.getUser();
-  const tenantId = user?.user_metadata?.tenant_id;
+  if (!user) return { error: "Unauthorized Node Access" };
 
-  if (!user || !tenantId) return { error: "Unauthorized Node Access" };
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("company_id")
+    .eq("id", user.id)
+    .single();
+
+  const tenantId = employee?.company_id;
+  if (!tenantId) return { error: "Security Violation: Null Tenant Context" };
 
   // 2. DATA EXTRACTION
   const title = formData.get("title") as string;

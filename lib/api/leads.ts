@@ -11,43 +11,54 @@ import { revalidatePath } from "next/cache";
 export async function createLeadAction(formData: FormData) {
   const supabase = await createClient();
 
-  // 1. IDENTITY & METADATA EXTRACTION
-  // HCI: Reducing DB hops by using JWT metadata instead of querying 'employees' table
+  // 1. IDENTITY & TENANT RESOLUTION
+  // tenant_id is not baked into the JWT — resolve company_id from the employees table
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: "Node Access Denied: Authentication Required" };
 
-  const tenant_id = user.user_metadata?.tenant_id;
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("company_id")
+    .eq("id", user.id)
+    .single();
+
+  const tenant_id = employee?.company_id;
   if (!tenant_id) return { error: "Security Violation: Null Tenant Context" };
 
   // 2. DATA EXTRACTION
-  const first_name = formData.get("first_name") as string;
-  const last_name = formData.get("last_name") as string;
-  const company_name = formData.get("company_name") as string;
+  const client_name = formData.get("client_name") as string;
+  const contact_name = formData.get("contact_name") as string;
+  const client_phone = formData.get("client_phone") as string;
   const email = formData.get("email") as string;
-  const phone = formData.get("phone") as string;
-  const source = formData.get("source") as string;
   const status = formData.get("status") as string;
-  const potential_value = formData.get("potential_value") as string;
+  const institution_type = formData.get("institution_type") as string;
+  const product = formData.get("product") as string;
+  const next_action = formData.get("next_action") as string;
+  const next_action_date = formData.get("next_action_date") as string;
+  const need_identified = formData.get("need_identified") as string;
+  const notes = formData.get("notes") as string;
 
   // 3. VALIDATION
-  if (!first_name || !phone) {
-    return { error: "HCI Requirement: Primary fields (Name/Phone) cannot be null." };
+  if (!client_name || !client_phone || !product) {
+    return { error: "Security/HCI Requirement: Client Name, Phone, and Product are mandatory." };
   }
 
   // 4. PERSISTENCE
-  // Logic: Using 'employee_id' to match your DDL schema exactly
   const { error } = await supabase.from("leads").insert([
     {
       company_id: tenant_id,
       employee_id: user.id, 
-      first_name,
-      last_name,
-      company_name,
+      client_name,
+      contact_name,
+      client_phone,
       email,
-      phone,
-      source: source || "Direct Entry",
       status: status || "new",
-      potential_value: parseFloat(potential_value) || 0,
+      institution_type,
+      product,
+      next_action,
+      next_action_date,
+      need_identified,
+      notes,
     },
   ]);
 
@@ -101,11 +112,18 @@ export async function deleteLeadAction(leadId: string) {
 
 export async function getLeads() {
   const supabase = await createClient();
-  
-  // Logic: Directly get tenant from metadata for max speed
-  const { data: { user } } = await supabase.auth.getUser();
-  const tenantId = user?.user_metadata?.tenant_id;
 
+  // Resolve tenant from employees table — tenant_id is not stored in the JWT metadata
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("company_id")
+    .eq("id", user.id)
+    .single();
+
+  const tenantId = employee?.company_id;
   if (!tenantId) return { error: "No active tenant node found." };
 
   const { data: leads, error } = await supabase
