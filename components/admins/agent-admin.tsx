@@ -11,7 +11,13 @@ export function AgentDashboard({ userId, companyId }: { userId?: string; company
   const [tickets, setTickets] = useState<any[]>([])
   const [employees, setEmployees] = useState<any[]>([])
   const [companies, setCompanies] = useState<any[]>([])
-  const [me, setMe] = useState<any>({ name: "Loading...", avatar: "", role: "", status: "", email: "" })
+  const [me, setMe] = useState<any>({ 
+    name: "User", 
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=User", 
+    role: "Agent", 
+    status: "Online", 
+    email: "" 
+  })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
