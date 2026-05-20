@@ -7,19 +7,19 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
-  { href: "/protected", icon: "dashboard", label: "Dashboard" },
-  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive" },
-  { href: "/protected/crm-leads-table", icon: "groups", label: "Leads" },
-  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks" },
-  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat" },
-  { href: "/protected/tickets", icon: "support_agent", label: "Support" },
-  { href: "/protected/admin", icon: "admin_panel_settings", label: "Admin" },
+  { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "super_admin"] },
+  { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "super_admin"] },
+  { href: "/protected/admin", icon: "admin_panel_settings", label: "Admin", roles: ["admin", "super_admin"] },
 ];
 
 const systemItems = [
-  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder" },
-  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder" },
-  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony" },
+  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles:["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles:["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles:["sales_agent", "admin", "super_admin"] },
 ];
 export default function DashboardShell({ children, role, name }: { children: ReactNode; role?: string; name?: string }) {
   const router = useRouter();
@@ -37,6 +37,10 @@ export default function DashboardShell({ children, role, name }: { children: Rea
     setSidebarOpen(false);
   }, [pathname]);
 
+  // Filter items based on role
+  const filteredNav = navItems.filter(item => item.roles?.includes(role || "sales_agent"));
+  const filteredSystem = systemItems.filter(item => item.roles?.includes(role || "sales_agent"));
+
   /* ── Sidebar content (shared between desktop & mobile) ── */
   const sidebarContent = (
     <>
@@ -47,13 +51,13 @@ export default function DashboardShell({ children, role, name }: { children: Rea
         </div>
         <div>
           <h2 className="text-lg font-bold leading-tight tracking-tight">CRM Executive</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Admin Console</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{role} Console</p>
         </div>
       </div>
 
       {/* Nav */}
       <nav className="flex-1 px-4 space-y-1">
-        {navItems.map(({ href, icon, label }) => {
+        {filteredNav.map(({ href, icon, label }) => {
           const isActive = href === "/protected"
             ? pathname === href
             : pathname.startsWith(href);
@@ -79,7 +83,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
           </p>
         </div>
 
-        {systemItems.map(({ href, icon, label }) => {
+        {filteredSystem.map(({ href, icon, label }) => {
           const isActive = pathname.startsWith(href);
           return (
             <Link
@@ -96,6 +100,31 @@ export default function DashboardShell({ children, role, name }: { children: Rea
             </Link>
           );
         })}
+
+        {/* ── Personal Throughput (Dummy Data) ── */}
+        <div className="pt-8 pb-4 px-3">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">
+            Throughput
+          </p>
+          <div className="space-y-4">
+            {role === 'super_admin' ? (
+              <>
+                <SidebarProgress label="Node Deployment" value={82} color="bg-indigo-500" />
+                <SidebarProgress label="Security Audit" value={95} color="bg-emerald-500" />
+              </>
+            ) : role === 'admin' ? (
+              <>
+                <SidebarProgress label="Team Objectives" value={64} color="bg-indigo-500" />
+                <SidebarProgress label="SLA Compliance" value={88} color="bg-blue-500" />
+              </>
+            ) : (
+              <>
+                <SidebarProgress label="Daily Outreach" value={45} color="bg-indigo-500" />
+                <SidebarProgress label="Lead Follow-up" value={72} color="bg-amber-500" />
+              </>
+            )}
+          </div>
+        </div>
       </nav>
 
       {/* User footer */}
@@ -213,6 +242,23 @@ export default function DashboardShell({ children, role, name }: { children: Rea
           </div>
         </footer>
       </main>
+    </div>
+  );
+}
+
+function SidebarProgress({ label, value, color }: { label: string, value: number, color: string }) {
+  return (
+    <div className="space-y-2 px-1">
+      <div className="flex justify-between items-center text-[10px] font-medium uppercase tracking-tight">
+        <span className="text-slate-500 dark:text-slate-400">{label}</span>
+        <span className="text-slate-700 dark:text-slate-200">{value}%</span>
+      </div>
+      <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div 
+          className={`h-full ${color} transition-all duration-1000 shadow-[0_0_8px_rgba(var(--tw-shadow-color),0.5)]`} 
+          style={{ width: `${value}%` }}
+        />
+      </div>
     </div>
   );
 }

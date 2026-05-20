@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
@@ -14,12 +13,6 @@ export const metadata: Metadata = {
   description: "The fastest way to build apps with Next.js and Supabase"
 };
 
-const inter = Inter({
-  variable: "--font-inter",
-  display: "swap",
-  subsets: ["latin"],
-});
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,7 +26,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         />
       </head>
-      <body className={`${inter.className} antialiased`}>
+      <body className="antialiased font-sans">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

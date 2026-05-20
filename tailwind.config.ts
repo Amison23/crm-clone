@@ -59,6 +59,19 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ["'Plus Jakarta Sans'", "sans-serif"],
+        native: [
+          "system-ui",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          '"Segoe UI"',
+          "Roboto",
+          '"Helvetica Neue"',
+          "Arial",
+          "sans-serif"
+        ],
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

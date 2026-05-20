@@ -7,22 +7,22 @@ import { createClient } from "@/lib/supabase/client";
 // --- 1. DYNAMIC ACL CONFIGURATION ---
 const sidebarItems = [
   // CORE NODES
-  { href: "/protected", icon: "dashboard", label: "Portal Home", roles: ["sales_agent", "admin", "superadmin", "server_admin"] },
-  { href: "/protected/super-admin", icon: "language", label: "Global Plane", roles: ["superadmin"] },
-  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin"] },
-  { href: "/protected/server-admin", icon: "dns", label: "Server Node", roles: ["server_admin", "superadmin"] },
-  { href: "/protected/sales-agent", icon: "badge", label: "My Workspace", roles: ["sales_agent", "admin", "superadmin"] },
+  { href: "/protected", icon: "dashboard", label: "Portal Home", roles: ["sales_agent", "admin", "super_admin", "server_admin"] },
+  { href: "/protected/super-admin", icon: "language", label: "Global Plane", roles: ["super_admin"] },
+  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "super_admin"] },
+  { href: "/protected/server-admin", icon: "dns", label: "Server Node", roles: ["server_admin", "super_admin"] },
+  { href: "/protected/sales-agent", icon: "badge", label: "My Workspace", roles: ["sales_agent", "admin", "super_admin"] },
   
   // OPERATIONS (Shared)
-  { href: "/protected/crm-leads-table", icon: "groups", label: "CRM Leads", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat Inbox", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "superadmin"] },
+  { href: "/protected/crm-leads-table", icon: "groups", label: "CRM Leads", roles: ["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat Inbox", roles: ["sales_agent", "admin", "super_admin"] },
+  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "super_admin"] },
 ];
 
 const systemItems = [
-  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles: ["admin", "superadmin"] },
-  { href: "/protected/admin-permissions-matrix", icon: "settings_accessibility", label: "Permissions", roles: ["superadmin"] },
+  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles: ["admin", "super_admin"] },
+  { href: "/protected/admin-permissions-matrix", icon: "settings_accessibility", label: "Permissions", roles: ["super_admin"] },
 ];
 
 export function Sidebar({ role = "sales_agent" }: { role?: string }) {

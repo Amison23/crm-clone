@@ -4,8 +4,17 @@ import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRight, LayoutDashboard, MessageSquare, PhoneCall, Users } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    return redirect("/protected");
+  }
+
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center overflow-x-hidden selection:bg-primary/30">
       {/* Dynamic Backgrounds */}
