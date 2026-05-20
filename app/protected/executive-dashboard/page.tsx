@@ -24,11 +24,34 @@ export default async function ExecutiveDashboard() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const tenantId = user.user_metadata?.tenant_id;
-  const userRole = user.user_metadata?.role;
+  let tenantId = user.user_metadata?.tenant_id;
+  let userRole = user.user_metadata?.role;
 
-  if (userRole === 'sales_agent') redirect('/protected/agent-workspace');
-  if (!tenantId) return <NodeIsolatedError />;
+  // Fallback to employees table if metadata is missing
+  if (!tenantId || !userRole) {
+    const { data: employee } = await supabase
+      .from('employees')
+      .select('role, company_id')
+      .eq('id', user.id)
+      .single();
+    
+    if (employee) {
+      tenantId = tenantId || employee.company_id;
+      userRole = userRole || employee.role;
+    }
+  }
+
+  if (userRole === 'sales_agent') redirect('/protected/sales-agent');
+  
+  if (!tenantId) {
+    // For presentation purposes, if no tenant is linked, try to get the first company
+    const { data: firstCompany } = await supabase.from('companies').select('id').limit(1).single();
+    if (firstCompany) {
+      tenantId = firstCompany.id;
+    } else {
+      return <NodeIsolatedError />;
+    }
+  }
 
   const { data: company } = await supabase
     .from('companies')
@@ -123,7 +146,7 @@ supabase.from('view_expansive_revenue_audit')
             <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700">
                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Node ID</p>
                <p className="text-xs font-mono font-bold text-slate-900 dark:text-white uppercase tracking-tighter">
-                  {tenantId.slice(0, 14)}...
+                  {tenantId?.slice(0, 14)}...
                </p>
             </div>
             <button className="px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.8rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.03] transition-all active:scale-95">

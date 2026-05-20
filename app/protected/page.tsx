@@ -30,7 +30,7 @@ async function DashboardContent() {
 
   const { data: profile } = await supabase
     .from("employees")
-    .select("role, full_name")
+    .select("role, full_name, companies(name)")
     .eq("id", user.id)
     .single();
 
@@ -56,6 +56,10 @@ async function DashboardContent() {
 
   const roleLabel = role.replace(/_/g, " ");
 
+  // Resolve the company/platform name the agent is assigned to
+  const companyData = profile?.companies as unknown as { name: string } | null;
+  const platformLabel = companyData?.name ?? "Unassigned";
+
   // Module access matrix
   const allLinks = [
     {
@@ -64,44 +68,18 @@ async function DashboardContent() {
       icon: Globe,
       bg: "bg-purple-100 dark:bg-purple-900/40",
       iconColor: "text-purple-600 dark:text-purple-400",
-      roles: ["superadmin"],
+      roles: ["super_admin"],
       desc: "Platform-wide management",
     },
-    {
-      name: "Executive console",
-      href: "/protected/executive-dashboard",
-      icon: BarChart3,
-      bg: "bg-blue-100 dark:bg-blue-900/40",
-      iconColor: "text-blue-600 dark:text-blue-400",
-      roles: ["admin", "superadmin"],
-      desc: "Revenue & yield analytics",
-    },
+    // agent needs this
     {
       name: "My workspace",
       href: "/protected/sales-agent",
       icon: LayoutDashboard,
       bg: "bg-green-100 dark:bg-green-900/40",
       iconColor: "text-green-600 dark:text-green-400",
-      roles: ["sales_agent", "admin", "superadmin"],
+      roles: ["sales_agent", "admin", "super_admin"],
       desc: "Tasks & pipeline queue",
-    },
-    {
-      name: "CRM leads",
-      href: "/protected/crm-leads-table",
-      icon: Users,
-      bg: "bg-sky-100 dark:bg-sky-900/40",
-      iconColor: "text-sky-600 dark:text-sky-400",
-      roles: ["sales_agent", "admin", "superadmin"],
-      desc: "Lead acquisition database",
-    },
-    {
-      name: "Inbox",
-      href: "/protected/omnichannel-chat-inbox",
-      icon: MessageSquare,
-      bg: "bg-teal-100 dark:bg-teal-900/40",
-      iconColor: "text-teal-600 dark:text-teal-400",
-      roles: ["sales_agent", "admin", "superadmin"],
-      desc: "Live customer communication",
     },
     {
       name: "Tasks",
@@ -109,16 +87,17 @@ async function DashboardContent() {
       icon: Target,
       bg: "bg-orange-100 dark:bg-orange-900/40",
       iconColor: "text-orange-600 dark:text-orange-400",
-      roles: ["sales_agent", "admin", "superadmin"],
+      roles: ["sales_agent", "admin", "super_admin"],
       desc: "SLA objective board",
     },
+    // agent needs this
     {
       name: "Support tickets",
       href: "/protected/tickets",
       icon: Headset,
       bg: "bg-red-100 dark:bg-red-900/40",
       iconColor: "text-red-600 dark:text-red-400",
-      roles: ["sales_agent", "admin", "server_admin", "superadmin"],
+      roles: ["sales_agent", "admin", "server_admin", "super_admin"],
       desc: "Incident resolution queue",
     },
     {
@@ -127,17 +106,8 @@ async function DashboardContent() {
       icon: Bot,
       bg: "bg-indigo-100 dark:bg-indigo-900/40",
       iconColor: "text-indigo-600 dark:text-indigo-400",
-      roles: ["admin", "superadmin"],
+      roles: ["admin", "super_admin"],
       desc: "AI routing & automation",
-    },
-    {
-      name: "Infrastructure",
-      href: "/protected/server-admin",
-      icon: Cpu,
-      bg: "bg-amber-100 dark:bg-amber-900/40",
-      iconColor: "text-amber-600 dark:text-amber-400",
-      roles: ["server_admin", "superadmin"],
-      desc: "Node health & server logs",
     },
     {
       name: "Admin matrix",
@@ -145,12 +115,42 @@ async function DashboardContent() {
       icon: Settings,
       bg: "bg-slate-100 dark:bg-slate-800",
       iconColor: "text-slate-600 dark:text-slate-400",
-      roles: ["superadmin"],
+      roles: ["super_admin"],
       desc: "Global ACL & role provisioning",
     },
   ];
 
   const quickLinks = allLinks.filter((link) => link.roles.includes(role));
+
+  // Role-based dummy stats
+  const getStats = () => {
+    switch (role) {
+      case 'super_admin':
+        return [
+          { label: "Global Leads", value: "1,240", sub: "+12% this month" },
+          { label: "Active Nodes", value: "48", sub: "Operational" },
+          { label: "Total Revenue", value: "KES 12.4M", sub: "KES 1.2M today" },
+          { label: "System Health", value: "99.9%", sub: "af-south-1" },
+        ];
+      case 'admin':
+        return [
+          { label: "Company Leads", value: "342", sub: "12 new today" },
+          { label: "Team Tasks", value: "18", sub: "5 high priority" },
+          { label: "Resolved Tickets", value: "89", sub: "92% SLA" },
+          { label: "Active Agents", value: "6", sub: "4 online" },
+        ];
+      case 'sales_agent':
+      default:
+        return [
+          { label: "My Leads", value: "24", sub: "3 new" },
+          { label: "Tasks Due Today", value: "5", sub: "2 high priority" },
+          { label: "Open Tickets", value: "8", sub: "2 pending" },
+          { label: "Unread Messages", value: "14", sub: "5 from clients" },
+        ];
+    }
+  };
+
+  const stats = getStats();
 
   return (
     <div className="flex-1 w-full px-10 py-10 space-y-10 animate-in fade-in duration-700">
@@ -173,15 +173,10 @@ async function DashboardContent() {
 
       {/* ── STATS ROW ── */}
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Open leads", value: "—", sub: null },
-          { label: "Tasks due today", value: "—", sub: null },
-          { label: "Open tickets", value: "—", sub: null },
-          { label: "Unread messages", value: "—", sub: null },
-        ].map((stat) => (
+        {stats.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 space-y-1"
+            className="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-5 space-y-1 hover:border-indigo-500/30 transition-all cursor-default group"
           >
             <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide">
               {stat.label}
@@ -189,6 +184,11 @@ async function DashboardContent() {
             <p className="text-3xl font-semibold tracking-tight text-slate-800 dark:text-white">
               {stat.value}
             </p>
+            {stat.sub && (
+              <p className="text-[10px] text-slate-400 dark:text-slate-600 font-medium group-hover:text-indigo-500 transition-colors">
+                {stat.sub}
+              </p>
+            )}
           </div>
         ))}
       </section>
@@ -197,7 +197,7 @@ async function DashboardContent() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         {/* ── MODULE GRID ── */}
-        <section className="xl:col-span-2 space-y-4">
+        {/* <section className="xl:col-span-2 space-y-4">
           <p className="text-xs font-medium tracking-widest uppercase text-slate-400 dark:text-slate-500">
             Quick access
           </p>
@@ -226,7 +226,7 @@ async function DashboardContent() {
               );
             })}
           </div>
-        </section>
+        </section> */}
 
         {/* ── SESSION SIDEBAR ── */}
         <section className="space-y-4">
@@ -238,7 +238,7 @@ async function DashboardContent() {
               { key: "User ID", value: user.id.slice(0, 8) },
               { key: "Role", value: roleLabel },
               { key: "Access", value: "Verified", green: true },
-              { key: "Region", value: "af-south-1" },
+              { key: "Platform", value: platformLabel },
             ].map((row) => (
               <div
                 key={row.key}
@@ -258,17 +258,6 @@ async function DashboardContent() {
                 </span>
               </div>
             ))}
-          </div>
-
-          {/* Live indicator */}
-          <div className="flex items-center gap-2.5 px-1">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-            </span>
-            <p className="text-xs text-slate-400 dark:text-slate-500">
-              Connected · af-south-1
-            </p>
           </div>
         </section>
       </div>
