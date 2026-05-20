@@ -11,13 +11,17 @@ import {
   History, 
   LayoutDashboard,
   ShieldAlert,
-  Smartphone
+  Smartphone,
+  User,
+  Glasses
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
-  { name: "Overview", href: "/protected/super-admin/overview", icon: LayoutDashboard },
+  {name: "Home", href: "/protected/super-admin", icon: LayoutDashboard},
+  { name: "Overview", href: "/protected/super-admin/overview", icon: Glasses },
   { name: "Tenants", href: "/protected/super-admin/tenants", icon: Building2 },
+  { name: "Agent Management", href: "/protected/super-admin/agents", icon: User },
   { name: "Users", href: "/protected/super-admin/users", icon: Users },
   { name: "Telephony", href: "/protected/super-admin/telephony", icon: Smartphone },
   { name: "Permissions", href: "/protected/super-admin/permissions", icon: ShieldCheck },

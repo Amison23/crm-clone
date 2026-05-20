@@ -48,6 +48,18 @@ export async function logAction(
   });
 }
 
+// --- HELPERS ---
+
+function slugify(text: string) {
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")     // Replace spaces with -
+    .replace(/[^\w-]+/g, "")   // Remove all non-word chars
+    .replace(/--+/g, "-");     // Replace multiple - with single -
+}
+
 // --- TENANT ACTIONS ---
 
 export async function createTenant(name: string) {
@@ -58,7 +70,10 @@ export async function createTenant(name: string) {
  
   const { data, error } = await supabase
     .from("companies")
-    .insert({ name })
+    .insert({ 
+      name,
+      slug: slugify(name)
+    })
     .select()
     .single();
  
@@ -66,7 +81,7 @@ export async function createTenant(name: string) {
     return { success: false, error: error.message };
   }
  
-  await logAction(supabase, "CREATE_TENANT", "company", data.id, { name });
+  await logAction(supabase, "CREATE_TENANT", "company", data.id, { name, slug: data.slug });
   return { success: true, data };
 }
 
@@ -81,7 +96,10 @@ export async function updateTenant(id: string, name: string) {
  
   const { error } = await supabase
     .from("companies")
-    .update({ name })
+    .update({ 
+      name,
+      slug: slugify(name)
+    })
     .eq("id", id);
  
   if (error) {
@@ -183,6 +201,67 @@ export async function updateUserRole(userId: string, role: string, companyId?: s
   });
   return { success: true };
 }
+
+export async function assignLead(leadId: string, employeeId: string) {
+  const supabase = await createClient();
+  if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
+
+  const { error } = await supabase
+    .from("leads")
+    .update({ employee_id: employeeId })
+    .eq("id", leadId);
+
+  if (error) return { success: false, error: error.message };
+
+  await logAction(supabase, "ASSIGN_LEAD", "lead", leadId, { employee_id: employeeId });
+  return { success: true };
+}
+
+export async function assignAgentToProduct(agentId: string, productId: string) {
+  const supabase = await createClient();
+  if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
+
+  const { error } = await supabase
+    .from("agent_products")
+    .upsert({ agent_id: agentId, product_id: productId });
+
+  if (error) return { success: false, error: error.message };
+
+  await logAction(supabase, "ASSIGN_AGENT_PRODUCT", "agent_product", `${agentId}:${productId}`, { agent_id: agentId, product_id: productId });
+  return { success: true };
+}
+
+export async function unassignAgentFromProduct(agentId: string, productId: string) {
+  const supabase = await createClient();
+  if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
+
+  const { error } = await supabase
+    .from("agent_products")
+    .delete()
+    .match({ agent_id: agentId, product_id: productId });
+
+  if (error) return { success: false, error: error.message };
+
+  await logAction(supabase, "UNASSIGN_AGENT_PRODUCT", "agent_product", `${agentId}:${productId}`, { agent_id: agentId, product_id: productId });
+  return { success: true };
+}
+
+export async function createAgent(data: { full_name: string, email_address: string, role: string, company_id: string | null }) {
+  const supabase = await createClient();
+  if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
+
+  const { data: employee, error } = await supabase
+    .from("employees")
+    .insert([data])
+    .select()
+    .single();
+
+  if (error) return { success: false, error: error.message };
+
+  await logAction(supabase, "CREATE_AGENT", "employee", employee.id, data);
+  return { success: true, data: employee };
+}
+
 
 // --- TELEPHONY ACTIONS ---
 
@@ -317,4 +396,23 @@ export async function updateSystemSetting(key: string, value: unknown) {
  
   await logAction(supabase, "UPDATE_SETTING", "system_setting", key, { value });
   return { success: true };
+}
+
+export async function createProduct(data: { name: string, description: string }) {
+  const supabase = await createClient();
+  if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
+
+  // Generate a mock API key (usually this would be done by a database trigger or a more secure method)
+  const apiKey = `pk_${Math.random().toString(36).substring(2, 15)}_${Math.random().toString(36).substring(2, 15)}`;
+
+  const { data: product, error } = await supabase
+    .from("products")
+    .insert([{ ...data, api_key: apiKey }])
+    .select("*, agent_products(agent_id, employees(full_name))")
+    .single();
+
+  if (error) return { success: false, error: error.message };
+
+  await logAction(supabase, "CREATE_PRODUCT", "product", product.id, data);
+  return { success: true, data: product };
 }

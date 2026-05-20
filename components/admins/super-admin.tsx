@@ -1,14 +1,32 @@
 import { createClient } from "@/lib/supabase/client"
 import { useState, useEffect } from "react"
+import { SubscribedPackages } from "./subscribed-packages";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 // ─── Super Admin ──────────────────────────────────────────────────────────────
 
 export function SuperAdmin({ user: authUser }: { user: { id: string; role: string; company_id: string | null } | null }) {
   const supabase = createClient()
+  const router = useRouter()
   const [user, setUser] = useState<{name: string} | null>(null)
   const [newCompanyModal, setNewCompanyModal] = useState(false)
   const [companies, setCompanies] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  const handleDeleteCompany = async (companyId: string) => {
+    const { error } = await supabase.from('companies').delete().eq('id', companyId)
+    if (error) {
+      toast.error("Error deleting company")
+      return
+    }
+    setCompanies((prev) => prev.filter((c) => c.id !== companyId))
+    toast.success("Company deleted successfully")
+  }
+
+  const handleCompanyDashboard = (companyId: string) => {
+    router.push(`/protected/companies/${companyId}/dashboard`)
+  }
 
   useEffect(() => {
     async function fetchUser() {
@@ -33,8 +51,9 @@ export function SuperAdmin({ user: authUser }: { user: { id: string; role: strin
           logo: c.logo || `https://api.dicebear.com/7.x/initials/svg?seed=${c.name}&backgroundColor=6366f1`,
           subscription_plan: c.pricing_tier || "Free",
           status: c.is_active ? "Active" : "Inactive",
-          agent_incharge: "Alex Director", // These should ideally come from a join
+          agent_incharge: "Alex Director", 
           internal_agent: "Sarah Johnson",
+          subscribed_packages: ["CRM", "LMS", "HRM"].slice(0, Math.floor(Math.random() * 2) + 1), // Mock data
           last_billing: c.updated_at
         })))
       }
@@ -42,6 +61,7 @@ export function SuperAdmin({ user: authUser }: { user: { id: string; role: strin
     }
     fetchCompanies()
   }, [])
+
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-6 md:p-10">
@@ -94,7 +114,12 @@ export function SuperAdmin({ user: authUser }: { user: { id: string; role: strin
         {/* Companies Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {companies.map((company) => (
-            <CompanyCard key={company.id} company={company} />
+            <CompanyCard 
+              key={company.id} 
+              company={company} 
+              onDelete={handleDeleteCompany}
+              onDashboard={handleCompanyDashboard}
+            />
           ))}
         </div>
       </div>
@@ -106,7 +131,15 @@ export function SuperAdmin({ user: authUser }: { user: { id: string; role: strin
 
 // ─── Company Card ─────────────────────────────────────────────────────────────
 
-export function CompanyCard({ company }: { company: any }) {
+export function CompanyCard({ 
+  company, 
+  onDelete, 
+  onDashboard 
+}: { 
+  company: any, 
+  onDelete: (id: string) => void,
+  onDashboard: (id: string) => void
+}) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -130,6 +163,10 @@ export function CompanyCard({ company }: { company: any }) {
                 <StatusBadge type="status" value={company.status} />
               </div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 mt-1">
+            <SubscribedPackages client={false} company={company} />
           </div>
 
           {/* Meta */}
@@ -160,14 +197,31 @@ export function CompanyCard({ company }: { company: any }) {
         </div>
       </div>
 
-      {open && <CompanyDetailModal company={company} onClose={() => setOpen(false)} />}
+      {open && (
+        <CompanyDetailModal 
+          company={company} 
+          onClose={() => setOpen(false)} 
+          onDelete={onDelete}
+          onDashboard={onDashboard}
+        />
+      )}
     </>
   )
 }
 
 // ─── Company Detail Modal ─────────────────────────────────────────────────────
 
-function CompanyDetailModal({ company, onClose }: { company: any; onClose: () => void }) {
+function CompanyDetailModal({ 
+  company, 
+  onClose,
+  onDelete,
+  onDashboard
+}: { 
+  company: any; 
+  onClose: () => void;
+  onDelete: (id: string) => void;
+  onDashboard: (id: string) => void;
+}) {
   const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onClose()
   }
@@ -225,14 +279,25 @@ function CompanyDetailModal({ company, onClose }: { company: any; onClose: () =>
 
         {/* Footer Actions */}
         <div className="p-6 pt-5 flex items-center gap-3">
-          <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/25">
+          <button
+            onClick={() => onDashboard(company.id)} 
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all shadow-lg shadow-indigo-500/25">
             <span className="material-symbols-outlined text-sm">open_in_new</span>
             Open Dashboard
           </button>
-          <button className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700 shadow-sm">
+          <button
+            onClick={() => toast.error("Edit feature coming soon!")} 
+            className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-sm font-bold rounded-xl transition-all border border-slate-200 dark:border-slate-700 shadow-sm">
             <span className="material-symbols-outlined text-sm">edit</span>
           </button>
-          <button className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800/50 shadow-sm rounded-xl">
+          <button 
+            onClick={() => {
+              if (confirm(`Are you sure you want to delete ${company.name}?`)) {
+                onDelete(company.id)
+                onClose()
+              }
+            }} 
+            className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 transition-all border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-800/50 shadow-sm rounded-xl">
             <span className="material-symbols-outlined text-sm">delete</span>
           </button>
         </div>

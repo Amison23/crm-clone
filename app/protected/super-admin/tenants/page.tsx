@@ -41,9 +41,10 @@ export default async function TenantsPage() {
         </div>
         
         <TenantDialog mode="create">
-            <button className="flex items-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all group overflow-hidden">
+            <button 
+              className="flex items-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all group overflow-hidden">
                 <Plus className="size-4 group-hover:rotate-90 transition-transform" />
-                Provision New Node
+                New Company
             </button>
         </TenantDialog>
       </header>

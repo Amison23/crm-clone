@@ -18,7 +18,6 @@ import { transformPipelineData } from '@/utils/transformAgentData';
 // Intelligence v3.0 Components
 import SummaryCards from '@/app/ui/dashboard/analytics/components/SummaryCards';
 import PerformanceDeepDive from '@/app/ui/dashboard/analytics/components/PerfomanceDeepDive';
-import TacticalAudit from '@/app/ui/dashboard/analytics/components/TacticalAudit';
 import RevenueAuditTable from '@/app/ui/dashboard/analytics/components/RevenueAuditTable';
 import PipelineFunnel from '@/app/ui/dashboard/analytics/components/PipelineFunnel';
 import TenantTable from '@/app/ui/dashboard/analytics/components/TenantsTable';
@@ -26,13 +25,11 @@ import TenantTable from '@/app/ui/dashboard/analytics/components/TenantsTable';
 export default async function SuperAdminCommandCenter() {
   const supabase = await createClient();
 
-  // 1. AUTH & ROLE ESCALATION
+  // 1. AUTH & SESSION CHECK
+  // Note: Layout already performs authoritative role check via database.
   const { data: { user } } = await supabase.auth.getUser();
-  const role = user?.user_metadata?.role;
+  if (!user) redirect('/protected'); 
 
-  if (!user || role !== 'superadmin') {
-    redirect('/protected'); 
-  }
 
   // 2. GLOBAL DATA AGGREGATION (Cross-Tenant Telemetry)
 const [
@@ -156,10 +153,6 @@ const [
              </div>
           </div>
         </div>
-        <TacticalAudit 
-          frictionData={frictionReq.data || []} 
-          unassignedData={unassignedReq.data || []} 
-        />
       </section>
 
       {/* --- TIER 4: PERFORMANCE & PIPELINE GRID --- */}

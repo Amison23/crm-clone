@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { archiveTenant, restoreTenant, purgeTenant } from "../../actions";
 import { toast } from "react-hot-toast";
 import TenantDialog from "./TenantDialog";
+import TenantManagementModal from "./TenantManagementModal";
 
 interface Tenant {
   id: string;
@@ -33,6 +34,7 @@ export default function SuperAdminTenantTable({ initialTenants }: { initialTenan
   const [tenants, setTenants] = useState(initialTenants);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState<"all" | "active" | "archived">("all");
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
   const filteredTenants = tenants.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -117,7 +119,7 @@ export default function SuperAdminTenantTable({ initialTenants }: { initialTenan
           <thead className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
             <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
               <th className="px-8 py-4">Node Profile</th>
-              <th className="px-8 py-4">Provisioned At</th>
+              <th className="px-8 py-4">Added on</th>
               <th className="px-8 py-4">Health Status</th>
               <th className="px-8 py-4 text-right">Administrative Actions</th>
             </tr>
@@ -126,8 +128,9 @@ export default function SuperAdminTenantTable({ initialTenants }: { initialTenan
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
             {filteredTenants.length > 0 ? filteredTenants.map((t) => (
               <tr 
+                onClick={() => setSelectedTenant(t)}
                 key={t.id} 
-                className="group hover:bg-orange-50/30 dark:hover:bg-orange-950/10 transition-colors duration-200"
+                className="group cursor-pointer hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-all duration-300 border-l-2 border-transparent hover:border-orange-500"
               >
                 <td className="px-8 py-5">
                   <p className="font-bold text-slate-900 dark:text-white group-hover:text-orange-600 transition-colors">
@@ -152,7 +155,7 @@ export default function SuperAdminTenantTable({ initialTenants }: { initialTenan
                   <div className="flex items-center gap-2">
                     <Clock className="size-3.5 text-slate-400" />
                     <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 uppercase">
-                        {new Date(t.created_at).toLocaleDateString()}
+                        {new Date(t.created_at).toLocaleDateString("en-GB")}
                     </span>
                   </div>
                 </td>
@@ -174,7 +177,7 @@ export default function SuperAdminTenantTable({ initialTenants }: { initialTenan
                 </td>
 
                 <td className="px-8 py-5 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity translate-x-2 group-hover:translate-x-0">
+                    <div className="flex items-center justify-end gap-2 opacity-100" onClick={(e) => e.stopPropagation()}>
                         <TenantDialog mode="edit" tenant={t} onSuccess={() => window.location.reload()}>
                             <button className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-100 hover:text-blue-600 transition-all active:scale-95 shadow-sm overflow-hidden">
                                 <Edit className="size-4" />
@@ -227,6 +230,11 @@ export default function SuperAdminTenantTable({ initialTenants }: { initialTenan
           Platform Infrastructure Registry Pool • Total Count: {filteredTenants.length}
         </p>
       </div>
+
+      <TenantManagementModal 
+        tenant={selectedTenant} 
+        onClose={() => setSelectedTenant(null)} 
+      />
     </div>
   );
 }

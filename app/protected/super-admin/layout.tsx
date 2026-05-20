@@ -15,7 +15,7 @@ export default async function SuperAdminLayout({
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
-    redirect("/sign-in");
+    redirect("/login"); // or whatever your login path is, /login seems standard here
   }
 
   const { data: profile, error } = await supabase
@@ -26,7 +26,7 @@ export default async function SuperAdminLayout({
 
   if (error || !profile || profile.role !== "superadmin") {
     console.error("Super Admin access denied for user:", user.id);
-    redirect("/dashboard"); // Redirect to regular dashboard if not super admin
+    redirect("/protected"); // Redirect to regular dashboard if not super admin
   }
 
   return (

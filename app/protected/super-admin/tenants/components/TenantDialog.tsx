@@ -4,7 +4,12 @@ import { useState, ReactNode } from "react";
 import { 
   Building2, 
   X, 
-  Loader2 
+  Loader2,
+  ChevronDown,
+  CreditCard,
+  ShieldCheck,
+  UserCog,
+  Briefcase
 } from "lucide-react";
 import { createTenant, updateTenant } from "../../actions";
 import { toast } from "react-hot-toast";
@@ -23,6 +28,10 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) {
+        toast.error("Company name is required");
+        return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -77,7 +86,7 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                   </p>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"
               >
@@ -86,35 +95,107 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="p-8 space-y-6">
+            <form onSubmit={handleSubmit} className="px-8 py-6 space-y-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">
-                  Tenant Business Name
-                </label>
+                <label htmlFor="company-name" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
+                <div className="relative group/input">
+                  <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
+                  <input
+                    type="text"
+                    id="company-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Acme Corp"
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="company-logo">Company Logo</label>
                 <input
-                  required
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Acme Corporation"
-                  className="w-full px-5 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none text-slate-900 dark:text-white"
+                  type="file"
+                  id="company-logo"
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
                 />
               </div>
+              <div className="space-y-2">
+                <label htmlFor="company-subscription-plan" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
+                  Subscription Plan
+                </label>
+                <div className="relative group/select">
+                  <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/select:text-indigo-500 transition-colors" />
+                  <select
+                    id="company-subscription-plan"
+                    className="w-full pl-12 pr-10 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="free">Free</option>
+                    <option value="basic">Basic</option>
+                    <option value="pro">Pro</option>
+                    <option value="enterprise">Enterprise</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none group-hover/select:text-slate-600 transition-colors" />
+                </div>
+              </div>
 
-              <div className="pt-4 flex gap-3">
+              <div className="space-y-2">
+                <label htmlFor="company-status" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Status</label>
+                <div className="relative group/select">
+                  <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/select:text-indigo-500 transition-colors" />
+                  <select
+                    id="company-status"
+                    className="w-full pl-12 pr-10 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none group-hover/select:text-slate-600 transition-colors" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="company-agent-incharge" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Agent Incharge</label>
+                <div className="relative group/input">
+                  <UserCog className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
+                  <input
+                    type="text"
+                    id="company-agent-incharge"
+                    placeholder="Search or select agent..."
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="company-internal-agent" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Internal Agent</label>
+                <div className="relative group/input">
+                  <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
+                  <input
+                    type="text"
+                    id="company-internal-agent"
+                    placeholder="Internal reference ID..."
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="flex-1 px-6 py-4 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+                  className="px-6 py-3 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  disabled={isSubmitting}
                   type="submit"
-                  className="flex-1 px-6 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:scale-100 flex items-center justify-center"
+                  disabled={isSubmitting}
+                  className="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-indigo-500/20 flex items-center gap-2"
                 >
-                  {isSubmitting ? <Loader2 className="animate-spin size-4" /> : (mode === "create" ? "Provision Now" : "Update Node")}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="size-3 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    mode === "create" ? "Add Company" : "Update Company"
+                  )}
                 </button>
               </div>
             </form>
