@@ -426,8 +426,14 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
 
           {/* Simple Modal Dialog */}
           {isOpen && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
-              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 relative mx-auto my-8">
+            <div 
+              className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto"
+              onClick={() => setIsOpen(false)}
+            >
+              <div 
+                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 relative mx-auto mt-16 mb-8"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   onClick={() => setIsOpen(false)}
                   className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
@@ -453,8 +459,14 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
           )}
 
           {uploadModal && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
-              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 relative mx-auto my-8">
+            <div 
+              className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto"
+              onClick={() => setUploadModal(false)}
+            >
+              <div 
+                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 relative mx-auto mt-16 mb-8"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   onClick={() => setUploadModal(false)}
                   className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
