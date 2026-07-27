@@ -4,6 +4,9 @@ import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRight, LayoutDashboard, MessageSquare, PhoneCall, Users } from "lucide-react";
+
+export const dynamic = "force-dynamic"
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center overflow-x-hidden selection:bg-primary/30">
@@ -46,15 +49,15 @@ export default function Home() {
             Unify your customer data, automate tasks, and handle omnichannel communication all from a single, beautiful ecosystem.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-4">
-            <Link 
-              href="/auth/sign-up" 
+            <Link
+              href="/auth/sign-up"
               className="px-8 py-3 rounded-lg bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all flex items-center gap-2 group shadow-lg shadow-orange-500/20"
             >
               Start for free
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <Link 
-              href="#features" 
+            <Link
+              href="#features"
               className="px-8 py-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               Explore Features
@@ -78,7 +81,7 @@ export default function Home() {
               </div>
               <h3 className="text-2xl font-bold mb-3 relative z-10">Lead 360 Profile</h3>
               <p className="text-slate-600 dark:text-slate-400 text-lg max-w-md relative z-10">Track the entire customer journey, from the first touchpoint to conversion. Deep analytics and history in one timeline.</p>
-              
+
               {/* Decorative element */}
               <div className="hidden md:flex absolute right-0 bottom-0 translate-x-12 translate-y-12 w-64 h-48 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-tl-xl shadow-2xl p-4 flex-col gap-3 group-hover:-translate-x-2 group-hover:-translate-y-2 transition-transform duration-500">
                 <div className="w-full h-8 bg-slate-200 dark:bg-slate-800 rounded object-cover" />
@@ -109,16 +112,16 @@ export default function Home() {
 
             {/* Feature 4 - Sub Feature */}
             <div className="md:col-span-2 relative group overflow-hidden rounded-3xl bg-slate-900 dark:bg-slate-100 border border-slate-800 dark:border-slate-200 p-8 shadow-sm hover:shadow-md transition-all text-white dark:text-slate-900 flex flex-col justify-center">
-               <div className="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.2)_50%,transparent_75%,transparent_100%)] bg-[length:40px_40px]"></div>
-               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
-                 <div>
-                   <h3 className="text-3xl font-bold mb-3">Ready to transform your sales?</h3>
-                   <p className="text-slate-300 dark:text-slate-700 text-lg max-w-sm">Join forward-thinking teams using our platform to close more leads.</p>
-                 </div>
-                 <Link href="/auth/login" className="px-8 py-3 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold hover:scale-105 transition-transform whitespace-nowrap shadow-xl">
-                   Get Started Today
-                 </Link>
-               </div>
+              <div className="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,.2)_50%,transparent_75%,transparent_100%)] bg-[length:40px_40px]"></div>
+              <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+                <div>
+                  <h3 className="text-3xl font-bold mb-3">Ready to transform your sales?</h3>
+                  <p className="text-slate-300 dark:text-slate-700 text-lg max-w-sm">Join forward-thinking teams using our platform to close more leads.</p>
+                </div>
+                <Link href="/auth/login" className="px-8 py-3 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-bold hover:scale-105 transition-transform whitespace-nowrap shadow-xl">
+                  Get Started Today
+                </Link>
+              </div>
             </div>
           </div>
         </section>
