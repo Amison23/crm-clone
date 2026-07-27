@@ -9,7 +9,8 @@ import {
   CreditCard,
   ShieldCheck,
   UserCog,
-  Briefcase
+  Briefcase,
+  Mail
 } from "lucide-react";
 import { createTenant, updateTenant } from "../../actions";
 import { toast } from "react-hot-toast";
@@ -24,6 +25,7 @@ interface TenantDialogProps {
 export default function TenantDialog({ children, mode, tenant, onSuccess }: TenantDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState(tenant?.name || "");
+  const [adminEmail, setAdminEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -36,11 +38,17 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
 
     try {
         if (mode === "create") {
-            const result = await createTenant(name);
+            if (!adminEmail.trim()) {
+                toast.error("Admin Email Address is required");
+                setIsSubmitting(false);
+                return;
+            }
+            const result = await createTenant(name, adminEmail);
             if (result.success) {
                 toast.success(`Tenant "${name}" provisioned successfully`);
                 setIsOpen(false);
                 setName("");
+                setAdminEmail("");
                 onSuccess?.();
             } else {
                 toast.error(result.error || "Failed to create tenant");
@@ -110,6 +118,24 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                   />
                 </div>
               </div>
+
+              {mode === "create" && (
+                <div className="space-y-2">
+                  <label htmlFor="admin-email" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Email Address</label>
+                  <div className="relative group/input">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
+                    <input
+                      type="email"
+                      id="admin-email"
+                      value={adminEmail}
+                      onChange={(e) => setAdminEmail(e.target.value)}
+                      placeholder="admin@acmecorp.com"
+                      className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <div>
                 <label htmlFor="company-logo">Company Logo</label>
                 <input

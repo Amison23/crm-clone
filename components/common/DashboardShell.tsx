@@ -108,7 +108,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
             Throughput
           </p>
           <div className="space-y-4">
-            {role === 'super_admin' ? (
+            {role === 'superadmin' || role === 'super_admin' ? (
               <>
                 <SidebarProgress label="Node Deployment" value={82} color="bg-indigo-500" />
                 <SidebarProgress label="Security Audit" value={95} color="bg-emerald-500" />

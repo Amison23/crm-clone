@@ -4,13 +4,6 @@ import { useState, useEffect } from "react";
 import { SuperAdmin } from "@/components/admins/super-admin";
 import { CompanyAdmin } from "@/components/admins/admin";
 import { AgentDashboard } from "@/components/admins/agent-admin";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface AdminTabsProps {
   user: {
@@ -32,19 +25,13 @@ type TabKey = (typeof ALL_TABS)[number]["key"];
 
 export default function AdminTabs({ user, company }: AdminTabsProps) {
   const actualRole = user?.role ?? "";
-  const [activeRole, setActiveRole] = useState(actualRole);
 
-  // Sync activeRole if the prop changes (initial load)
-  useEffect(() => {
-    setActiveRole(actualRole);
-  }, [actualRole]);
+  // Only show tabs the user's role is allowed to see
+  const visibleTabs = ALL_TABS.filter((t) => (t.roles as readonly string[]).includes(actualRole));
 
-  // Only show tabs the simulated role is allowed to see
-  const visibleTabs = ALL_TABS.filter((t) => (t.roles as readonly string[]).includes(activeRole));
-
-  // Default to the tab that matches the simulated role, fallback to first visible
+  // Default to the tab that matches the user's role, fallback to first visible
   const defaultTab =
-    (visibleTabs.find((t) => t.key === activeRole)?.key ?? visibleTabs[0]?.key) as TabKey;
+    (visibleTabs.find((t) => t.key === actualRole)?.key ?? visibleTabs[0]?.key) as TabKey;
 
   const [activeTab, setActiveTab] = useState<TabKey>(defaultTab);
 
@@ -53,10 +40,7 @@ export default function AdminTabs({ user, company }: AdminTabsProps) {
     if (!visibleTabs.find(t => t.key === activeTab)) {
       setActiveTab(defaultTab);
     }
-  }, [activeRole, visibleTabs, activeTab, defaultTab]);
-
-  // Create a simulated user object to pass to sub-components
-  const simulatedUser = user ? { ...user, role: activeRole } : null;
+  }, [actualRole, visibleTabs, activeTab, defaultTab]);
 
   return (
     <div className="space-y-6">
@@ -78,40 +62,19 @@ export default function AdminTabs({ user, company }: AdminTabsProps) {
             {tab.label}
           </button>
         ))}
-
-        {/* Testing / Role Override UI */}
-        <div className="ml-4 flex items-center gap-2 pl-4 border-l border-slate-200 dark:border-slate-700">
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">
-            View As:
-          </span>
-          <Select value={activeRole} onValueChange={setActiveRole}>
-            <SelectTrigger className="h-7 w-[130px] text-xs bg-transparent border-none focus:ring-0 px-1 font-medium text-slate-700 dark:text-slate-300">
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="superadmin">Super Admin</SelectItem>
-              <SelectItem value="admin">Company Admin</SelectItem>
-              <SelectItem value="sales_agent">Sales Agent</SelectItem>
-              <SelectItem value="server_admin">Server Admin</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="px-1.5 py-0.5 text-[9px] font-bold text-white bg-amber-500 rounded uppercase">
-            Dev
-          </span>
-        </div>
       </div>
 
       {/* ── PANELS ── */}
       {activeTab === "superadmin" && (
-        <SuperAdmin user={simulatedUser} />
+        <SuperAdmin user={user} />
       )}
 
       {activeTab === "admin" && (
-        <CompanyAdmin companyId={simulatedUser?.company_id} initialCompany={company} />
+        <CompanyAdmin companyId={user?.company_id} initialCompany={company} />
       )}
 
       {activeTab === "sales_agent" && (
-        <AgentDashboard userId={simulatedUser?.id} companyId={simulatedUser?.company_id} />
+        <AgentDashboard userId={user?.id} companyId={user?.company_id} />
       )}
     </div>
   );

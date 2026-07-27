@@ -1,7 +1,8 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 
 interface PermissionUpdate {
   [key: string]: boolean | undefined;
@@ -62,7 +63,7 @@ function slugify(text: string) {
 
 // --- TENANT ACTIONS ---
 
-export async function createTenant(name: string) {
+export async function createTenant(name: string, adminEmail?: string) {
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) {
       return { success: false, error: "Unauthorized: Super Admin access required" };
@@ -80,8 +81,36 @@ export async function createTenant(name: string) {
   if (error) {
     return { success: false, error: error.message };
   }
+
+  if (adminEmail) {
+    const adminClient = createAdminClient();
+    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
+      adminEmail,
+      {
+        data: {
+          company_id: data.id,
+          role: "admin"
+        }
+      }
+    );
+
+    if (inviteError) {
+      return { success: false, error: `Tenant created but failed to invite admin: ${inviteError.message}` };
+    }
+
+    if (inviteData?.user) {
+      await supabase.from("employees").insert({
+        id: inviteData.user.id,
+        email_address: adminEmail,
+        role: "admin",
+        company_id: data.id,
+        full_name: "Company Admin"
+      });
+    }
+  }
  
   await logAction(supabase, "CREATE_TENANT", "company", data.id, { name, slug: data.slug });
+  revalidatePath("/protected/super-admin/tenants");
   return { success: true, data };
 }
 
@@ -110,6 +139,7 @@ export async function updateTenant(id: string, name: string) {
       prev: { name: oldTenant?.name }, 
       next: { name } 
   });
+  revalidatePath("/protected/super-admin/tenants");
   return { success: true };
 }
 
@@ -129,6 +159,7 @@ export async function archiveTenant(id: string) {
   }
  
   await logAction(supabase, "ARCHIVE_TENANT", "company", id, {});
+  revalidatePath("/protected/super-admin/tenants");
   return { success: true };
 }
 
@@ -148,6 +179,7 @@ export async function restoreTenant(id: string) {
   }
  
   await logAction(supabase, "RESTORE_TENANT", "company", id, {});
+  revalidatePath("/protected/super-admin/tenants");
   return { success: true };
 }
 
@@ -167,6 +199,7 @@ export async function purgeTenant(id: string) {
   }
  
   await logAction(supabase, "PURGE_TENANT", "company", id, {});
+  revalidatePath("/protected/super-admin/tenants");
   return { success: true };
 }
 
