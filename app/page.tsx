@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRight, LayoutDashboard, MessageSquare, PhoneCall, Users } from "lucide-react";
 
-export const dynamic = "force-dynamic"
+// export const dynamic = "force-dynamic"
 
 export default function Home() {
   return (
