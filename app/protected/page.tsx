@@ -68,7 +68,7 @@ async function DashboardContent() {
       icon: Globe,
       bg: "bg-purple-100 dark:bg-purple-900/40",
       iconColor: "text-purple-600 dark:text-purple-400",
-      roles: ["super_admin"],
+      roles: ["superadmin"],
       desc: "Platform-wide management",
     },
     // agent needs this
@@ -78,7 +78,7 @@ async function DashboardContent() {
       icon: LayoutDashboard,
       bg: "bg-green-100 dark:bg-green-900/40",
       iconColor: "text-green-600 dark:text-green-400",
-      roles: ["sales_agent", "admin", "super_admin"],
+      roles: ["sales_agent", "admin", "superadmin"],
       desc: "Tasks & pipeline queue",
     },
     {
@@ -87,7 +87,7 @@ async function DashboardContent() {
       icon: Target,
       bg: "bg-orange-100 dark:bg-orange-900/40",
       iconColor: "text-orange-600 dark:text-orange-400",
-      roles: ["sales_agent", "admin", "super_admin"],
+      roles: ["sales_agent", "admin", "superadmin"],
       desc: "SLA objective board",
     },
     // agent needs this
@@ -97,7 +97,7 @@ async function DashboardContent() {
       icon: Headset,
       bg: "bg-red-100 dark:bg-red-900/40",
       iconColor: "text-red-600 dark:text-red-400",
-      roles: ["sales_agent", "admin", "server_admin", "super_admin"],
+      roles: ["sales_agent", "admin", "server_admin", "superadmin"],
       desc: "Incident resolution queue",
     },
     {
@@ -106,7 +106,7 @@ async function DashboardContent() {
       icon: Bot,
       bg: "bg-indigo-100 dark:bg-indigo-900/40",
       iconColor: "text-indigo-600 dark:text-indigo-400",
-      roles: ["admin", "super_admin"],
+      roles: ["admin", "superadmin"],
       desc: "AI routing & automation",
     },
     {
@@ -115,7 +115,7 @@ async function DashboardContent() {
       icon: Settings,
       bg: "bg-slate-100 dark:bg-slate-800",
       iconColor: "text-slate-600 dark:text-slate-400",
-      roles: ["super_admin"],
+      roles: ["superadmin"],
       desc: "Global ACL & role provisioning",
     },
   ];
@@ -125,7 +125,7 @@ async function DashboardContent() {
   // Role-based dummy stats
   const getStats = () => {
     switch (role) {
-      case 'super_admin':
+      case 'superadmin':
         return [
           { label: "Global Leads", value: "1,240", sub: "+12% this month" },
           { label: "Active Nodes", value: "48", sub: "Operational" },
@@ -248,11 +248,10 @@ async function DashboardContent() {
                   {row.key}
                 </span>
                 <span
-                  className={`text-sm font-medium capitalize ${
-                    row.green
+                  className={`text-sm font-medium capitalize ${row.green
                       ? "text-green-500"
                       : "text-slate-700 dark:text-slate-200"
-                  }`}
+                    }`}
                 >
                   {row.value}
                 </span>

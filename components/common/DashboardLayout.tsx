@@ -38,8 +38,15 @@ async function AuthGate({ children }: { children: ReactNode }) {
     redirect("/auth/login");
   }
 
+  // Fetch role from employees table to ensure sidebar has authoritative role
+  const { data: profile } = await supabase
+    .from("employees")
+    .select("role")
+    .eq("id", user.id)
+    .single();
+
   const name = user.user_metadata?.full_name || user.email?.split('@')[0] || "Operator";
-  const role = user.user_metadata?.role;
+  const role = profile?.role || user.user_metadata?.role || "sales_agent";
 
   return (
     <DashboardShell name={name} role={role}>
