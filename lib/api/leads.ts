@@ -26,39 +26,46 @@ export async function createLeadAction(formData: FormData) {
   if (!tenant_id) return { error: "Security Violation: Null Tenant Context" };
 
   // 2. DATA EXTRACTION
-  const client_name = formData.get("client_name") as string;
-  const contact_name = formData.get("contact_name") as string;
-  const client_phone = formData.get("client_phone") as string;
+  const company_name = formData.get("client_name") as string || "";
+  const contact_name = formData.get("contact_name") as string || "";
+  const phone = formData.get("client_phone") as string;
   const email = formData.get("email") as string;
   const status = formData.get("status") as string;
-  const institution_type = formData.get("institution_type") as string;
   const product = formData.get("product") as string;
+  const institution_type = formData.get("institution_type") as string;
+  const need_identified = formData.get("need_identified") as string;
   const next_action = formData.get("next_action") as string;
   const next_action_date = formData.get("next_action_date") as string;
-  const need_identified = formData.get("need_identified") as string;
-  const notes = formData.get("notes") as string;
+  const user_notes = formData.get("notes") as string;
 
   // 3. VALIDATION
-  if (!client_name || !client_phone || !product) {
+  if (!company_name || !phone || !product) {
     return { error: "Security/HCI Requirement: Client Name, Phone, and Product are mandatory." };
   }
 
-  // 4. PERSISTENCE
+  // 4. MAP TO SCHEMA & PERSISTENCE
+  const nameParts = contact_name.trim().split(" ");
+  const first_name = nameParts[0] || "Unknown";
+  const last_name = nameParts.slice(1).join(" ") || "Unknown";
+
+  let final_notes = user_notes ? user_notes + "\n\n" : "";
+  if (product) final_notes += `Product: ${product}\n`;
+  if (institution_type) final_notes += `Institution: ${institution_type}\n`;
+  if (need_identified) final_notes += `Need: ${need_identified}\n`;
+  if (next_action) final_notes += `Next Action: ${next_action} (${next_action_date || 'No date'})\n`;
+
   const { error } = await supabase.from("leads").insert([
     {
       company_id: tenant_id,
-      employee_id: user.id, 
-      client_name,
-      contact_name,
-      client_phone,
+      employee_id: user.id,
+      company_name,
+      first_name,
+      last_name,
+      phone,
       email,
+      source: "Manual",
       status: status || "new",
-      institution_type,
-      product,
-      next_action,
-      next_action_date,
-      need_identified,
-      notes,
+      notes: final_notes.trim(),
     },
   ]);
 
@@ -80,10 +87,46 @@ export async function updateLeadAction(leadId: string, payload: any) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized Node Access" };
 
+  let updateData = payload;
+  if (payload instanceof FormData) {
+    const formData = payload;
+    const company_name = formData.get("client_name") as string || "";
+    const contact_name = formData.get("contact_name") as string || "";
+    const phone = formData.get("client_phone") as string;
+    const email = formData.get("email") as string;
+    const status = formData.get("status") as string;
+    const product = formData.get("product") as string;
+    const institution_type = formData.get("institution_type") as string;
+    const need_identified = formData.get("need_identified") as string;
+    const next_action = formData.get("next_action") as string;
+    const next_action_date = formData.get("next_action_date") as string;
+    const user_notes = formData.get("notes") as string;
+
+    const nameParts = contact_name.trim().split(" ");
+    const first_name = nameParts[0] || "Unknown";
+    const last_name = nameParts.slice(1).join(" ") || "Unknown";
+
+    let final_notes = user_notes ? user_notes + "\n\n" : "";
+    if (product) final_notes += `Product: ${product}\n`;
+    if (institution_type) final_notes += `Institution: ${institution_type}\n`;
+    if (need_identified) final_notes += `Need: ${need_identified}\n`;
+    if (next_action) final_notes += `Next Action: ${next_action} (${next_action_date || 'No date'})\n`;
+
+    updateData = {
+      company_name,
+      first_name,
+      last_name,
+      phone,
+      email,
+      status: status || "new",
+      notes: final_notes.trim(),
+    };
+  }
+
   // Logic: Update handles potential_value which feeds the Revenue charts
   const { error } = await supabase
     .from("leads")
-    .update(payload)
+    .update(updateData)
     .eq("id", leadId);
 
   if (error) return { error: error.message };

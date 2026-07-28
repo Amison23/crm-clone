@@ -12,9 +12,10 @@ const supabase = createClient();
 
 export type Lead = {
   id: string;
-  client_name: string | null;
-  contact_name: string | null;
-  client_phone: string;
+  company_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  phone: string;
   email: string | null;
   status: string | null;
   institution_type?: string | null;
@@ -25,6 +26,20 @@ export type Lead = {
   notes?: string | null;
   created_at: string | null;
 };
+
+function extractFromNotes(notes: string | null | undefined, field: string): string | null {
+  if (!notes) return null;
+  if (field === "Next Action Date") {
+    const match = notes.match(/Next Action: .*?\((.*?)\)/);
+    return match && match[1] !== 'No date' ? match[1] : null;
+  }
+  if (field === "Next Action") {
+    const match = notes.match(/Next Action: (.*?)(?: \(|\n|$)/);
+    return match ? match[1].trim() : null;
+  }
+  const match = notes.match(new RegExp(`${field}: (.*?)(?:\\n|$)`));
+  return match ? match[1].trim() : null;
+}
 
 function parseCSVRow(row: string): string[] {
   const values: string[] = []
@@ -98,13 +113,15 @@ async function uploadLeadFileAction(formData: FormData) {
               case "client":
               case "company":
               case "client_name":
-                lead.client_name = value;
+                lead.company_name = value;
                 break;
               case "contact_person":
               case "contact_name":
               case "name":
               case "full_name":
-                lead.contact_name = value;
+                const nameParts = value.trim().split(" ");
+                lead.first_name = nameParts[0] || "Unknown";
+                lead.last_name = nameParts.slice(1).join(" ") || "Unknown";
                 break;
               case "email":
                 lead.email = value;
@@ -112,37 +129,37 @@ async function uploadLeadFileAction(formData: FormData) {
               case "phone":
               case "client_phone":
               case "contact_phone":
-                lead.client_phone = value;
+                lead.phone = value;
                 break;
               case "status":
                 lead.status = value;
                 break;
-              case "institution_type":
-                lead.institution_type = value;
-                break;
-              case "product":
-                lead.product = value;
-                break;
-              case "need_identified":
-                lead.need_identified = value;
-                break;
-              case "next_action":
-                lead.next_action = value;
-                break;
-              case "next_action_date":
-                lead.next_action_date = value;
-                break;
               case "notes":
                 lead.notes = value;
                 break;
-              // Add more mappings if needed
+              case "institution_type":
+                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Institution: ${value}`;
+                break;
+              case "product":
+                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Product: ${value}`;
+                break;
+              case "need_identified":
+                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Need: ${value}`;
+                break;
+              case "next_action":
+                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Next Action: ${value}`;
+                break;
+              case "next_action_date":
+                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Next Action Date: ${value}`;
+                break;
             }
           });
           
           // Ensure every lead is associated with the current company
           lead.company_id = company_id;
-          // Also associate with the current user if needed
-          lead.employee_id = user.id; 
+          lead.employee_id = user.id;
+          lead.source = "CSV Upload";
+          if (!lead.status) lead.status = "new";
           
           return lead;
         });
@@ -171,6 +188,12 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [uploadModal, setUploadModal] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+
+  useEffect(() => {
+    setLeads(initialLeads);
+  }, [initialLeads]);
 
   const handleUpload = async (file: File) => {
     try {
@@ -264,13 +287,6 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                 <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
-                    <th className="p-4 w-12 text-center">
-                      <input
-                        className="rounded text-primary focus:ring-primary border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                        type="checkbox"
-                        onClick={(e) => {console.log(e.currentTarget.checked,"all leads selected")}}
-                      />
-                    </th>
                     <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
                       Client/Company
                     </th>
@@ -307,23 +323,17 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                         key={lead.id}
                         className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
                       >
-                        <td className="p-4 text-center">
-                          <input
-                            className="rounded text-primary focus:ring-primary border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
-                            type="checkbox"
-                          />
-                        </td>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
                             <div className="size-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-primary font-bold text-xs uppercase">
-                              {lead.client_name?.[0] || ""}
+                              {lead.company_name?.[0] || ""}
                             </div>
                             <div>
                               <p className="text-sm font-semibold">
-                                {lead.client_name}
+                                {lead.company_name}
                               </p>
                               <p className="text-[11px] text-slate-500">
-                                {lead.email || lead.client_phone}
+                                {lead.email || lead.phone}
                               </p>
                             </div>
                           </div>
@@ -334,13 +344,15 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                           </span>
                         </td>
                         <td className="p-4 text-sm text-slate-600 dark:text-slate-400 capitalize">
-                          {lead.product || "N/A"}
+                          {lead.product || extractFromNotes(lead.notes, "Product") || "N/A"}
                         </td>
                         <td className="p-4">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-medium">{lead.next_action || "None"}</span>
-                            {lead.next_action_date && (
-                              <span className="text-[10px] text-slate-500">{new Date(lead.next_action_date).toLocaleDateString()}</span>
+                            <span className="text-sm font-medium">{lead.next_action || extractFromNotes(lead.notes, "Next Action") || "None"}</span>
+                            {(lead.next_action_date || extractFromNotes(lead.notes, "Next Action Date")) && (
+                              <span className="text-[10px] text-slate-500">
+                                {new Date((lead.next_action_date || extractFromNotes(lead.notes, "Next Action Date"))!).toLocaleDateString()}
+                              </span>
                             )}
                           </div>
                         </td>
@@ -356,6 +368,7 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                             <button
                               className="p-1.5 text-slate-400 hover:text-primary transition-colors"
                               title="View Details"
+                              onClick={() => setSelectedLead(lead)}
                             >
                               <span className="material-symbols-outlined text-lg">
                                 visibility
@@ -364,6 +377,7 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                             <button
                               className="p-1.5 text-slate-400 hover:text-primary transition-colors"
                               title="Call Lead"
+                              onClick={() => showToast('success', 'Coming soon!!')}
                             >
                               <span className="material-symbols-outlined text-lg">
                                 call
@@ -372,6 +386,7 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                             <button
                               className="p-1.5 text-slate-400 hover:text-primary transition-colors"
                               title="Edit"
+                              onClick={() => setEditingLead(lead)}
                             >
                               <span className="material-symbols-outlined text-lg">
                                 edit
@@ -451,6 +466,7 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                   </p>
                 </div>
                 <AddLeadForm
+                  initialData={undefined}
                   onSuccess={() => setIsOpen(false)}
                   onMessage={showToast}
                 />
@@ -600,6 +616,129 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
               </div>
             </div>
           )}
+
+          {/* Lead Details Modal */}
+          {selectedLead && (
+            <div 
+              className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto"
+              onClick={() => setSelectedLead(null)}
+            >
+              <div 
+                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-2xl p-6 relative mx-auto mt-16 mb-8"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setSelectedLead(null)}
+                  className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50 flex items-center gap-3">
+                    <div className="size-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-primary font-bold text-lg uppercase">
+                      {selectedLead.company_name?.[0] || ""}
+                    </div>
+                    {selectedLead.company_name}
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1 ml-13">
+                    Created on {selectedLead.created_at ? new Date(selectedLead.created_at).toLocaleDateString('en-GB') : "Unknown"}
+                  </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Contact Details</h4>
+                      <p className="text-sm font-medium">{selectedLead.first_name} {selectedLead.last_name}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{selectedLead.email || "No email"}</p>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{selectedLead.phone}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Status</h4>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 capitalize">
+                        {selectedLead.status || "new"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Target Product</h4>
+                      <p className="text-sm font-medium capitalize">{selectedLead.product || extractFromNotes(selectedLead.notes, "Product") || "N/A"}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Next Action</h4>
+                      <p className="text-sm font-medium">{selectedLead.next_action || extractFromNotes(selectedLead.notes, "Next Action") || "None"}</p>
+                      {(selectedLead.next_action_date || extractFromNotes(selectedLead.notes, "Next Action Date")) && (
+                        <p className="text-xs text-slate-500">
+                          Due: {new Date((selectedLead.next_action_date || extractFromNotes(selectedLead.notes, "Next Action Date"))!).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Notes & Details</h4>
+                  <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-mono">
+                    {selectedLead.notes || "No additional notes available."}
+                  </div>
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <Button variant="outline" onClick={() => setSelectedLead(null)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Lead Modal */}
+          {editingLead && (
+            <div 
+              className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto"
+              onClick={() => setEditingLead(null)}
+            >
+              <div 
+                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 relative mx-auto mt-16 mb-8"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setEditingLead(null)}
+                  className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                    Edit Lead
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Update the details for {editingLead.company_name}.
+                  </p>
+                </div>
+                <AddLeadForm
+                  initialData={{
+                    id: editingLead.id,
+                    client_name: editingLead.company_name || "",
+                    contact_name: `${editingLead.first_name || ""} ${editingLead.last_name || ""}`.trim(),
+                    client_phone: editingLead.phone || "",
+                    email: editingLead.email || "",
+                    status: editingLead.status || "new",
+                    product: editingLead.product || extractFromNotes(editingLead.notes, "Product") || "",
+                    institution_type: extractFromNotes(editingLead.notes, "Institution") || "",
+                    need_identified: extractFromNotes(editingLead.notes, "Need") || "",
+                    next_action: editingLead.next_action || extractFromNotes(editingLead.notes, "Next Action") || "",
+                    next_action_date: editingLead.next_action_date || extractFromNotes(editingLead.notes, "Next Action Date") || "",
+                    notes: editingLead.notes || "",
+                  }}
+                  onSuccess={() => setEditingLead(null)}
+                  onMessage={showToast}
+                />
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </>

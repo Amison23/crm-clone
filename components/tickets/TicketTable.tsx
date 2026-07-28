@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import {
   StatusBadge,
@@ -156,6 +157,7 @@ export const TicketModal = ({
   onClose,
 }: TicketModalProps) => {
   const supabase = createClient();
+  const router = useRouter();
   const [showAssign, setShowAssign] = useState(false);
   const [agent, setAgent] = useState(selectedTicket.agent);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
@@ -243,6 +245,7 @@ export const TicketModal = ({
     setAgent(emp.full_name);
     setAuditLog((prev) => [newEntry, ...prev]);
     setSaving(false);
+    router.refresh();
   }
 
   async function handleResolve() {
@@ -260,6 +263,7 @@ export const TicketModal = ({
     setSaving(false);
     setOpenModal(false);
     onClose();
+    router.refresh();
   }
 
   if (!openModal) return null;

@@ -68,7 +68,7 @@ export default function TicketsClient({
       subject: t.title,
       description: t.description || "",
       customer: t.customer?.full_name || t.client_id || "Unknown Customer",
-      createdAt: new Date(t.created_at).toLocaleDateString(),
+      createdAt: new Date(t.created_at).toISOString().split('T')[0],
       status,
       priority: priorityMap[t.priority] || "Low",
       sla: computeSla(t.created_at, status),

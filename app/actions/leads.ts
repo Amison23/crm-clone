@@ -24,31 +24,47 @@ export async function createLeadAction(formData: FormData) {
   }
 
   // Extract form data
-  const first_name = formData.get("first_name") as string;
-  const last_name = formData.get("last_name") as string;
-  const company_name = formData.get("company_name") as string;
+  const company_name = formData.get("client_name") as string || "";
+  const contact_name = formData.get("contact_name") as string || "";
   const email = formData.get("email") as string;
-  const phone = formData.get("phone") as string;
-  const source = formData.get("source") as string;
+  const phone = formData.get("client_phone") as string;
   const status = formData.get("status") as string;
+  const product = formData.get("product") as string;
+  const institution_type = formData.get("institution_type") as string;
+  const need_identified = formData.get("need_identified") as string;
+  const next_action = formData.get("next_action") as string;
+  const next_action_date = formData.get("next_action_date") as string;
+  const user_notes = formData.get("notes") as string;
+
+  // Map to DB schema
+  const nameParts = contact_name.trim().split(" ");
+  const first_name = nameParts[0] || "Unknown";
+  const last_name = nameParts.slice(1).join(" ") || "Unknown";
+
+  let notes = user_notes ? user_notes + "\n\n" : "";
+  if (product) notes += `Product: ${product}\n`;
+  if (institution_type) notes += `Institution: ${institution_type}\n`;
+  if (need_identified) notes += `Need: ${need_identified}\n`;
+  if (next_action) notes += `Next Action: ${next_action} (${next_action_date || 'No date'})\n`;
 
   // Validate required fields
-  if (!first_name || !phone) {
-    return { error: "First Name and Phone are required fields." };
+  if (!contact_name || !phone) {
+    return { error: "Contact Name and Phone are required fields." };
   }
 
   // Insert into leads table using the user's tenant_id
   const { data, error } = await supabase.from("leads").insert([
     {
       company_id: profile.company_id,
-      assigned_to: user.id, // we can optionally assign the lead to the user creating it
+      employee_id: user.id, // assigned to the user creating it
       first_name,
       last_name,
       company_name,
       email,
       phone,
-      source,
+      source: "Manual",
       status: status || "new",
+      notes: notes.trim(),
     },
   ]);
 
