@@ -34,26 +34,8 @@ export default async function SalesAgentPage() {
     supabase.from('deals').select('amount').eq('assigned_to', agentId).eq('status', 'won')
   ]);
 
-  // --- MOCK DATA FALLBACKS ---
-  const mockTasks = [
-    { id: 'mt-1', title: 'Follow up with Enterprise Lead', status: 'pending', due_date: new Date(Date.now() + 86400000).toISOString() },
-    { id: 'mt-2', title: 'Prepare Technical Proposal', status: 'in_progress', due_date: new Date(Date.now() + 172800000).toISOString() },
-    { id: 'mt-3', title: 'Product Demo: SwiftPay Hub', status: 'completed', due_date: new Date(Date.now() - 86400000).toISOString() },
-    { id: 'mt-4', title: 'Review Q2 Sales Targets', status: 'pending', due_date: new Date(Date.now() + 259200000).toISOString() },
-    { id: 'mt-5', title: 'Update Client Onboarding Docs', status: 'completed', due_date: new Date(Date.now() - 172800000).toISOString() }
-  ];
-
-  const tasksToMap = tasksReq.data && tasksReq.data.length > 0 ? tasksReq.data : mockTasks;
-
-  const mockTickets = [
-    { title: 'Payment Processing Error', created_at: new Date(Date.now() - 3600000).toISOString(), status: 'open' },
-    { title: 'Account Access Recovery', created_at: new Date(Date.now() - 7200000).toISOString(), status: 'resolved' },
-    { title: 'Subscription Tier Inquiry', created_at: new Date(Date.now() - 10800000).toISOString(), status: 'pending' },
-    { title: 'API Integration Support', created_at: new Date(Date.now() - 14400000).toISOString(), status: 'open' },
-    { title: 'Dashboard Loading Issues', created_at: new Date(Date.now() - 18000000).toISOString(), status: 'resolved' }
-  ];
-
-  const ticketsToMap = ticketsReq.data && ticketsReq.data.length > 0 ? ticketsReq.data : mockTickets;
+  const tasksToMap = tasksReq.data || [];
+  const ticketsToMap = ticketsReq.data || [];
 
   // 3. PERSONAL TELEMETRY TRANSFORMATIONS
   const allLeads = leadsReq.data || [];
@@ -91,15 +73,9 @@ export default async function SalesAgentPage() {
     outbound: Math.floor(Math.random() * 50)
   }));
 
-  // --- MOCK DATA FOR CSS STRESS TEST ---
-  const mockLeads = Array.from({ length: 50 }, (_, i) => ({
-    id: `mock-${i}`,
-    first_name: ["James", "Sarah", "Michael", "Elena", "David", "Amina"][i % 6],
-    last_name: ["Smith", "Jones", "Williams", "Mbugua", "Garcia", "Chen"][i % 6],
-    status: ["New", "In Progress", "Follow-up", "Negotiation"][i % 4]
-  }));
+  const leadsToShow = activeLeads;
 
-  const leadsToShow = activeLeads.length > 0 ? activeLeads : mockLeads;
+  return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-32 font-sans antialiased">
       <div className="w-full p-4 lg:p-10 space-y-10 animate-in fade-in duration-1000">
         
@@ -238,7 +214,7 @@ export default async function SalesAgentPage() {
 
       </div>
     </div>
-  ;
+  )
 }
 
 // Minimalist Internal Icon Component
