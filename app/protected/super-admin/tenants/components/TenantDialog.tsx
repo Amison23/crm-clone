@@ -45,7 +45,8 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
             }
             const result = await createTenant(name, adminEmail);
             if (result.success) {
-                if (result.credentials) {
+                const creds = ('credentials' in result) ? result.credentials as { email: string, password: string } : null;
+                if (creds) {
                     toast((t) => (
                         <div className="flex flex-col gap-3 w-full">
                             <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm">
@@ -54,14 +55,14 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                             <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
                                 <p className="text-[10px] text-slate-500 mb-2 uppercase font-black tracking-widest">Admin Credentials</p>
                                 <div className="space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                    <p>Email: <span className="text-indigo-600 dark:text-indigo-400 select-all">{result.credentials.email}</span></p>
-                                    <p>Password: <span className="text-indigo-600 dark:text-indigo-400 select-all">{result.credentials.password}</span></p>
+                                    <p>Email: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.email}</span></p>
+                                    <p>Password: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.password}</span></p>
                                 </div>
                             </div>
                             <button 
                                 onClick={(e) => {
                                     e.preventDefault();
-                                    navigator.clipboard.writeText(`Login URL: ${window.location.origin}\nEmail: ${result.credentials.email}\nPassword: ${result.credentials.password}`);
+                                    navigator.clipboard.writeText(`Login URL: ${window.location.origin}\nEmail: ${creds.email}\nPassword: ${creds.password}`);
                                     toast.success("Credentials copied to clipboard!");
                                     toast.dismiss(t.id);
                                 }}
