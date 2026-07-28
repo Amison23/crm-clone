@@ -63,7 +63,7 @@ function slugify(text: string) {
 
 // --- TENANT ACTIONS ---
 
-export async function createTenant(name: string, adminEmail?: string) {
+export async function createTenant(name: string, adminEmail?: string, adminName?: string) {
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) {
       return { success: false, error: "Unauthorized: Super Admin access required" };
@@ -79,6 +79,9 @@ export async function createTenant(name: string, adminEmail?: string) {
     .single();
  
   if (error) {
+    if (error.code === '23505' || error.message.includes('unique constraint') || error.message.includes('duplicate key')) {
+        return { success: false, error: "A company with this name (or a very similar one) already exists. Please use a unique name." };
+    }
     return { success: false, error: error.message };
   }
 
@@ -99,13 +102,17 @@ export async function createTenant(name: string, adminEmail?: string) {
     }
 
     if (inviteData?.user) {
-      await supabase.from("employees").insert({
+      const { error: upsertError } = await adminClient.from("employees").upsert({
         id: inviteData.user.id,
         email_address: adminEmail,
         role: "admin",
         company_id: data.id,
-        full_name: "Company Admin"
+        full_name: adminName || "Company Admin"
       });
+      
+      if (upsertError) {
+          console.error("Failed to upsert employee details:", upsertError);
+      }
     }
   }
  
@@ -136,6 +143,9 @@ export async function updateTenant(id: string, name: string) {
     .eq("id", id);
  
   if (error) {
+    if (error.code === '23505' || error.message.includes('unique constraint') || error.message.includes('duplicate key')) {
+        return { success: false, error: "A company with this name (or a very similar one) already exists. Please use a unique name." };
+    }
     return { success: false, error: error.message };
   }
  
@@ -452,4 +462,53 @@ export async function createProduct(data: { name: string, description: string })
 
   await logAction(supabase, "CREATE_PRODUCT", "product", product.id, data);
   return { success: true, data: product };
+}
+
+export async function provisionAgent(companyId: string, name: string, email: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+  
+  const { data: profile } = await supabase.from('employees').select('role, company_id').eq('id', user.id).single();
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin')) {
+      return { success: false, error: "Unauthorized" };
+  }
+  if (profile.role === 'admin' && profile.company_id !== companyId) {
+      return { success: false, error: "Unauthorized to add agents for another company" };
+  }
+
+  const adminClient = createAdminClient();
+  const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
+    email,
+    password: "SystemCRM2026!",
+    email_confirm: true,
+    user_metadata: {
+      company_id: companyId,
+      role: "sales_agent"
+    }
+  });
+
+  if (inviteError) {
+    return { success: false, error: inviteError.message };
+  }
+
+  if (inviteData?.user) {
+    const { error: upsertError } = await adminClient.from("employees").upsert({
+      id: inviteData.user.id,
+      email_address: email,
+      role: "sales_agent",
+      company_id: companyId,
+      full_name: name
+    });
+    if (upsertError) {
+       console.error("Failed to upsert agent details:", upsertError);
+    }
+  }
+
+  await logAction(supabase, "CREATE_AGENT", "employee", inviteData?.user?.id || '', { companyId, name, email });
+  revalidatePath("/protected/admin");
+  return { 
+    success: true,
+    credentials: { email, password: "SystemCRM2026!" }
+  };
 }

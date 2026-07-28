@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "react-hot-toast"
+import { provisionAgent } from "@/app/protected/super-admin/actions"
 
 type Tab = "overview" | "agents" | "customers" | "issues"
 type Company = {
@@ -29,15 +31,15 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
     async function fetchData() {
       try {
         setLoading(true)
-        
+
         // Fetch company details
-        if(!initialCompany){        
+        if (!initialCompany) {
           const companyQuery = supabase.from('companies').select('*')
           if (companyId) {
             companyQuery.eq('id', companyId)
           }
           const { data: companies, error: companyError } = await companyQuery.limit(1)
-          
+
           if (companyError) throw companyError
 
           if (companies?.[0]) {
@@ -54,7 +56,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
           }
         }
         // Fetch agents in this company
-        const agentsQuery = supabase.from('employees').select('*').neq('role', 'client')
+        const agentsQuery = supabase.from('employees').select('*').eq('role', 'sales_agent')
         if (companyId) {
           agentsQuery.eq('company_id', companyId)
         }
@@ -64,7 +66,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
         // Fetch tickets in this company (needed for counts)
         const ticketsQuery = supabase
           .from('tickets')
-          .select('*, companies(name), employees!tickets_assigned_to_fkey(full_name)')
+          .select('*, companies(name)')
         if (companyId) {
           ticketsQuery.eq('company_id', companyId)
         }
@@ -72,6 +74,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
         if (ticketsError) throw ticketsError
         const tickets = ticketsData || []
 
+        // Fetch all agents 
         if (employees) {
           setAgents(employees.map(e => {
             const agentTickets = tickets.filter(t => t.assigned_to === e.id)
@@ -116,8 +119,8 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
         setIssues(tickets.map(t => ({
           id: t.id,
           title: t.title,
-          client: t.companies?.name || "Unknown",
-          agent: t.employees?.full_name || "Unassigned",
+          client: customersData?.find(c => c.id === t.client_id)?.full_name || "Unknown",
+          agent: employees?.find(e => e.id === t.assigned_to)?.full_name || "Unassigned",
           priority: t.priority.charAt(0).toUpperCase() + t.priority.slice(1),
           status: t.status === 'open' ? 'Open' : t.status === 'in_progress' ? 'In Progress' : t.status === 'resolved' ? 'Resolved' : t.status,
           created: t.created_at,
@@ -166,7 +169,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
           <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
             We couldn't find any company data associated with your account.
           </p>
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="w-full py-2.5 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/25 hover:bg-indigo-700 transition-all"
           >
@@ -195,7 +198,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
                 {company?.name}
               </h1>
               <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium text-sm">
-                Company Admin Console
+                Admin Console
               </p>
             </div>
           </div>
@@ -225,11 +228,10 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${
-                activeTab === t.key
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
-                  : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
-              }`}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === t.key
+                ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800"
+                }`}
             >
               <span className="material-symbols-outlined text-base">{t.icon}</span>
               {t.label}
@@ -244,7 +246,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
 
         {/* Tab Content */}
         {activeTab === "overview" && <OverviewTab issues={issues} agents={agents} customers={customers} />}
-        {activeTab === "agents" && <AgentsTab agents={agents} issues={issues} customers={customers} />}
+        {activeTab === "agents" && <AgentsTab companyId={companyId} agents={agents} issues={issues} customers={customers} onAgentAdded={() => window.location.reload()} />}
         {activeTab === "customers" && <ClientsTab customers={customers} />}
         {activeTab === "issues" && <IssuesTab issues={issues} />}
       </div>
@@ -345,11 +347,140 @@ function OverviewTab({ issues, agents, customers }: { issues: any[], agents: any
 
 // ─── Agents Tab ───────────────────────────────────────────────────────────────
 
-function AgentsTab({ agents, issues, customers }: { agents: any[], issues: any[], customers: any[] }) {
+function AgentsTab({ companyId, agents, issues, customers, onAgentAdded }: { companyId?: string | null, agents: any[], issues: any[], customers: any[], onAgentAdded?: () => void }) {
   const [selected, setSelected] = useState<any | null>(null)
+  const [isAddingAgent, setIsAddingAgent] = useState(false)
+  const [agentName, setAgentName] = useState("")
+  const [agentEmail, setAgentEmail] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleAddAgent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!companyId) return;
+    if (!agentName.trim() || !agentEmail.trim()) {
+      toast.error("Name and Email are required");
+      return;
+    }
+    setIsSubmitting(true);
+
+    try {
+      const result = await provisionAgent(companyId, agentName, agentEmail);
+      if (result.success && result.credentials) {
+        const creds = result.credentials;
+        toast.custom((t) => (
+          <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-slate-900 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
+            <div className="flex-1 w-0 p-4">
+              <div className="flex flex-col gap-3 w-full">
+                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm">
+                  <span>Agent provisioned successfully</span>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
+                  <p className="text-[10px] text-slate-500 mb-2 uppercase font-black tracking-widest">Agent Credentials</p>
+                  <div className="space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <p>Email: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.email}</span></p>
+                    <p>Password: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.password}</span></p>
+                  </div>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigator.clipboard.writeText(`Login URL: ${window.location.origin}\nEmail: ${creds.email}\nPassword: ${creds.password}`);
+                    toast.success("Credentials copied to clipboard!");
+                    toast.dismiss(t.id);
+                  }}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-indigo-500/20"
+                >
+                  Copy Credentials
+                </button>
+              </div>
+            </div>
+            <div className="flex border-l border-gray-200 dark:border-slate-700">
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        ), { duration: 30000, position: "bottom-right" });
+
+        setIsAddingAgent(false);
+        setAgentName("");
+        setAgentEmail("");
+        onAgentAdded?.();
+      } else {
+        toast.error(result.error || "Failed to create agent");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <>
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={() => setIsAddingAgent(true)}
+          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/30 hover:bg-indigo-500 transition-all active:scale-95"
+        >
+          <span className="material-symbols-outlined text-sm">person_add</span>
+          Add Sales Agent
+        </button>
+      </div>
+
+      {isAddingAgent && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">Add Sales Agent</h2>
+              <button onClick={() => setIsAddingAgent(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleAddAgent} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Agent Name</label>
+                <input
+                  type="text"
+                  required
+                  value={agentName}
+                  onChange={(e) => setAgentName(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  placeholder="e.g. Jane Doe"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Agent Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={agentEmail}
+                  onChange={(e) => setAgentEmail(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  placeholder="agent@company.com"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full mt-4 bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl hover:bg-indigo-500 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-sm">check_circle</span>
+                )}
+                {isSubmitting ? "Provisioning..." : "Provision Agent"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         {agents.map((agent) => (
           <div
@@ -396,11 +527,10 @@ function ClientsTab({ customers }: { customers: any[] }) {
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-              filter === s
-                ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20"
-                : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
-            }`}
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all border ${filter === s
+              ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20"
+              : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
+              }`}
           >
             {s}
           </button>
@@ -470,11 +600,10 @@ function IssuesTab({ issues }: { issues: any[] }) {
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all border ${
-              filter === s
-                ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20"
-                : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
-            }`}
+            className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all border ${filter === s
+              ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/20"
+              : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-indigo-300"
+              }`}
           >
             {s}
           </button>
@@ -629,9 +758,9 @@ function AgentStat({ label, value, highlight, positive }: { label: string; value
 function AgentStatusDot({ status, className = "" }: { status: string; className?: string }) {
   const color =
     status === "Online" ? "bg-emerald-500" :
-    status === "Busy" ? "bg-amber-500" :
-    status === "Away" ? "bg-orange-400" :
-    "bg-slate-300 dark:bg-slate-600"
+      status === "Busy" ? "bg-amber-500" :
+        status === "Away" ? "bg-orange-400" :
+          "bg-slate-300 dark:bg-slate-600"
 
   return <span className={`size-3 rounded-full border-2 border-white dark:border-slate-900 ${color} ${className}`} />
 }
@@ -641,8 +770,8 @@ function ClientStatusBadge({ status }: { status: string }) {
     status === "Healthy"
       ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800/50"
       : status === "Critical"
-      ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800/50"
-      : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50"
+        ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800/50"
+        : "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50"
 
   return (
     <span className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-md border ${styles}`}>
@@ -654,9 +783,9 @@ function ClientStatusBadge({ status }: { status: string }) {
 function PriorityDot({ priority }: { priority: string }) {
   const color =
     priority === "Critical" ? "bg-red-500" :
-    priority === "High" ? "bg-orange-500" :
-    priority === "Medium" ? "bg-amber-500" :
-    "bg-slate-300"
+      priority === "High" ? "bg-orange-500" :
+        priority === "Medium" ? "bg-amber-500" :
+          "bg-slate-300"
 
   return <span className={`size-2 rounded-full flex-shrink-0 ${color}`} />
 }

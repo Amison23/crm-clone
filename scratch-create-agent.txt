@@ -1,0 +1,48 @@
+export async function createAgent(companyId: string, name: string, email: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+  
+  const { data: profile } = await supabase.from('employees').select('role, company_id').eq('id', user.id).single();
+  if (!profile || (profile.role !== 'admin' && profile.role !== 'superadmin')) {
+      return { success: false, error: "Unauthorized" };
+  }
+  if (profile.role === 'admin' && profile.company_id !== companyId) {
+      return { success: false, error: "Unauthorized to add agents for another company" };
+  }
+
+  const adminClient = createAdminClient();
+  const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
+    email,
+    password: "SystemCRM2026!",
+    email_confirm: true,
+    user_metadata: {
+      company_id: companyId,
+      role: "sales_agent"
+    }
+  });
+
+  if (inviteError) {
+    return { success: false, error: inviteError.message };
+  }
+
+  if (inviteData?.user) {
+    const { error: upsertError } = await adminClient.from("employees").upsert({
+      id: inviteData.user.id,
+      email_address: email,
+      role: "sales_agent",
+      company_id: companyId,
+      full_name: name
+    });
+    if (upsertError) {
+       console.error("Failed to upsert agent details:", upsertError);
+    }
+  }
+
+  await logAction(supabase, "CREATE_AGENT", "employee", inviteData?.user?.id || '', { companyId, name, email });
+  revalidatePath("/protected/admin");
+  return { 
+    success: true,
+    credentials: { email, password: "SystemCRM2026!" }
+  };
+}

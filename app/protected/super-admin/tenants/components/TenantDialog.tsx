@@ -25,6 +25,7 @@ interface TenantDialogProps {
 export default function TenantDialog({ children, mode, tenant, onSuccess }: TenantDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState(tenant?.name || "");
+  const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,40 +44,53 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                 setIsSubmitting(false);
                 return;
             }
-            const result = await createTenant(name, adminEmail);
+            const result = await createTenant(name, adminEmail, adminName);
             if (result.success) {
                 const creds = ('credentials' in result) ? result.credentials as { email: string, password: string } : null;
                 if (creds) {
-                    toast((t) => (
-                        <div className="flex flex-col gap-3 w-full">
-                            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm">
-                                <span>Tenant "{name}" provisioned successfully</span>
-                            </div>
-                            <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
-                                <p className="text-[10px] text-slate-500 mb-2 uppercase font-black tracking-widest">Admin Credentials</p>
-                                <div className="space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                                    <p>Email: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.email}</span></p>
-                                    <p>Password: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.password}</span></p>
+                    toast.custom((t) => (
+                        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-slate-900 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
+                            <div className="flex-1 w-0 p-4">
+                                <div className="flex flex-col gap-3 w-full">
+                                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm">
+                                        <span>Tenant "{name}" provisioned successfully</span>
+                                    </div>
+                                    <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
+                                        <p className="text-[10px] text-slate-500 mb-2 uppercase font-black tracking-widest">Admin Credentials</p>
+                                        <div className="space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
+                                            <p>Email: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.email}</span></p>
+                                            <p>Password: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.password}</span></p>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            navigator.clipboard.writeText(`Login URL: ${window.location.origin}\nEmail: ${creds.email}\nPassword: ${creds.password}`);
+                                            toast.success("Credentials copied to clipboard!");
+                                            toast.dismiss(t.id);
+                                        }}
+                                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-indigo-500/20"
+                                    >
+                                        Copy Credentials
+                                    </button>
                                 </div>
                             </div>
-                            <button 
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    navigator.clipboard.writeText(`Login URL: ${window.location.origin}\nEmail: ${creds.email}\nPassword: ${creds.password}`);
-                                    toast.success("Credentials copied to clipboard!");
-                                    toast.dismiss(t.id);
-                                }}
-                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-indigo-500/20"
-                            >
-                                Copy Credentials
-                            </button>
+                            <div className="flex border-l border-gray-200 dark:border-slate-700">
+                                <button
+                                    onClick={() => toast.dismiss(t.id)}
+                                    className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
-                    ), { duration: 30000, position: "bottom-right", style: { minWidth: '300px' } });
+                    ), { duration: 30000, position: "bottom-right" });
                 } else {
                     toast.success(`Tenant "${name}" provisioned successfully`);
                 }
                 setIsOpen(false);
                 setName("");
+                setAdminName("");
                 setAdminEmail("");
                 onSuccess?.();
             } else {
@@ -107,7 +121,7 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden transform animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden transform animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="px-8 py-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
               <div className="flex items-center gap-3">
@@ -132,9 +146,10 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
             </div>
 
             {/* Form */}
-            <form onSubmit={handleSubmit} className="px-8 py-6 space-y-6">
-              <div className="space-y-2">
-                <label htmlFor="company-name" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
+            <form onSubmit={handleSubmit} className="px-8 py-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2 md:col-span-2">
+                  <label htmlFor="company-name" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Name</label>
                 <div className="relative group/input">
                   <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
                   <input
@@ -149,24 +164,40 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
               </div>
 
               {mode === "create" && (
-                <div className="space-y-2">
-                  <label htmlFor="admin-email" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Email Address</label>
-                  <div className="relative group/input">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
-                    <input
-                      type="email"
-                      id="admin-email"
-                      value={adminEmail}
-                      onChange={(e) => setAdminEmail(e.target.value)}
-                      placeholder="admin@acmecorp.com"
-                      className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
-                    />
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="admin-name" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Name</label>
+                    <div className="relative group/input">
+                      <UserCog className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
+                      <input
+                        type="text"
+                        id="admin-name"
+                        value={adminName}
+                        onChange={(e) => setAdminName(e.target.value)}
+                        placeholder="e.g. John Doe"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                      />
+                    </div>
                   </div>
-                </div>
+                  <div className="space-y-2">
+                    <label htmlFor="admin-email" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Email Address</label>
+                    <div className="relative group/input">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/input:text-indigo-500 transition-colors" />
+                      <input
+                        type="email"
+                        id="admin-email"
+                        value={adminEmail}
+                        onChange={(e) => setAdminEmail(e.target.value)}
+                        placeholder="admin@acmecorp.com"
+                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                      />
+                    </div>
+                  </div>
+                </>
               )}
               
-              <div>
-                <label htmlFor="company-logo">Company Logo</label>
+              <div className="space-y-2">
+                <label htmlFor="company-logo" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Logo</label>
                 <input
                   type="file"
                   id="company-logo"
@@ -230,7 +261,8 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-end gap-3 pt-4">
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-8 mt-2 border-t border-slate-100 dark:border-slate-800/50">
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}

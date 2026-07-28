@@ -30,33 +30,21 @@ async function DashboardContent() {
 
   const { data: profile } = await supabase
     .from("employees")
-    .select("role, full_name, companies(name)")
+    .select("role, full_name, company_id, companies(name)")
     .eq("id", user.id)
     .single();
 
-  const role =
-    profile?.role || user.user_metadata?.role || "sales_agent";
-  const fullName =
-    profile?.full_name ||
-    user.user_metadata?.full_name ||
-    user.email?.split("@")[0] ||
-    "Operator";
-
+  const role = profile?.role || user.user_metadata?.role || "sales_agent";
+  const companyId = profile?.company_id || user.user_metadata?.company_id;
+  const fullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Operator";
   const firstName = fullName.split(" ")[0];
 
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const roleLabel = role.replace(/_/g, " ");
-
-  // Resolve the company/platform name the agent is assigned to
+  
   const companyData = profile?.companies as unknown as { name: string } | null;
   const platformLabel = companyData?.name ?? "Unassigned";
 
@@ -71,7 +59,15 @@ async function DashboardContent() {
       roles: ["superadmin"],
       desc: "Platform-wide management",
     },
-    // agent needs this
+    {
+      name: "Company Admin",
+      href: "/protected/admin",
+      icon: Settings,
+      bg: "bg-blue-100 dark:bg-blue-900/40",
+      iconColor: "text-blue-600 dark:text-blue-400",
+      roles: ["admin"],
+      desc: "Company settings & agents",
+    },
     {
       name: "My workspace",
       href: "/protected/sales-agent",
@@ -90,7 +86,6 @@ async function DashboardContent() {
       roles: ["sales_agent", "admin", "superadmin"],
       desc: "SLA objective board",
     },
-    // agent needs this
     {
       name: "Support tickets",
       href: "/protected/tickets",
@@ -122,35 +117,54 @@ async function DashboardContent() {
 
   const quickLinks = allLinks.filter((link) => link.roles.includes(role));
 
-  // Role-based dummy stats
-  const getStats = () => {
-    switch (role) {
-      case 'superadmin':
-        return [
-          { label: "Global Leads", value: "1,240", sub: "+12% this month" },
-          { label: "Active Nodes", value: "48", sub: "Operational" },
-          { label: "Total Revenue", value: "KES 12.4M", sub: "KES 1.2M today" },
-          { label: "System Health", value: "99.9%", sub: "af-south-1" },
-        ];
-      case 'admin':
-        return [
-          { label: "Company Leads", value: "342", sub: "12 new today" },
-          { label: "Team Tasks", value: "18", sub: "5 high priority" },
-          { label: "Resolved Tickets", value: "89", sub: "92% SLA" },
-          { label: "Active Agents", value: "6", sub: "4 online" },
-        ];
-      case 'sales_agent':
-      default:
-        return [
-          { label: "My Leads", value: "24", sub: "3 new" },
-          { label: "Tasks Due Today", value: "5", sub: "2 high priority" },
-          { label: "Open Tickets", value: "8", sub: "2 pending" },
-          { label: "Unread Messages", value: "14", sub: "5 from clients" },
-        ];
-    }
-  };
+  // Live Database Stats
+  let stats: any[] = [];
 
-  const stats = getStats();
+  if (role === 'superadmin') {
+    const [{ count: leadsCount }, { count: nodesCount }, { data: deals }] = await Promise.all([
+      supabase.from('leads').select('*', { count: 'exact', head: true }),
+      supabase.from('companies').select('*', { count: 'exact', head: true }),
+      supabase.from('deals').select('amount').eq('status', 'won')
+    ]);
+    
+    const revenue = (deals || []).reduce((acc, d) => acc + (Number(d.amount) || 0), 0);
+    const revFormatted = new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 }).format(revenue);
+    
+    stats = [
+      { label: "Global Leads", value: leadsCount?.toString() || "0", sub: "Platform-wide" },
+      { label: "Total Nodes", value: nodesCount?.toString() || "0", sub: "Provisioned companies" },
+      { label: "Global Revenue", value: `$${revFormatted}`, sub: "Total settled value" },
+      { label: "System Health", value: "99.9%", sub: "Operational" },
+    ];
+  } else if (role === 'admin' && companyId) {
+    const [{ count: leadsCount }, { count: tasksCount }, { count: ticketsCount }, { count: agentsCount }] = await Promise.all([
+      supabase.from('leads').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
+      supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'closed'),
+      supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId)
+    ]);
+    
+    stats = [
+      { label: "Company Leads", value: leadsCount?.toString() || "0", sub: "Total Pipeline" },
+      { label: "Company Tasks", value: tasksCount?.toString() || "0", sub: "Total Tasks" },
+      { label: "Resolved Tickets", value: ticketsCount?.toString() || "0", sub: "Closed" },
+      { label: "Active Agents", value: agentsCount?.toString() || "0", sub: "Provisioned staff" },
+    ];
+  } else {
+    // Sales Agent / Default
+    const [{ count: myLeads }, { count: myTasks }, { count: myTickets }] = await Promise.all([
+      supabase.from('leads').select('*', { count: 'exact', head: true }).eq('employee_id', user.id),
+      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id),
+      supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id).eq('status', 'open')
+    ]);
+    
+    stats = [
+      { label: "My Leads", value: myLeads?.toString() || "0", sub: "Assigned to me" },
+      { label: "My Tasks", value: myTasks?.toString() || "0", sub: "Total tasks" },
+      { label: "Open Tickets", value: myTickets?.toString() || "0", sub: "Requires attention" },
+      { label: "Unread Messages", value: "0", sub: "All caught up" },
+    ];
+  }
 
   return (
     <div className="flex-1 w-full px-10 py-10 space-y-10 animate-in fade-in duration-700">
@@ -197,7 +211,7 @@ async function DashboardContent() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
         {/* ── MODULE GRID ── */}
-        {/* <section className="xl:col-span-2 space-y-4">
+        <section className="xl:col-span-2 space-y-4">
           <p className="text-xs font-medium tracking-widest uppercase text-slate-400 dark:text-slate-500">
             Quick access
           </p>
@@ -226,7 +240,7 @@ async function DashboardContent() {
               );
             })}
           </div>
-        </section> */}
+        </section>
 
         {/* ── SESSION SIDEBAR ── */}
         <section className="space-y-4">

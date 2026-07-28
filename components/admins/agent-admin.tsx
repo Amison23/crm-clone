@@ -29,8 +29,7 @@ export function AgentDashboard({ userId, companyId }: { userId?: string; company
         .from('tickets')
         .select(`
           *,
-          companies (name, logo),
-          employees!tickets_assigned_to_fkey (full_name)
+          companies (name, logo)
         `)
       
       if (userId) {
@@ -45,23 +44,23 @@ export function AgentDashboard({ userId, companyId }: { userId?: string; company
       const { data: ticketsData } = await ticketsQuery.order('created_at', { ascending: false })
 
       // Fetch employees (Team) in my company
-      const employeesQuery = supabase.from('employees').select('*').neq('role', 'client')
+      const employeesQuery = supabase.from('employees').select('*').in('role', ['admin', 'sales_agent'])
       if (companyId) {
         employeesQuery.eq('company_id', companyId)
       }
       const { data: employeesData } = await employeesQuery
 
-      // Fetch companies (Clients) I am associated with
-      const companiesQuery = supabase.from('companies').select('*')
+      // Fetch customers (Clients) I am associated with
+      const companiesQuery = supabase.from('employees').select('*').eq('role', 'customer')
       if (companyId) {
-        companiesQuery.eq('id', companyId)
+        companiesQuery.eq('company_id', companyId)
       }
       const { data: companiesData } = await companiesQuery
 
       if (ticketsData) setTickets(ticketsData.map(t => ({
         id: t.id,
         title: t.title,
-        client: t.companies?.name || 'Unknown',
+        client: companiesData?.find(c => c.id === t.client_id)?.full_name || 'Unknown',
         priority: t.priority.charAt(0).toUpperCase() + t.priority.slice(1),
         status: t.status === 'open' ? 'Open' : t.status === 'in_progress' ? 'In Progress' : 'Resolved',
         category: t.category,
@@ -79,11 +78,11 @@ export function AgentDashboard({ userId, companyId }: { userId?: string; company
       
       if (companiesData) setCompanies(companiesData.map(c => ({
         id: c.id,
-        name: c.name,
-        logo: c.logo || `https://api.dicebear.com/7.x/initials/svg?seed=${c.name}&backgroundColor=6366f1`,
-        plan: c.pricing_tier || "Free",
+        name: c.full_name,
+        logo: `https://api.dicebear.com/7.x/initials/svg?seed=${c.full_name}&backgroundColor=10b981`,
+        plan: "Basic",
         status: "Healthy",
-        open_issues: ticketsData?.filter(t => t.company_id === c.id && t.status !== 'resolved').length || 0,
+        open_issues: ticketsData?.filter(t => t.client_id === c.id && t.status !== 'resolved').length || 0,
         since: c.created_at
       })))
 
@@ -183,7 +182,7 @@ export function AgentDashboard({ userId, companyId }: { userId?: string; company
         {tab === "overview" && <OverviewTab tickets={tickets} companies={companies} employees={employees} />}
         {tab === "clients" && <ClientsTab tickets={tickets} companies={companies} />}
         {tab === "issues" && <IssuesTab tickets={tickets} />}
-        {tab === "chat" && <ChatTab employees={employees} />}
+        {tab === "chat" && <ChatTab employees={employees} currentUserId={userId} />}
         {tab === "report" && <ReportTab companies={companies} userId={userId} companyId={companyId} />}
       </div>
     </div>
@@ -356,13 +355,14 @@ function IssuesTab({ tickets }: { tickets: any[] }) {
 
 // ─── Chat Tab ─────────────────────────────────────────────────────────────────
 
-function ChatTab({ employees }: { employees: any[] }) {
-  const [activePeer, setActivePeer] = useState(employees[0]?.id)
+function ChatTab({ employees, currentUserId }: { employees: any[], currentUserId?: string }) {
+  const peers = employees.filter(e => e.id !== currentUserId)
+  const [activePeer, setActivePeer] = useState(peers[0]?.id)
   const [messages, setMessages] = useState<Record<string, { id: string; from: "me" | "them"; text: string; time: string }[]>>({})
   const [input, setInput] = useState("")
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const peer = employees.find((t) => t.id === activePeer) || employees[0]
+  const peer = peers.find((t) => t.id === activePeer) || peers[0]
   if (!peer) return <EmptyState icon="group_off" message="No team members online for chat" />
   const thread = messages[activePeer] ?? []
 
@@ -387,7 +387,7 @@ function ChatTab({ employees }: { employees: any[] }) {
           <p className="text-[11px] font-black uppercase text-slate-400 tracking-wider">Team</p>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {employees.map((member) => {
+          {peers.map((member) => {
             const unread = (messages[member.id] ?? []).filter((m) => m.from === "them").length
             return (
               <button
