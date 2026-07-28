@@ -84,18 +84,18 @@ export async function createTenant(name: string, adminEmail?: string) {
 
   if (adminEmail) {
     const adminClient = createAdminClient();
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
-      adminEmail,
-      {
-        data: {
-          company_id: data.id,
-          role: "admin"
-        }
+    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
+      email: adminEmail,
+      password: "SystemCRM2026!",
+      email_confirm: true,
+      user_metadata: {
+        company_id: data.id,
+        role: "admin"
       }
-    );
+    });
 
     if (inviteError) {
-      return { success: false, error: `Tenant created but failed to invite admin: ${inviteError.message}` };
+      return { success: false, error: `Tenant created but failed to create admin: ${inviteError.message}` };
     }
 
     if (inviteData?.user) {
@@ -111,7 +111,11 @@ export async function createTenant(name: string, adminEmail?: string) {
  
   await logAction(supabase, "CREATE_TENANT", "company", data.id, { name, slug: data.slug });
   revalidatePath("/protected/super-admin/tenants");
-  return { success: true, data };
+  return { 
+    success: true, 
+    data, 
+    credentials: adminEmail ? { email: adminEmail, password: "SystemCRM2026!" } : undefined 
+  };
 }
 
 export async function updateTenant(id: string, name: string) {

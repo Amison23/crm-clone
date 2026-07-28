@@ -45,7 +45,35 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
             }
             const result = await createTenant(name, adminEmail);
             if (result.success) {
-                toast.success(`Tenant "${name}" provisioned successfully`);
+                if (result.credentials) {
+                    toast((t) => (
+                        <div className="flex flex-col gap-3 w-full">
+                            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm">
+                                <span>Tenant "{name}" provisioned successfully</span>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
+                                <p className="text-[10px] text-slate-500 mb-2 uppercase font-black tracking-widest">Admin Credentials</p>
+                                <div className="space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
+                                    <p>Email: <span className="text-indigo-600 dark:text-indigo-400 select-all">{result.credentials.email}</span></p>
+                                    <p>Password: <span className="text-indigo-600 dark:text-indigo-400 select-all">{result.credentials.password}</span></p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    navigator.clipboard.writeText(`Login URL: ${window.location.origin}\nEmail: ${result.credentials.email}\nPassword: ${result.credentials.password}`);
+                                    toast.success("Credentials copied to clipboard!");
+                                    toast.dismiss(t.id);
+                                }}
+                                className="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-indigo-500/20"
+                            >
+                                Copy Credentials
+                            </button>
+                        </div>
+                    ), { duration: 30000, position: "bottom-right", style: { minWidth: '300px' } });
+                } else {
+                    toast.success(`Tenant "${name}" provisioned successfully`);
+                }
                 setIsOpen(false);
                 setName("");
                 setAdminEmail("");

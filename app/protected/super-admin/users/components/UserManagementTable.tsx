@@ -29,7 +29,7 @@ interface Company {
   name: string;
 }
 
-export default function UserManagementTable({ initialUsers, companies }: { initialUsers: any[], companies: Company[] }) {
+export default function UserManagementTable({ initialUsers, companies }: { initialUsers: User[], companies: Company[] }) {
   const [employees, setEmployees] = useState(initialUsers);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
@@ -111,7 +111,7 @@ export default function UserManagementTable({ initialUsers, companies }: { initi
 }
 
 function UserRow({ user, roles, companies, onUpdate, isLoading }: { 
-    user: any, 
+    user: User, 
     roles: any[], 
     companies: Company[], 
     onUpdate: (userId: string, role: string, companyId: string | null) => void,
