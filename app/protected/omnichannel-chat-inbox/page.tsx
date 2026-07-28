@@ -39,8 +39,12 @@ export default function OmnichannelChatInbox() {
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [employeeName, setEmployeeName] = useState<string>('')
+  const [companyId, setCompanyId] = useState<string | null>(null)
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [filter, setFilter] = useState<FilterTab>('unassigned')
   const [searchQuery, setSearchQuery] = useState('')
+  const [colleagueSearchQuery, setColleagueSearchQuery] = useState('')
+  const [isCreatingNewChat, setIsCreatingNewChat] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -52,13 +56,27 @@ export default function OmnichannelChatInbox() {
       if (user) {
         const { data: employee } = await supabase
           .from('employees')
-          .select('full_name')
+          .select('full_name, company_id')
           .eq('id', user.id)
           .single()
         setEmployeeName(employee?.full_name || user.email || '')
-      }
+        setCompanyId(employee?.company_id || null)
 
-      await loadChats('unassigned', user?.id)
+        // Fetch team members in the same company
+        if (employee?.company_id) {
+          const { data: team } = await supabase
+            .from('employees')
+            .select('id, full_name, email_address, role')
+            .eq('company_id', employee.company_id)
+            .neq('id', user.id)
+            .in('role', ['admin', 'sales_agent'])
+          setTeamMembers(team || [])
+        }
+
+        await loadChats('unassigned', user?.id, employee?.company_id, user?.email)
+      } else {
+        await loadChats('unassigned', undefined, null, undefined)
+      }
       setLoading(false)
     }
     init()
@@ -69,11 +87,11 @@ export default function OmnichannelChatInbox() {
     const channel = supabase
       .channel('chat_sessions_feed')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_sessions' }, () => {
-        loadChats(filter, currentUser?.id)
+        loadChats(filter, currentUser?.id, companyId, currentUser?.email)
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [filter, currentUser])
+  }, [filter, currentUser, companyId])
 
   // Realtime: new messages for selected chat
   useEffect(() => {
@@ -101,11 +119,18 @@ export default function OmnichannelChatInbox() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const loadChats = async (tab: FilterTab, userId?: string) => {
+  const loadChats = async (tab: FilterTab, userId?: string, compId?: string | null, userEmail?: string) => {
     try {
-      let query = supabase.from('chat_sessions').select('*').order('created_at', { ascending: false })
+      let query = supabase.from('chat_sessions').select('*').order('created_at', { ascending: false }).eq('is_deleted', false)
+      if (compId) query = query.eq('company_id', compId)
       if (tab === 'unassigned') query = query.is('assigned_to', null).eq('status', 'unassigned')
-      else if (tab === 'mine') query = query.eq('assigned_to', userId ?? '')
+      else if (tab === 'mine') {
+        if (userEmail) {
+          query = query.or(`assigned_to.eq.${userId ?? ''},customer_email.eq.${userEmail}`)
+        } else {
+          query = query.eq('assigned_to', userId ?? '')
+        }
+      }
       else if (tab === 'bot-only') query = query.eq('status', 'bot_only')
       const { data } = await query
       setChats(data || [])
@@ -130,7 +155,7 @@ export default function OmnichannelChatInbox() {
 
   const handleFilterChange = (tab: FilterTab) => {
     setFilter(tab)
-    loadChats(tab, currentUser?.id)
+    loadChats(tab, currentUser?.id, companyId, currentUser?.email)
   }
 
   const claimChat = async () => {
@@ -149,15 +174,17 @@ export default function OmnichannelChatInbox() {
     }
   }
 
-  const closeChat = async () => {
+  const deleteChat = async () => {
     if (!selectedChat) return
     await supabase
       .from('chat_sessions')
-      .update({ status: 'closed', closed_at: new Date().toISOString() })
+      .update({ is_deleted: true })
       .eq('id', selectedChat.id)
+    
+    setChats(prev => prev.filter(c => c.id !== selectedChat.id))
     setSelectedChat(null)
     setMessages([])
-    loadChats(filter, currentUser?.id)
+    loadChats(filter, currentUser?.id, companyId, currentUser?.email)
   }
 
   const sendMessage = async (e: React.FormEvent) => {
@@ -182,6 +209,55 @@ export default function OmnichannelChatInbox() {
     return c.customer_name?.toLowerCase().includes(q) || c.customer_email?.toLowerCase().includes(q)
   })
 
+  const filteredTeam = teamMembers.filter((t) => {
+    // Show all team members in the "Start New Chat" view if no query, but hide them in the sidebar if no query.
+    // We can handle the sidebar hiding down in the render, but here we'll filter based on either query.
+    if (!searchQuery && !colleagueSearchQuery) return true 
+    const q = (searchQuery || colleagueSearchQuery).toLowerCase()
+    return t.full_name?.toLowerCase().includes(q) || t.email_address?.toLowerCase().includes(q)
+  })
+
+  const handleSelectTeamMember = async (teamMember: any) => {
+    // Query the database to see if an internal chat already exists to prevent duplicates across tabs
+    const { data: existingChats } = await supabase
+      .from('chat_sessions')
+      .select('*')
+      .eq('source', 'internal')
+      .eq('is_deleted', false)
+      .or(`and(customer_email.eq.${teamMember.email_address},assigned_to.eq.${currentUser?.id}),and(customer_email.eq.${currentUser?.email},assigned_to.eq.${teamMember.id})`)
+      .limit(1)
+
+    let existingChat = existingChats?.[0]
+
+    if (!existingChat) {
+      // Create a new internal chat session
+      const { data, error } = await supabase.from('chat_sessions').insert({
+        company_id: companyId,
+        customer_name: teamMember.full_name,
+        customer_email: teamMember.email_address,
+        assigned_to: currentUser?.id,
+        status: 'active',
+        source: 'internal',
+        is_lead: false
+      }).select().single()
+
+      if (data) {
+        existingChat = data
+        setChats(prev => [data, ...prev])
+      } else {
+        console.error("Error creating internal chat:", error)
+        return
+      }
+    }
+
+    if (existingChat) {
+      handleSelectChat(existingChat)
+    }
+    setSearchQuery('')
+    setColleagueSearchQuery('')
+    setIsCreatingNewChat(false)
+  }
+
   const formatTime = (ts: string) => {
     const diffMin = Math.floor((Date.now() - new Date(ts).getTime()) / 60000)
     if (diffMin < 1) return 'just now'
@@ -197,7 +273,16 @@ export default function OmnichannelChatInbox() {
         <div className="p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold">Inbox</h2>
-            <span className="text-xs font-semibold text-slate-400">{filteredChats.length} chats</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-slate-400">{filteredChats.length} chats</span>
+              <button 
+                onClick={() => { setSelectedChat(null); setIsCreatingNewChat(true); }}
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                title="Start New Chat"
+              >
+                <span className="material-symbols-outlined text-[15px]">edit_square</span>
+              </button>
+            </div>
           </div>
           <div className="relative">
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
@@ -272,6 +357,44 @@ export default function OmnichannelChatInbox() {
               )}
             </div>
           ))}
+
+          {/* Internal Team Search Results */}
+          {searchQuery && filteredTeam.length > 0 && (
+            <div className="mt-4">
+              <div className="px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                Team Members
+              </div>
+              {filteredTeam.map((member) => (
+                <div
+                  key={member.id}
+                  onClick={() => handleSelectTeamMember(member)}
+                  className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0">
+                        <span className="text-xs font-bold text-white">
+                          {(member.full_name || 'T')[0].toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold">{member.full_name || 'Unknown'}</p>
+                        <div className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px] text-indigo-500">badge</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-400">
+                            {member.role === 'admin' ? 'Admin' : 'Sales Agent'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 truncate ml-11">
+                    {member.email_address}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
@@ -300,14 +423,20 @@ export default function OmnichannelChatInbox() {
                     Claim Chat
                   </button>
                 )}
-                {selectedChat.status !== 'closed' && (
                   <button
-                    onClick={closeChat}
-                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-200 transition-colors"
+                    onClick={() => { setSelectedChat(null); setIsCreatingNewChat(false); }}
+                    className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1"
                   >
+                    <span className="material-symbols-outlined text-[14px]">close</span>
                     Close
                   </button>
-                )}
+                  <button
+                    onClick={deleteChat}
+                    className="px-3 py-1.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-xs font-semibold hover:bg-red-200 transition-colors flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">delete</span>
+                    Delete
+                  </button>
               </div>
             </div>
 
@@ -378,10 +507,68 @@ export default function OmnichannelChatInbox() {
               )}
             </div>
           </>
+        ) : isCreatingNewChat ? (
+          <div className="flex h-full items-center justify-center flex-col gap-4 text-slate-400 p-8 w-full max-w-lg mx-auto">
+            <span className="material-symbols-outlined text-5xl mb-2 text-primary">person_add</span>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">Start a new chat</h3>
+            <p className="text-sm font-medium mb-4 text-center">Search for a colleague within your organization</p>
+            
+            <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col h-80">
+              <div className="relative border-b border-slate-100 dark:border-slate-800 p-3 shrink-0">
+                <span className="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+                <input
+                  autoFocus
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none"
+                  placeholder="Search by name or email..."
+                  value={colleagueSearchQuery}
+                  onChange={(e) => setColleagueSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto p-2">
+                {filteredTeam.length === 0 ? (
+                   <p className="text-center text-xs text-slate-400 p-4">No colleagues found.</p>
+                ) : (
+                  filteredTeam.map(member => (
+                    <div
+                      key={member.id}
+                      onClick={() => handleSelectTeamMember(member)}
+                      className="px-3 py-2.5 rounded-lg border border-transparent cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shrink-0">
+                          <span className="text-xs font-bold text-white">
+                            {(member.full_name || 'T')[0].toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{member.full_name || 'Unknown'}</p>
+                          <p className="text-xs text-slate-400">{member.role === 'admin' ? 'Admin' : 'Sales Agent'}</p>
+                        </div>
+                      </div>
+                      <span className="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors text-sm">chat</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+            <button 
+              onClick={() => { setIsCreatingNewChat(false); setColleagueSearchQuery(''); }}
+              className="mt-4 px-4 py-2 text-sm font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         ) : (
-          <div className="flex h-full items-center justify-center flex-col gap-3 text-slate-400">
+          <div className="flex h-full items-center justify-center flex-col gap-4 text-slate-400">
             <span className="material-symbols-outlined text-5xl">forum</span>
             <p className="text-sm font-medium">Select a conversation to get started</p>
+            <button
+              onClick={() => setIsCreatingNewChat(true)}
+              className="mt-2 flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shadow-sm font-medium text-sm hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <span className="material-symbols-outlined text-sm">add</span>
+              Start New Chat
+            </button>
           </div>
         )}
       </section>
