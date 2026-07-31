@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { MFAChallengeForm } from "@/components/mfa-challenge-form";
 
 export function LoginForm({
   className,
@@ -24,11 +25,12 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showMfaChallenge, setShowMfaChallenge] = useState(false);
   const router = useRouter();
+  const supabase = createClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const supabase = createClient();
     setIsLoading(true);
     setError(null);
 
@@ -37,7 +39,25 @@ export function LoginForm({
         email,
         password,
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Email not confirmed")) {
+          throw new Error("Please confirm your email address before logging in.");
+        }
+        throw error;
+      }
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        const { data: mfaData, error: mfaError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        if (mfaError) throw mfaError;
+        
+        if (mfaData.nextLevel === "aal2" && mfaData.currentLevel === "aal1") {
+          setShowMfaChallenge(true);
+          return;
+        }
+      }
+      
       // Update this route to redirect to an authenticated route. The user already has an active session.
       router.push("/protected");
     } catch (error: unknown) {
@@ -46,6 +66,22 @@ export function LoginForm({
       setIsLoading(false);
     }
   };
+
+  if (showMfaChallenge) {
+    return (
+      <div className={cn("flex flex-col gap-6", className)} {...props}>
+        <MFAChallengeForm 
+          onCancel={() => {
+            setShowMfaChallenge(false);
+            supabase.auth.signOut();
+          }}
+          onSuccess={() => {
+            router.push("/protected");
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

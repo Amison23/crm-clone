@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "react-hot-toast"
 import { provisionAgent } from "@/app/protected/super-admin/actions"
+import { generateInviteCode, linkExistingUser } from "@/app/actions/tenant"
 
 type Tab = "overview" | "agents" | "customers" | "issues"
 type Company = {
@@ -9,6 +10,7 @@ type Company = {
   logo: string,
   subscription_plan: string,
   status: string,
+  invite_code?: string,
 }
 
 // ─── Company Admin ─────────────────────────────────────────────────────────────
@@ -20,7 +22,8 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
     name: initialCompany.name,
     logo: initialCompany.logo || `https://api.dicebear.com/7.x/initials/svg?seed=${initialCompany.name}&backgroundColor=6366f1`,
     subscription_plan: initialCompany.pricing_tier || "Pro",
-    status: initialCompany.is_active ? "Active" : "Inactive"
+    status: initialCompany.is_active ? "Active" : "Inactive",
+    invite_code: initialCompany.invite_code
   } : null)
   const [agents, setAgents] = useState<any[]>([])
   const [customers, setCustomers] = useState<any[]>([])
@@ -48,7 +51,8 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
               name: c.name,
               logo: c.logo || `https://api.dicebear.com/7.x/initials/svg?seed=${c.name}&backgroundColor=6366f1`,
               subscription_plan: c.pricing_tier || "Pro",
-              status: c.is_active ? "Active" : "Inactive"
+              status: c.is_active ? "Active" : "Inactive",
+              invite_code: c.invite_code
             })
           } else {
             // If no company found, we still need to stop loading but maybe show an error
@@ -246,7 +250,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
 
         {/* Tab Content */}
         {activeTab === "overview" && <OverviewTab issues={issues} agents={agents} customers={customers} />}
-        {activeTab === "agents" && <AgentsTab companyId={companyId} agents={agents} issues={issues} customers={customers} onAgentAdded={() => window.location.reload()} />}
+        {activeTab === "agents" && <AgentsTab company={company} companyId={companyId} agents={agents} issues={issues} customers={customers} onAgentAdded={() => window.location.reload()} />}
         {activeTab === "customers" && <ClientsTab customers={customers} />}
         {activeTab === "issues" && <IssuesTab issues={issues} />}
       </div>
@@ -347,70 +351,51 @@ function OverviewTab({ issues, agents, customers }: { issues: any[], agents: any
 
 // ─── Agents Tab ───────────────────────────────────────────────────────────────
 
-function AgentsTab({ companyId, agents, issues, customers, onAgentAdded }: { companyId?: string | null, agents: any[], issues: any[], customers: any[], onAgentAdded?: () => void }) {
+function AgentsTab({ company, companyId, agents, issues, customers, onAgentAdded }: { company?: Company | null, companyId?: string | null, agents: any[], issues: any[], customers: any[], onAgentAdded?: () => void }) {
   const [selected, setSelected] = useState<any | null>(null)
   const [isAddingAgent, setIsAddingAgent] = useState(false)
-  const [agentName, setAgentName] = useState("")
   const [agentEmail, setAgentEmail] = useState("")
+  const [agentRole, setAgentRole] = useState("sales_agent")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isGeneratingCode, setIsGeneratingCode] = useState(false)
+
+  const handleGenerateCode = async () => {
+    if (!companyId) return;
+    setIsGeneratingCode(true);
+    try {
+      const res = await generateInviteCode(companyId);
+      if (res.success) {
+        toast.success("Invite code generated!");
+        onAgentAdded?.(); // Reload to fetch new code
+      } else {
+        toast.error(res.error || "Failed to generate code");
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsGeneratingCode(false);
+    }
+  };
 
   const handleAddAgent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) return;
-    if (!agentName.trim() || !agentEmail.trim()) {
-      toast.error("Name and Email are required");
+    if (!agentEmail.trim()) {
+      toast.error("Email is required");
       return;
     }
     setIsSubmitting(true);
 
     try {
-      const result = await provisionAgent(companyId, agentName, agentEmail);
-      if (result.success && result.credentials) {
-        const creds = result.credentials;
-        toast.custom((t) => (
-          <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-slate-900 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}>
-            <div className="flex-1 w-0 p-4">
-              <div className="flex flex-col gap-3 w-full">
-                <div className="flex items-center gap-2 text-green-600 dark:text-green-400 font-bold text-sm">
-                  <span>Agent provisioned successfully</span>
-                </div>
-                <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded-lg border border-slate-100 dark:border-slate-700">
-                  <p className="text-[10px] text-slate-500 mb-2 uppercase font-black tracking-widest">Agent Credentials</p>
-                  <div className="space-y-1 text-xs font-bold text-slate-700 dark:text-slate-300">
-                    <p>Email: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.email}</span></p>
-                    <p>Password: <span className="text-indigo-600 dark:text-indigo-400 select-all">{creds.password}</span></p>
-                  </div>
-                </div>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    navigator.clipboard.writeText(`Login URL: ${window.location.origin}\nEmail: ${creds.email}\nPassword: ${creds.password}`);
-                    toast.success("Credentials copied to clipboard!");
-                    toast.dismiss(t.id);
-                  }}
-                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all shadow-lg shadow-indigo-500/20"
-                >
-                  Copy Credentials
-                </button>
-              </div>
-            </div>
-            <div className="flex border-l border-gray-200 dark:border-slate-700">
-              <button
-                onClick={() => toast.dismiss(t.id)}
-                className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-indigo-600 hover:text-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        ), { duration: 30000, position: "bottom-right" });
-
+      const result = await linkExistingUser(companyId, agentEmail.trim(), agentRole);
+      if (result.success) {
+        toast.success("User successfully added to organization!");
         setIsAddingAgent(false);
-        setAgentName("");
         setAgentEmail("");
+        setAgentRole("sales_agent");
         onAgentAdded?.();
       } else {
-        toast.error(result.error || "Failed to create agent");
+        toast.error(result.error || "Failed to add user");
       }
     } catch (err: any) {
       toast.error(err.message || "An error occurred");
@@ -421,7 +406,37 @@ function AgentsTab({ companyId, agents, issues, customers, onAgentAdded }: { com
 
   return (
     <>
-      <div className="mb-6 flex justify-end">
+      <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 pl-4 rounded-2xl shadow-sm">
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Company Invite Code</span>
+            {company?.invite_code ? (
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-black tracking-widest text-slate-900 dark:text-white uppercase">{company.invite_code}</span>
+                <button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(company.invite_code || "");
+                    toast.success("Copied to clipboard!");
+                  }}
+                  className="text-indigo-500 hover:text-indigo-600 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-sm">content_copy</span>
+                </button>
+              </div>
+            ) : (
+              <span className="text-sm font-semibold text-slate-500 italic">None generated</span>
+            )}
+          </div>
+          <button
+            onClick={handleGenerateCode}
+            disabled={isGeneratingCode}
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-sm">{isGeneratingCode ? "sync" : "refresh"}</span>
+            {company?.invite_code ? "Regenerate" : "Generate"}
+          </button>
+        </div>
+
         <button
           onClick={() => setIsAddingAgent(true)}
           className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/30 hover:bg-indigo-500 transition-all active:scale-95"
@@ -443,26 +458,27 @@ function AgentsTab({ companyId, agents, issues, customers, onAgentAdded }: { com
 
             <form onSubmit={handleAddAgent} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Agent Name</label>
-                <input
-                  type="text"
-                  required
-                  value={agentName}
-                  onChange={(e) => setAgentName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                  placeholder="e.g. Jane Doe"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Agent Email Address</label>
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">User Email Address</label>
                 <input
                   type="email"
                   required
                   value={agentEmail}
                   onChange={(e) => setAgentEmail(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                  placeholder="agent@company.com"
+                  placeholder="user@company.com"
                 />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Role</label>
+                <select
+                  value={agentRole}
+                  onChange={(e) => setAgentRole(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
+                  <option value="sales_agent">Sales Agent</option>
+                  <option value="admin">Admin</option>
+                  <option value="customer">Customer</option>
+                </select>
               </div>
               <button
                 type="submit"
@@ -474,7 +490,7 @@ function AgentsTab({ companyId, agents, issues, customers, onAgentAdded }: { com
                 ) : (
                   <span className="material-symbols-outlined text-sm">check_circle</span>
                 )}
-                {isSubmitting ? "Provisioning..." : "Provision Agent"}
+                {isSubmitting ? "Linking..." : "Add User"}
               </button>
             </form>
           </div>

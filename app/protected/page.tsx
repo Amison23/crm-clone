@@ -36,6 +36,11 @@ async function DashboardContent() {
 
   const role = profile?.role || user.user_metadata?.role || "sales_agent";
   const companyId = profile?.company_id || user.user_metadata?.company_id;
+  
+  if (!companyId && role !== "superadmin") {
+    redirect("/protected/unassigned");
+  }
+
   const fullName = profile?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Operator";
   const firstName = fullName.split(" ")[0];
 
