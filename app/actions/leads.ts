@@ -78,3 +78,57 @@ export async function createLeadAction(formData: FormData) {
 
   return { success: true };
 }
+
+export async function bulkUploadLeads(leads: any[]) {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  const { data: profile } = await supabase
+    .from("employees")
+    .select("company_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile?.company_id) {
+    return { success: false, error: "Unauthorized. Missing company context." };
+  }
+
+  // Format leads for DB, forcing company_id and employee_id from session
+  const rowsToInsert = leads.map(lead => {
+    let notes = lead.notes ? lead.notes + "\n\n" : "";
+    if (lead.product) notes += `Product: ${lead.product}\n`;
+    if (lead.institution_type) notes += `Institution: ${lead.institution_type}\n`;
+    if (lead.need_identified) notes += `Need: ${lead.need_identified}\n`;
+    if (lead.next_action) notes += `Next Action: ${lead.next_action} (${lead.next_action_date || 'No date'})\n`;
+
+    const nameParts = (lead.contact_name || "").trim().split(" ");
+    const first_name = nameParts[0] || "Unknown";
+    const last_name = nameParts.slice(1).join(" ") || "Unknown";
+
+    return {
+      company_id: profile.company_id,
+      employee_id: user.id, // Forcing the uploading agent as the owner
+      first_name,
+      last_name,
+      company_name: lead.client_name || "",
+      email: lead.email || null,
+      phone: lead.client_phone || null,
+      source: lead.source || "CSV Import",
+      status: lead.status || "new",
+      notes: notes.trim(),
+    };
+  });
+
+  try {
+    const { error } = await supabase.from("leads").insert(rowsToInsert);
+    if (error) throw error;
+  } catch (err: any) {
+    console.error("Bulk upload error:", err.message);
+    return { success: false, error: err.message };
+  }
+
+  revalidatePath("/protected/crm-leads-table");
+  return { success: true, count: rowsToInsert.length };
+}

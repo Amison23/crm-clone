@@ -44,6 +44,9 @@ export function SignUpForm({
         email,
         password,
         options: {
+          data: {
+            role: "unassigned",
+          },
           emailRedirectTo: `${window.location.origin}/protected`,
         },
       });

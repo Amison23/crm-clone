@@ -18,7 +18,7 @@ export type Task = {
   assignee?: { full_name: string | null, email_address: string | null } | null;
 };
 
-export function TasksClientWrapper({ initialTasks }: { initialTasks: Task[] }) {
+export function TasksClientWrapper({ initialTasks, agents = [], isAdmin = false }: { initialTasks: Task[], agents?: any[], isAdmin?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
 
   const showToast = (type: "success" | "error", text: string) => {
@@ -126,6 +126,8 @@ export function TasksClientWrapper({ initialTasks }: { initialTasks: Task[] }) {
                 <AddTaskForm 
                   onSuccess={() => setIsOpen(false)} 
                   onMessage={showToast}
+                  agents={agents}
+                  isAdmin={isAdmin}
                 />
               </div>
             </div>

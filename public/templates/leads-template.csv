@@ -1,0 +1,4 @@
+client_name,contact_name,email,client_phone,status,source,product,institution_type,need_identified,next_action,next_action_date,notes
+Acme Corp,John Doe,john@acme.com,+15550100,new,Conference,Enterprise Suite,Corporate,Integration,Follow up call,2026-08-15,Interested in pricing
+TechStart,Jane Smith,jane@techstart.io,+15550101,contacted,Inbound,Pro Suite,Startup,Scalability,Send quote,2026-08-16,
+Global Trade,,info@globaltrade.net,+15550102,qualified,Referral,,,Needs demo,Schedule demo,2026-08-18,

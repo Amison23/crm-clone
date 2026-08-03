@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import DashboardShell from "@/components/common/DashboardShell";
+import UnlinkedAgentScreen from "@/components/common/UnlinkedAgentScreen";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 
@@ -38,15 +39,20 @@ async function AuthGate({ children }: { children: ReactNode }) {
     redirect("/auth/login");
   }
 
-  // Fetch role from employees table to ensure sidebar has authoritative role
+  // Fetch role and company_id from employees table to ensure sidebar has authoritative info
   const { data: profile } = await supabase
     .from("employees")
-    .select("role")
+    .select("role, company_id")
     .eq("id", user.id)
     .single();
 
   const name = user.user_metadata?.full_name || user.email?.split('@')[0] || "Operator";
   const role = profile?.role || user.user_metadata?.role || "sales_agent";
+
+  // No-Tenant Gating
+  if (role === "sales_agent" && !profile?.company_id) {
+    return <UnlinkedAgentScreen />;
+  }
 
   return (
     <DashboardShell name={name} role={role}>

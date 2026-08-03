@@ -20,7 +20,11 @@ async function TaskManagementBoardData() {
   }
 
   return (
-    <TasksClientWrapper initialTasks={result.tasks || []} />
+    <TasksClientWrapper 
+      initialTasks={result.tasks || []} 
+      agents={result.agents || []}
+      isAdmin={result.isAdmin || false}
+    />
   );
 }
 

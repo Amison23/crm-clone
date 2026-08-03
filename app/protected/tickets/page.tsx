@@ -51,57 +51,7 @@ export default async function TicketsPage() {
 
   const { data: ticketsData } = await ticketsQuery;
 
-  // --- MOCK DATA FALLBACK FOR SALES AGENTS ---
-  const finalTicketsData = (ticketsData && ticketsData.length > 0) ? ticketsData : [
-    {
-      id: "721a8b9c-1d2e-3f4g-5h6i-7j8k9l0m1n2o",
-      title: "Unable to process payment for subscription",
-      description: "Client is getting a 'Card Declined' error even though the card is valid.",
-      status: "open",
-      priority: "high",
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-      company_id: companyId,
-      assigned_to: user?.id,
-      assigned_agent: { id: user?.id, full_name: user?.user_metadata?.full_name || "Sales Agent", role: "sales_agent" },
-      customer: { full_name: "James Smith" }
-    },
-    {
-      id: "832b9c0d-2e3f-4g5h-6i7j-8k9l0m1n2o3p",
-      title: "Reset password link not working",
-      description: "The link expires too quickly or doesn't load at all.",
-      status: "in_progress",
-      priority: "medium",
-      created_at: new Date(Date.now() - 7200000).toISOString(),
-      company_id: companyId,
-      assigned_to: user?.id,
-      assigned_agent: { id: user?.id, full_name: user?.user_metadata?.full_name || "Sales Agent", role: "sales_agent" },
-      customer: { full_name: "Sarah Johnson" }
-    },
-    {
-      id: "943c0d1e-3f4g-5h6i-7j8k-9l0m1n2o3p4q",
-      title: "Query about enterprise pricing",
-      description: "Wants to know if there's a discount for 100+ users.",
-      status: "open",
-      priority: "low",
-      created_at: new Date(Date.now() - 10800000).toISOString(),
-      company_id: companyId,
-      assigned_to: user?.id,
-      assigned_agent: { id: user?.id, full_name: user?.user_metadata?.full_name || "Sales Agent", role: "sales_agent" },
-      customer: { full_name: "Michael Chen" }
-    },
-    {
-      id: "054d1e2f-4g5h-6i7j-8k9l-0m1n2o3p4q5r",
-      title: "Feature Request: Dashboard Customization",
-      description: "Needs to be able to drag and drop widgets on the main screen.",
-      status: "resolved",
-      priority: "medium",
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      company_id: companyId,
-      assigned_to: user?.id,
-      assigned_agent: { id: user?.id, full_name: user?.user_metadata?.full_name || "Sales Agent", role: "sales_agent" },
-      customer: { full_name: "Elena Rodriguez" }
-    }
-  ];
+  const finalTicketsData = ticketsData ?? [];
 
   // Fetch all employees for the company (to show workload even for those with 0 tickets)
   let employees: any[] = [];

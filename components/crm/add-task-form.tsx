@@ -9,10 +9,14 @@ import { Loader2 } from "lucide-react";
 
 export function AddTaskForm({ 
   onSuccess,
-  onMessage 
+  onMessage,
+  agents,
+  isAdmin
 }: { 
   onSuccess?: () => void,
-  onMessage?: (type: "success" | "error", msg: string) => void
+  onMessage?: (type: "success" | "error", msg: string) => void,
+  agents?: any[],
+  isAdmin?: boolean
 }) {
   const [isPending, setIsPending] = useState(false);
   const isSubmitting = useRef(false);
@@ -43,6 +47,18 @@ export function AddTaskForm({
         <Label htmlFor="title">Title *</Label>
         <Input id="title" name="title" required placeholder="Task title" />
       </div>
+
+      {isAdmin && agents && agents.length > 0 && (
+        <div className="space-y-2">
+          <Label htmlFor="assigned_to">Assign To</Label>
+          <select id="assigned_to" name="assigned_to" className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm">
+            <option value="">Assign to myself</option>
+            {agents?.map((a: any) => (
+              <option key={a.id} value={a.id}>{a.full_name || a.email_address}</option>
+            ))}
+          </select>
+        </div>
+      )}
       
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">

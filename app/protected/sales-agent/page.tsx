@@ -34,6 +34,11 @@ export default async function SalesAgentPage() {
     supabase.from('deals').select('amount').eq('assigned_to', agentId).eq('status', 'won')
   ]);
 
+  if (tasksReq.error) console.error("Error fetching tasks:", tasksReq.error);
+  if (ticketsReq.error) console.error("Error fetching tickets:", ticketsReq.error);
+  if (leadsReq.error) console.error("Error fetching leads:", leadsReq.error);
+  if (dealsReq.error) console.error("Error fetching deals:", dealsReq.error);
+
   const tasksToMap = tasksReq.data || [];
   const ticketsToMap = ticketsReq.data || [];
 
@@ -68,9 +73,7 @@ export default async function SalesAgentPage() {
     name: t.title,
     assigned_to: agentName,
     initiation: new Date(t.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }),
-    resolution: (t.status === 'resolved' || t.status === 'closed') ? 'Resolved' : 'Pending',
-    inbound: Math.floor(Math.random() * 50),
-    outbound: Math.floor(Math.random() * 50)
+    resolution: (t.status === 'resolved' || t.status === 'closed') ? 'Resolved' : 'Pending'
   }));
 
   const leadsToShow = activeLeads;

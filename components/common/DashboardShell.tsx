@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useState, useEffect } from "react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
+import toast from "react-hot-toast";
 
 const navItems = [
   { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "superadmin"] },
@@ -19,8 +20,8 @@ const navItems = [
 
 const systemItems = [
   { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles:["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles:["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles:["sales_agent", "admin", "superadmin"] },
+  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles:["sales_agent", "admin", "superadmin"], disabled: true },
+  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles:["sales_agent", "admin", "superadmin"], disabled: true },
 ];
 export default function DashboardShell({ children, role, name }: { children: ReactNode; role?: string; name?: string }) {
   const router = useRouter();
@@ -84,9 +85,19 @@ export default function DashboardShell({ children, role, name }: { children: Rea
           </p>
         </div>
 
-        {filteredSystem.map(({ href, icon, label }) => {
+        {filteredSystem.map(({ href, icon, label, disabled }) => {
           const isActive = pathname.startsWith(href);
-          return (
+          return disabled ? (
+            <div
+              key={href}
+              onClick={() => toast("Coming soon", { icon: "⏳" })}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-400 dark:text-slate-600 cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-900"
+              title="Coming Soon"
+            >
+              <span className="material-symbols-outlined text-[22px] opacity-50">{icon}</span>
+              <span>{label}</span>
+            </div>
+          ) : (
             <Link
               key={href}
               href={href}

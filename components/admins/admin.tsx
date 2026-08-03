@@ -2,9 +2,10 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "react-hot-toast"
 import { provisionAgent } from "@/app/protected/super-admin/actions"
-import { generateInviteCode, linkExistingUser } from "@/app/actions/tenant"
+import { generateInviteCode, linkExistingUser, getActiveInvites, revokeInviteCode, getAgentMetrics } from "@/app/actions/tenant"
+import { getCompanyProducts, createCompanyProduct, getAgentProducts, toggleAgentProduct } from "@/app/actions/products"
 
-type Tab = "overview" | "agents" | "customers" | "issues"
+type Tab = "overview" | "agents" | "products" | "customers" | "issues"
 type Company = {
   name: string,
   logo: string,
@@ -28,6 +29,10 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
   const [agents, setAgents] = useState<any[]>([])
   const [customers, setCustomers] = useState<any[]>([])
   const [issues, setIssues] = useState<any[]>([])
+  const [products, setProducts] = useState<any[]>([])
+  const [agentProducts, setAgentProducts] = useState<any[]>([])
+  const [activeInvites, setActiveInvites] = useState<any[]>([])
+  const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -131,6 +136,28 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
           category: t.category
         })))
 
+        if (companyId) {
+          const [productsRes, agentProductsRes, invitesRes, metricsRes] = await Promise.all([
+            getCompanyProducts(companyId),
+            getAgentProducts(companyId),
+            getActiveInvites(companyId),
+            getAgentMetrics(companyId)
+          ]);
+          
+          if (productsRes.success && productsRes.products) {
+            setProducts(productsRes.products);
+          }
+          if (agentProductsRes.success && agentProductsRes.agentProducts) {
+            setAgentProducts(agentProductsRes.agentProducts);
+          }
+          if (invitesRes.success && invitesRes.invites) {
+            setActiveInvites(invitesRes.invites);
+          }
+          if (metricsRes.success && metricsRes.metrics) {
+            setAgentMetrics(metricsRes.metrics);
+          }
+        }
+
       } catch (error) {
         console.error("Error fetching company data:", error)
       } finally {
@@ -147,6 +174,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "overview", label: "Overview", icon: "dashboard" },
     { key: "agents", label: "Agents", icon: "support_agent" },
+    { key: "products", label: "Products", icon: "inventory_2" },
     { key: "customers", label: "Customers", icon: "business" },
     { key: "issues", label: "Issues", icon: "bug_report" },
   ]
@@ -219,7 +247,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
         {/* Stat Pills */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
           <StatCard icon="support_agent" label="Total Agents" value={agents.length} color="indigo" />
-          <StatCard icon="circle" label="Active Now" value={onlineAgents} color="emerald" />
+          <StatCard icon="inventory_2" label="Products" value={products.length} color="emerald" />
           <StatCard icon="business" label="Customers" value={customers.length} color="violet" />
           <StatCard icon="warning" label="Open Issues" value={totalOpenIssues} color={criticalIssues > 0 ? "red" : "amber"} />
         </div>
@@ -250,9 +278,10 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
 
         {/* Tab Content */}
         {activeTab === "overview" && <OverviewTab issues={issues} agents={agents} customers={customers} />}
-        {activeTab === "agents" && <AgentsTab company={company} companyId={companyId} agents={agents} issues={issues} customers={customers} onAgentAdded={() => window.location.reload()} />}
+        {activeTab === "agents" && <AgentsTab company={company} companyId={companyId} agents={agents} issues={issues} customers={customers} products={products} agentProducts={agentProducts} activeInvites={activeInvites} agentMetrics={agentMetrics} onAgentAdded={() => window.location.reload()} />}
+        {activeTab === "products" && <ProductsTab companyId={companyId} products={products} onProductAdded={() => window.location.reload()} />}
         {activeTab === "customers" && <ClientsTab customers={customers} />}
-        {activeTab === "issues" && <IssuesTab issues={issues} />}
+        {activeTab === "issues" && <IssuesTab issues={issues} agents={agents} companyId={companyId} onReassign={() => window.location.reload()} />}
       </div>
     </div>
   )
@@ -351,7 +380,7 @@ function OverviewTab({ issues, agents, customers }: { issues: any[], agents: any
 
 // ─── Agents Tab ───────────────────────────────────────────────────────────────
 
-function AgentsTab({ company, companyId, agents, issues, customers, onAgentAdded }: { company?: Company | null, companyId?: string | null, agents: any[], issues: any[], customers: any[], onAgentAdded?: () => void }) {
+function AgentsTab({ company, companyId, agents, issues, customers, products, agentProducts, activeInvites, agentMetrics, onAgentAdded }: { company?: Company | null, companyId?: string | null, agents: any[], issues: any[], customers: any[], products: any[], agentProducts: any[], activeInvites: any[], agentMetrics: Record<string, any>, onAgentAdded?: () => void }) {
   const [selected, setSelected] = useState<any | null>(null)
   const [isAddingAgent, setIsAddingAgent] = useState(false)
   const [agentEmail, setAgentEmail] = useState("")
@@ -376,7 +405,7 @@ function AgentsTab({ company, companyId, agents, issues, customers, onAgentAdded
       setIsGeneratingCode(false);
     }
   };
-
+  
   const handleAddAgent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyId) return;
@@ -446,6 +475,39 @@ function AgentsTab({ company, companyId, agents, issues, customers, onAgentAdded
         </button>
       </div>
 
+      {activeInvites && activeInvites.length > 0 && (
+        <div className="mb-8">
+          <h3 className="text-sm font-black uppercase text-slate-400 tracking-wider mb-4">Active Invites</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeInvites.map(invite => (
+              <div key={invite.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+                <div>
+                  <p className="font-mono text-lg font-bold text-slate-900 dark:text-white">{invite.code}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Expires: {new Date(invite.expires_at).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!companyId) return;
+                    const res = await revokeInviteCode(companyId, invite.id);
+                    if (res.success) {
+                      toast.success("Invite revoked successfully");
+                      onAgentAdded?.();
+                    } else {
+                      toast.error(res.error || "Failed to revoke");
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg text-xs font-bold transition-colors"
+                >
+                  Revoke
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {isAddingAgent && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 p-6">
@@ -497,34 +559,177 @@ function AgentsTab({ company, companyId, agents, issues, customers, onAgentAdded
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {agents.map((agent) => (
           <div
             key={agent.id}
             onClick={() => setSelected(agent)}
-            className="group cursor-pointer bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 hover:border-indigo-400 dark:hover:border-indigo-500 transition-all duration-300 shadow-sm hover:shadow-xl"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-indigo-500/30 transition-all duration-300 cursor-pointer group flex flex-col items-center text-center"
           >
-            <div className="flex items-start justify-between mb-4">
-              <div className="relative">
-                <img src={agent.avatar} alt={agent.name} className="size-14 rounded-2xl bg-slate-100 dark:bg-slate-800" />
-                <AgentStatusDot status={agent.status} className="absolute -bottom-1 -right-1 ring-2 ring-white dark:ring-slate-900" />
+            <div className="size-16 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/30 mb-4 group-hover:scale-110 transition-transform">
+              {agent.full_name?.[0] || agent.email_address?.[0]?.toUpperCase()}
+            </div>
+            <h3 className="font-bold text-slate-900 dark:text-white text-lg">
+              {agent.full_name || "Unknown Agent"}
+            </h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 truncate w-full">
+              {agent.email_address}
+            </p>
+            
+            {/* Agent Metrics summary in card */}
+            <div className="w-full flex justify-around text-xs text-slate-500 mt-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex flex-col">
+                <span className="font-black text-slate-700 dark:text-slate-200">{agentMetrics[agent.id]?.leadsAssigned || 0}</span>
+                Leads
               </div>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-lg border border-slate-200 dark:border-slate-700">
-                {agent.role}
-              </span>
+              <div className="flex flex-col">
+                <span className="font-black text-slate-700 dark:text-slate-200">{agentMetrics[agent.id]?.ticketsResolved || 0}</span>
+                Resolved
+              </div>
+              <div className="flex flex-col">
+                <span className="font-black text-slate-700 dark:text-slate-200">{agentMetrics[agent.id]?.products?.length || 0}</span>
+                Products
+              </div>
             </div>
-            <h3 className="font-bold text-slate-900 dark:text-white truncate mb-1">{agent.name}</h3>
-            <p className="text-xs text-slate-400 truncate mb-4">{agent.email}</p>
-            <div className="grid grid-cols-3 gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <AgentStat label="Clients" value={agent.clients} />
-              <AgentStat label="Open" value={agent.open_tickets} highlight={agent.open_tickets > 5} />
-              <AgentStat label="Done" value={agent.resolved_this_week} positive />
-            </div>
+
+            <span className="mt-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 capitalize">
+              {agent.role.replace("_", " ")}
+            </span>
           </div>
         ))}
       </div>
 
-      {selected && <AgentDetailModal agent={selected} issues={issues} customers={customers} onClose={() => setSelected(null)} />}
+      {selected && <AgentDetailModal 
+        agent={selected} 
+        issues={issues} 
+        customers={customers} 
+        products={products}
+        agentProducts={agentProducts}
+        companyId={companyId}
+        agentMetrics={agentMetrics}
+        onClose={() => setSelected(null)} 
+      />}
+    </>
+  )
+}
+
+// ─── Products Tab ─────────────────────────────────────────────────────────────
+
+function ProductsTab({ companyId, products, onProductAdded }: { companyId?: string | null, products: any[], onProductAdded?: () => void }) {
+  const [isCreatingProduct, setIsCreatingProduct] = useState(false)
+  const [newProductName, setNewProductName] = useState("")
+  const [newProductDesc, setNewProductDesc] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const handleCreateProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!companyId) return;
+    if (!newProductName.trim()) {
+      toast.error("Product name is required");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      const res = await createCompanyProduct(companyId, newProductName.trim(), newProductDesc.trim());
+      if (res.success) {
+        toast.success("Product created!");
+        setIsCreatingProduct(false);
+        setNewProductName("");
+        setNewProductDesc("");
+        onProductAdded?.(); // Reload to fetch new product
+      } else {
+        toast.error(res.error || "Failed to create product");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <>
+      <div className="mb-6 flex justify-end">
+        <button
+          onClick={() => setIsCreatingProduct(true)}
+          className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/30 hover:bg-emerald-500 transition-all active:scale-95"
+        >
+          <span className="material-symbols-outlined text-sm">add_box</span>
+          New Product
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        {products.length === 0 ? (
+          <div className="col-span-full py-16 flex flex-col items-center justify-center text-slate-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl">
+            <span className="material-symbols-outlined text-5xl mb-3">inventory_2</span>
+            <p className="font-semibold">No products yet</p>
+          </div>
+        ) : (
+          products.map((product) => (
+            <div key={product.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+              <div className="flex items-start gap-4 mb-3">
+                <div className="size-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined">inventory_2</span>
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-lg leading-tight">{product.name}</h3>
+                  {product.description && <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{product.description}</p>}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {isCreatingProduct && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">New Product</h2>
+              <button onClick={() => setIsCreatingProduct(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProduct} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Product Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newProductName}
+                  onChange={(e) => setNewProductName(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  placeholder="e.g. Pro Suite"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Description</label>
+                <textarea
+                  value={newProductDesc}
+                  onChange={(e) => setNewProductDesc(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  placeholder="Short description..."
+                  rows={3}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full mt-4 bg-emerald-600 text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl hover:bg-emerald-500 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-sm">check_circle</span>
+                )}
+                {isSubmitting ? "Creating..." : "Create Product"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   )
 }
@@ -604,7 +809,9 @@ function ClientsTab({ customers }: { customers: any[] }) {
 
 // ─── Issues Tab ───────────────────────────────────────────────────────────────
 
-function IssuesTab({ issues }: { issues: any[] }) {
+import { reassignTicket } from "@/app/actions/tickets"
+
+function IssuesTab({ issues, agents, companyId, onReassign }: { issues: any[], agents: any[], companyId?: string | null, onReassign?: () => void }) {
   const [filter, setFilter] = useState<string>("All")
   const statuses = ["All", "Open", "In Progress", "Resolved"]
   const filtered = filter === "All" ? issues : issues.filter((i) => i.status === filter)
@@ -628,7 +835,7 @@ function IssuesTab({ issues }: { issues: any[] }) {
 
       <div className="space-y-3">
         {filtered.map((issue) => (
-          <IssueRow key={issue.id} issue={issue} />
+          <IssueRow key={issue.id} issue={issue} agents={agents} companyId={companyId} onReassign={onReassign} />
         ))}
         {filtered.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-slate-400">
@@ -643,12 +850,36 @@ function IssuesTab({ issues }: { issues: any[] }) {
 
 // ─── Agent Detail Modal ───────────────────────────────────────────────────────
 
-function AgentDetailModal({ agent, issues, customers, onClose }: { agent: any; issues: any[]; customers: any[]; onClose: () => void }) {
+function AgentDetailModal({ agent, issues, customers, products, agentProducts, companyId, agentMetrics, onClose }: { agent: any; issues: any[]; customers: any[]; products: any[]; agentProducts: any[]; companyId?: string | null; agentMetrics: Record<string, any>; onClose: () => void }) {
   const agentCustomers = customers.filter((c) => c.agent === agent.name)
   const agentIssues = issues.filter((i) => i.agent === agent.name && i.status !== "Resolved")
+  const [localAgentProducts, setLocalAgentProducts] = useState(agentProducts.filter(ap => ap.agent_id === agent.id).map(ap => ap.product_id));
+  const [isToggling, setIsToggling] = useState<string | null>(null);
 
   const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onClose()
+  }
+
+  const handleToggleProduct = async (productId: string, isAssigned: boolean) => {
+    if (!companyId) return;
+    setIsToggling(productId);
+    try {
+      const res = await toggleAgentProduct(companyId, agent.id, productId, !isAssigned);
+      if (res.success) {
+        if (isAssigned) {
+          setLocalAgentProducts(localAgentProducts.filter(id => id !== productId));
+        } else {
+          setLocalAgentProducts([...localAgentProducts, productId]);
+        }
+        toast.success(isAssigned ? "Product unassigned" : "Product assigned");
+      } else {
+        toast.error(res.error || "Failed to update assignment");
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsToggling(null);
+    }
   }
 
   return (
@@ -683,16 +914,16 @@ function AgentDetailModal({ agent, issues, customers, onClose }: { agent: any; i
         {/* Stats */}
         <div className="px-6 grid grid-cols-3 gap-3 mb-5">
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-black text-indigo-600">{agent.clients}</p>
-            <p className="text-[10px] font-bold uppercase text-slate-400 mt-1">Clients</p>
+            <p className="text-2xl font-black text-indigo-600">{agentMetrics[agent.id]?.leadsAssigned || 0}</p>
+            <p className="text-[10px] font-bold uppercase text-slate-400 mt-1">Leads Assigned</p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-center">
-            <p className={`text-2xl font-black ${agent.open_tickets > 5 ? "text-red-500" : "text-amber-500"}`}>{agent.open_tickets}</p>
-            <p className="text-[10px] font-bold uppercase text-slate-400 mt-1">Open</p>
+            <p className="text-2xl font-black text-emerald-500">{agentMetrics[agent.id]?.leadsConverted || 0}</p>
+            <p className="text-[10px] font-bold uppercase text-slate-400 mt-1">Leads Converted</p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-center">
-            <p className="text-2xl font-black text-emerald-500">{agent.resolved_this_week}</p>
-            <p className="text-[10px] font-bold uppercase text-slate-400 mt-1">Resolved</p>
+            <p className="text-2xl font-black text-indigo-600">{agentMetrics[agent.id]?.ticketsResolved || 0}</p>
+            <p className="text-[10px] font-bold uppercase text-slate-400 mt-1">Resolved Tickets</p>
           </div>
         </div>
 
@@ -723,6 +954,37 @@ function AgentDetailModal({ agent, issues, customers, onClose }: { agent: any; i
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex-1 truncate">{issue.title}</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* Assigned Products */}
+        {products.length > 0 && (
+          <div className="px-6 mb-6">
+            <p className="text-[11px] font-black uppercase text-slate-400 tracking-wider mb-3">Assigned Products</p>
+            <div className="space-y-2">
+              {products.map((product) => {
+                const isAssigned = localAgentProducts.includes(product.id);
+                return (
+                  <div key={product.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{product.name}</span>
+                      {product.description && <span className="text-[10px] font-semibold text-slate-400">{product.description}</span>}
+                    </div>
+                    <button
+                      onClick={() => handleToggleProduct(product.id, isAssigned)}
+                      disabled={isToggling === product.id}
+                      className={`relative flex items-center justify-center size-6 rounded-md border-2 transition-all disabled:opacity-50 ${isAssigned ? "bg-indigo-600 border-indigo-600" : "bg-transparent border-slate-300 dark:border-slate-600 hover:border-indigo-400"}`}
+                    >
+                      {isToggling === product.id ? (
+                        <span className="material-symbols-outlined text-[12px] animate-spin text-white">sync</span>
+                      ) : isAssigned && (
+                        <span className="material-symbols-outlined text-[14px] text-white font-black">check</span>
+                      )}
+                    </button>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}
@@ -798,25 +1060,53 @@ function ClientStatusBadge({ status }: { status: string }) {
 
 function PriorityDot({ priority }: { priority: string }) {
   const color =
-    priority === "Critical" ? "bg-red-500" :
-      priority === "High" ? "bg-orange-500" :
-        priority === "Medium" ? "bg-amber-500" :
+    priority === "Critical" || priority === "critical" ? "bg-red-500" :
+      priority === "High" || priority === "high" ? "bg-orange-500" :
+        priority === "Medium" || priority === "medium" ? "bg-amber-500" :
           "bg-slate-300"
 
   return <span className={`size-2 rounded-full flex-shrink-0 ${color}`} />
 }
 
-function IssueRow({ issue, compact }: { issue: any; compact?: boolean }) {
+function IssueRow({ issue, compact, agents, companyId, onReassign }: { issue: any; compact?: boolean; agents?: any[]; companyId?: string | null; onReassign?: () => void }) {
   const priorityStyles: Record<string, string> = {
     Critical: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800/50",
+    critical: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800/50",
     High: "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800/50",
+    high: "bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-100 dark:border-orange-800/50",
     Medium: "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50",
+    medium: "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-800/50",
     Low: "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
+    low: "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700",
   }
   const statusStyles: Record<string, string> = {
     Open: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
+    open: "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
     "In Progress": "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
+    in_progress: "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400",
     Resolved: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400",
+    resolved: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400",
+    closed: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400",
+  }
+  
+  const [isReassigning, setIsReassigning] = useState(false);
+  const handleReassign = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    if (!companyId) return;
+    const newAgentId = e.target.value || null;
+    setIsReassigning(true);
+    try {
+      const res = await reassignTicket(issue.id, newAgentId, companyId);
+      if (res.success) {
+        toast.success("Ticket reassigned!");
+        onReassign?.();
+      } else {
+        toast.error(res.error || "Failed to reassign");
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    } finally {
+      setIsReassigning(false);
+    }
   }
 
   return (
@@ -840,14 +1130,28 @@ function IssueRow({ issue, compact }: { issue: any; compact?: boolean }) {
               </span>
               <span className="flex items-center gap-1">
                 <span className="material-symbols-outlined text-xs">person</span>
-                {issue.agent}
+                {agents ? (
+                  <select
+                    className="bg-transparent border-none text-[11px] font-semibold text-slate-400 focus:outline-none focus:ring-0 w-24 truncate cursor-pointer disabled:opacity-50"
+                    value={issue.assigned_to || ""}
+                    onChange={handleReassign}
+                    disabled={isReassigning}
+                  >
+                    <option value="">Unassigned</option>
+                    {agents.map(a => (
+                      <option key={a.id} value={a.id}>{a.full_name || a.email_address}</option>
+                    ))}
+                  </select>
+                ) : (
+                  issue.agent || "Unassigned"
+                )}
               </span>
               <span>{new Date(issue.created).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
             </div>
           )}
         </div>
-        <span className={`flex-shrink-0 px-2.5 py-1 text-[10px] font-black uppercase rounded-xl ${statusStyles[issue.status]}`}>
-          {issue.status}
+        <span className={`flex-shrink-0 px-2.5 py-1 text-[10px] font-black uppercase rounded-xl ${statusStyles[issue.status] || statusStyles['Open']}`}>
+          {issue.status.replace("_", " ")}
         </span>
       </div>
     </div>

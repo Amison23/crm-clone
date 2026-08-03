@@ -126,11 +126,19 @@ async function DashboardContent() {
   let stats: any[] = [];
 
   if (role === 'superadmin') {
-    const [{ count: leadsCount }, { count: nodesCount }, { data: deals }] = await Promise.all([
+    const [leadsRes, nodesRes, dealsRes] = await Promise.all([
       supabase.from('leads').select('*', { count: 'exact', head: true }),
       supabase.from('companies').select('*', { count: 'exact', head: true }),
       supabase.from('deals').select('amount').eq('status', 'won')
     ]);
+    
+    if (leadsRes.error) console.error("Global Dashboard - Error fetching leads count:", leadsRes.error);
+    if (nodesRes.error) console.error("Global Dashboard - Error fetching nodes count:", nodesRes.error);
+    if (dealsRes.error) console.error("Global Dashboard - Error fetching deals:", dealsRes.error);
+
+    const leadsCount = leadsRes.count;
+    const nodesCount = nodesRes.count;
+    const deals = dealsRes.data;
     
     const revenue = (deals || []).reduce((acc, d) => acc + (Number(d.amount) || 0), 0);
     const revFormatted = new Intl.NumberFormat('en-US', { notation: 'compact', compactDisplay: 'short', maximumFractionDigits: 1 }).format(revenue);
@@ -142,12 +150,22 @@ async function DashboardContent() {
       { label: "System Health", value: "99.9%", sub: "Operational" },
     ];
   } else if (role === 'admin' && companyId) {
-    const [{ count: leadsCount }, { count: tasksCount }, { count: ticketsCount }, { count: agentsCount }] = await Promise.all([
+    const [leadsRes, tasksRes, ticketsRes, agentsRes] = await Promise.all([
       supabase.from('leads').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
       supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('company_id', companyId),
       supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('company_id', companyId).eq('status', 'closed'),
       supabase.from('employees').select('*', { count: 'exact', head: true }).eq('company_id', companyId)
     ]);
+    
+    if (leadsRes.error) console.error("Admin Dashboard - Error fetching leads count:", leadsRes.error);
+    if (tasksRes.error) console.error("Admin Dashboard - Error fetching tasks count:", tasksRes.error);
+    if (ticketsRes.error) console.error("Admin Dashboard - Error fetching tickets count:", ticketsRes.error);
+    if (agentsRes.error) console.error("Admin Dashboard - Error fetching agents count:", agentsRes.error);
+
+    const leadsCount = leadsRes.count;
+    const tasksCount = tasksRes.count;
+    const ticketsCount = ticketsRes.count;
+    const agentsCount = agentsRes.count;
     
     stats = [
       { label: "Company Leads", value: leadsCount?.toString() || "0", sub: "Total Pipeline" },
@@ -157,11 +175,19 @@ async function DashboardContent() {
     ];
   } else {
     // Sales Agent / Default
-    const [{ count: myLeads }, { count: myTasks }, { count: myTickets }] = await Promise.all([
+    const [leadsRes, tasksRes, ticketsRes] = await Promise.all([
       supabase.from('leads').select('*', { count: 'exact', head: true }).eq('employee_id', user.id),
       supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id),
       supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id).eq('status', 'open')
     ]);
+    
+    if (leadsRes.error) console.error("Agent Dashboard - Error fetching leads count:", leadsRes.error);
+    if (tasksRes.error) console.error("Agent Dashboard - Error fetching tasks count:", tasksRes.error);
+    if (ticketsRes.error) console.error("Agent Dashboard - Error fetching tickets count:", ticketsRes.error);
+
+    const myLeads = leadsRes.count;
+    const myTasks = tasksRes.count;
+    const myTickets = ticketsRes.count;
     
     stats = [
       { label: "My Leads", value: myLeads?.toString() || "0", sub: "Assigned to me" },

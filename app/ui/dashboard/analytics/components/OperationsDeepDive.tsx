@@ -31,8 +31,6 @@ export interface Ticket {
   assigned_to: string;
   initiation: string;
   resolution: string;
-  inbound?: number;
-  outbound?: number;
 }
 
 interface OperationsProps {
@@ -221,7 +219,6 @@ export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode 
               <thead>
                 <tr className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800">
                   <th className="pb-5">Incident Log</th>
-                  <th className="pb-5 text-center">Telemetry</th>
                   <th className="pb-5 text-right">Status</th>
                 </tr>
               </thead>
@@ -240,12 +237,6 @@ export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode 
                           <span className="flex items-center gap-1"><User size={10} /> {viewMode === 'agent' ? 'Me' : ticket.assigned_to}</span>
                         </div>
                       </td>
-                      <td className="py-5 px-2">
-                        <div className="flex items-center justify-center gap-1.5">
-                          <TelemetryBadge value={ticket.outbound || 0} direction="up" color="emerald" />
-                          <TelemetryBadge value={ticket.inbound || 0} direction="down" color="blue" />
-                        </div>
-                      </td>
                       <td className="py-5 pl-4 text-right">
                         <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg inline-block border ${
                           isResolved 
@@ -261,7 +252,7 @@ export default function OperationsDeepDive({ tasks = [], tickets = [], viewMode 
                   );
                 }) : (
                   <tr>
-                    <td colSpan={3} className="py-20">
+                    <td colSpan={2} className="py-20">
                       <EmptyState icon={<Inbox className="w-8 h-8 text-slate-200 animate-bounce" />} label="Zero Incident Packets Found" />
                     </td>
                   </tr>

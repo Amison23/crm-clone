@@ -22,8 +22,9 @@ export default function SourceAnalytics({ data = [] }: { data: any[] }) {
 
       <div className="space-y-6">
         {data.map((item, i) => {
-          // Calculate percentage for the bar (mock logic or prop-based)
-          const percentage = Math.min(100, (item.lead_count / 10) * 100); 
+          // Calculate percentage dynamically based on total leads across all sources
+          const totalLeads = data.reduce((sum, d) => sum + (Number(d.lead_count) || 0), 0);
+          const percentage = totalLeads > 0 ? Math.min(100, (item.lead_count / totalLeads) * 100) : 0; 
           
           return (
             <div key={i} className="space-y-2 group">

@@ -18,58 +18,45 @@ export async function getTasks() {
 
   const { data: employee } = await supabase
     .from("employees")
-    .select("company_id")
+    .select("company_id, role")
     .eq("id", user.id)
     .single();
 
   const tenantId = employee?.company_id;
+  const role = employee?.role;
   if (!tenantId) return { error: "Node Access Denied: Null Tenant Context" };
 
   // 2. TACTICAL FETCH
   // Logic: Optimized join to retrieve assignee details for the Task Board
-  const { data: tasks, error } = await supabase
+  let query = supabase
     .from("tasks")
     .select("*, assignee:employees!tasks_assigned_to_fkey(full_name, email_address)")
     .eq("company_id", tenantId)
     .order("created_at", { ascending: false });
 
+  if (role === "sales_agent") {
+    query = query.eq("assigned_to", user.id);
+  }
+
+  const { data: tasks, error } = await query;
+
   if (error) return { error: `Query Failure: ${error.message}` };
 
-  // 3. MOCK DATA FALLBACK (For Presentation/Empty State)
-  const finalTasks = (tasks && tasks.length > 0) ? tasks : [
-    {
-      id: "t1",
-      title: "Deploy CRM Node v2.5",
-      description: "Finalize the production deployment of the af-south-1 node.",
-      status: "in_progress",
-      priority: "high",
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-      due_date: new Date(Date.now() + 86400000).toISOString(),
-      assignee: { full_name: "System Automator", email_address: "bot@crm.node" }
-    },
-    {
-      id: "t2",
-      title: "Quarterly Performance Review",
-      description: "Analyze lead conversion metrics and agent response times.",
-      status: "pending",
-      priority: "medium",
-      created_at: new Date(Date.now() - 172800000).toISOString(),
-      due_date: new Date(Date.now() + 259200000).toISOString(),
-      assignee: { full_name: "Jason Anyango", email_address: "jason@momentum.test" }
-    },
-    {
-      id: "t3",
-      title: "Security Patch: ACL Layer",
-      description: "Address the identified vulnerability in the role-based permission matrix.",
-      status: "completed",
-      priority: "critical",
-      created_at: new Date(Date.now() - 259200000).toISOString(),
-      due_date: new Date(Date.now() - 86400000).toISOString(),
-      assignee: { full_name: "Elena Rodriguez", email_address: "elena@tech.node" }
-    }
-  ];
+  // 2.5 FETCH AGENTS FOR ASSIGNMENT
+  let agents: any[] = [];
+  const isAdmin = role === "admin" || role === "superadmin";
 
-  return { tasks: finalTasks };
+  if (isAdmin) {
+    const { data: agentsData } = await supabase
+      .from("employees")
+      .select("id, full_name, email_address")
+      .eq("company_id", tenantId);
+    if (agentsData) agents = agentsData;
+  }
+
+  const finalTasks = tasks ?? [];
+
+  return { tasks: finalTasks, agents, isAdmin };
 }
 
 export async function createTaskAction(formData: FormData) {
@@ -81,11 +68,12 @@ export async function createTaskAction(formData: FormData) {
 
   const { data: employee } = await supabase
     .from("employees")
-    .select("company_id")
+    .select("company_id, role")
     .eq("id", user.id)
     .single();
 
   const tenantId = employee?.company_id;
+  const role = employee?.role;
   if (!tenantId) return { error: "Security Violation: Null Tenant Context" };
 
   // 2. DATA EXTRACTION
@@ -97,11 +85,18 @@ export async function createTaskAction(formData: FormData) {
 
   if (!title) return { error: "HCI Requirement: Task Title is mandatory." };
 
+  const requestedAssignee = formData.get("assigned_to") as string;
+  let assignedTo = user.id;
+
+  if ((role === "admin" || role === "superadmin") && requestedAssignee) {
+    assignedTo = requestedAssignee;
+  }
+
   // 3. PERSISTENCE
   const { error } = await supabase.from("tasks").insert([
     {
       company_id: tenantId,
-      assigned_to: user.id, // Auto-assign to creator for initial node state
+      assigned_to: assignedTo,
       title,
       description,
       status,

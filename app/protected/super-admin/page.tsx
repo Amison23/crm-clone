@@ -52,6 +52,13 @@ const [
       .select('*') // Simplified for safety
       .order('recorded_at', { ascending: true })
   ]);
+
+  if (tenantsReq.error) console.error("Super Admin Dashboard - Error fetching tenants:", tenantsReq.error);
+  if (leadsReq.error) console.error("Super Admin Dashboard - Error fetching leads:", leadsReq.error);
+  if (revenueReq.error) console.error("Super Admin Dashboard - Error fetching revenue:", revenueReq.error);
+  if (frictionReq.error) console.error("Super Admin Dashboard - Error fetching operational audit:", frictionReq.error);
+  if (unassignedReq.error) console.error("Super Admin Dashboard - Error fetching unassigned routing:", unassignedReq.error);
+  if (trendsReq.error) console.error("Super Admin Dashboard - Error fetching trends:", trendsReq.error);
   // 3. TELEMETRY TRANSFORMATIONS (Platform-Wide Aggregation)
   const tenantData = (tenantsReq.data as any[]) || [];
   const snapshotData = (trendsReq.data as any[]) || [];
@@ -82,7 +89,7 @@ const [
       
       {/* --- TIER 1: GLOBAL COMMAND HEADER --- */}
       <header className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-8 bg-slate-900 p-12 rounded-[4rem] border border-slate-800 shadow-2xl relative overflow-hidden group">
-        <Globe size={240} className="absolute -right-16 -bottom-16 text-primary opacity-5 rotate-12 pointer-events-none group-hover:rotate-45 transition-transform duration-[20s] ease-linear" />
+        <Globe size={240} className="absolute -right-16 -bottom-16 text-primary opacity-5 rotate-12 pointer-events-none group-hover:rotate-45 transition-transform ease-linear" style={{ transitionDuration: '20s' }} />
         
         <div className="relative z-10 space-y-5">
           <div className="flex items-center gap-3">

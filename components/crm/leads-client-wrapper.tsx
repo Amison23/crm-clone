@@ -2,9 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Upload } from "lucide-react";
+import { Loader2, Plus, Upload, CheckCircle2, XCircle } from "lucide-react";
 import { AddLeadForm } from "./add-lead-form";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import Papa from "papaparse";
+import { bulkUploadLeads } from "@/app/actions/leads";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "../ui/input";
@@ -24,6 +34,8 @@ export type Lead = {
   next_action?: string | null;
   next_action_date?: string | null;
   notes?: string | null;
+  source?: string | null;
+  employee_id?: string | null;
   created_at: string | null;
 };
 
@@ -63,150 +75,103 @@ function parseCSVRow(row: string): string[] {
 
 }
 
-async function uploadLeadFileAction(formData: FormData) {
-  const supabase = createClient();
-  // gets the user in session
-  const { data: { user } } = await supabase.auth.getUser();
-  if(!user) throw new Error("Not authenticated");
-
-  // get the company id of this user in session
-  const { data: employee, error: employeeError } = await supabase
-    .from("employees")
-    .select("company_id")
-    .eq("id", user.id) // Using 'id' to match the schema in lib/api/leads.ts
-    .single();
-
-  if (employeeError || !employee?.company_id) {
-    throw new Error("Could not resolve company context. Please ensure your employee profile is set up.");
+// Client-side CSV validation
+function validateLeadRow(row: any) {
+  const errors = [];
+  if (!row.client_name && !row.company_name) errors.push("Missing Client Name");
+  if (!row.contact_name) errors.push("Missing Contact Name");
+  if (!row.client_phone && !row.phone && !row.contact_phone) errors.push("Missing Phone Number");
+  
+  const validStatuses = ["new", "contacted", "qualified", "lost"];
+  if (row.status && !validStatuses.includes(row.status.toLowerCase())) {
+    errors.push(`Invalid status. Must be one of: ${validStatuses.join(", ")}`);
+  }
+  
+  if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) {
+    errors.push("Invalid email format");
   }
 
-  const company_id = employee.company_id;
-
-  const file = formData.get("file") as File;
-  if (!file) {
-    throw new Error("No file provided");
-  }
-
-  return new Promise<Lead[]>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsText(file);
-
-    reader.onload = async () => {
-      try {
-        const csvText = reader.result as string;
-        const lines = csvText.split(/\r?\n/).filter(line => line.trim() !== "");
-        if (lines.length < 2) {
-          throw new Error("CSV file is empty or missing headers");
-        }
-
-        const headers = parseCSVRow(lines[0]).map(h => h.trim().toLowerCase());
-        const dataRows = lines.slice(1);
-
-        const leadsToInsert = dataRows.map(row => {
-          const values = parseCSVRow(row);
-          const lead: any = {};
-          
-          headers.forEach((header, index) => {
-            // Map common CSV headers to our database fields
-            const value = values[index] || "";
-            switch (header) {
-              case "client":
-              case "company":
-              case "client_name":
-                lead.company_name = value;
-                break;
-              case "contact_person":
-              case "contact_name":
-              case "name":
-              case "full_name":
-                const nameParts = value.trim().split(" ");
-                lead.first_name = nameParts[0] || "Unknown";
-                lead.last_name = nameParts.slice(1).join(" ") || "Unknown";
-                break;
-              case "email":
-                lead.email = value;
-                break;
-              case "phone":
-              case "client_phone":
-              case "contact_phone":
-                lead.phone = value;
-                break;
-              case "status":
-                lead.status = value;
-                break;
-              case "notes":
-                lead.notes = value;
-                break;
-              case "institution_type":
-                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Institution: ${value}`;
-                break;
-              case "product":
-                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Product: ${value}`;
-                break;
-              case "need_identified":
-                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Need: ${value}`;
-                break;
-              case "next_action":
-                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Next Action: ${value}`;
-                break;
-              case "next_action_date":
-                lead.notes = (lead.notes ? lead.notes + "\n" : "") + `Next Action Date: ${value}`;
-                break;
-            }
-          });
-          
-          // Ensure every lead is associated with the current company
-          lead.company_id = company_id;
-          lead.employee_id = user.id;
-          lead.source = "CSV Upload";
-          if (!lead.status) lead.status = "new";
-          
-          return lead;
-        });
-
-        const { data, error } = await supabase
-          .from("leads")
-          .insert(leadsToInsert)
-          .select("*");
-
-        if (error) throw error;
-        console.log("Upload successful, data:", data);
-        resolve(data);
-        return data
-      } catch (err) {
-        console.error("Upload processing error:", err);
-        reject(err);
-      }
-    };
-
-    reader.onerror = () => reject(new Error("File reading failed"));
-  });
+  return errors;
 }
 
 export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [uploadModal, setUploadModal] = useState(false);
+  const [csvPreview, setCsvPreview] = useState<{ row: any, errors: string[] }[] | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [role, setRole] = useState<string | null>(null);
 
+  // Filter States
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [agentFilter, setAgentFilter] = useState("All");
+  const [sourceFilter, setSourceFilter] = useState("All");
+
+  const filteredLeads = leads.filter((lead) => {
+    const matchStatus = statusFilter === "All" || lead.status === statusFilter;
+    const matchAgent = agentFilter === "All" || (lead.employee_id && lead.employee_id === agentFilter) || (!lead.employee_id && agentFilter === "Unassigned");
+    const matchSource = sourceFilter === "All" || (lead.source && lead.source === sourceFilter) || (!lead.source && sourceFilter === "Unknown");
+    
+    return matchStatus && matchAgent && matchSource;
+  });
+  
   useEffect(() => {
     setLeads(initialLeads);
+    
+    // Fetch user to determine role
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      // Typically the application role is stored in user_metadata or it defaults to 'sales_agent'
+      setRole(user?.user_metadata?.role || 'sales_agent');
+    });
   }, [initialLeads]);
 
   const handleUpload = async (file: File) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        if (results.errors.length > 0) {
+          showToast("error", "Failed to parse CSV. Please check formatting.");
+          return;
+        }
+
+        const previewData = results.data.map((row: any) => ({
+          row,
+          errors: validateLeadRow(row)
+        }));
+        
+        setCsvPreview(previewData);
+      },
+      error: function(error) {
+        showToast("error", error.message);
+      }
+    });
+  };
+
+  const confirmBulkUpload = async () => {
+    if (!csvPreview) return;
+    
+    const validRows = csvPreview.filter(p => p.errors.length === 0).map(p => p.row);
+    if (validRows.length === 0) {
+      showToast("error", "No valid rows to upload.");
+      return;
+    }
+
     try {
       setIsUploading(true);
-      const formData = new FormData();
-      formData.append("file", file);
-      const newLeads = await uploadLeadFileAction(formData);
-      // In a real app, you might want to refresh the leads list here
-      setLeads((prevLeads) => [...prevLeads, ...newLeads]);
-
-
-      showToast("success", "Leads uploaded successfully");
-      setUploadModal(false);
+      const res = await bulkUploadLeads(validRows);
+      
+      if (res.success) {
+        showToast("success", `${res.count} leads added successfully! ${csvPreview.length - validRows.length} skipped.`);
+        setUploadModal(false);
+        setCsvPreview(null);
+        router.refresh();
+      } else {
+        showToast("error", res.error || "Failed to upload leads");
+      }
     } catch (error) {
       showToast("error", "Failed to upload leads");
       console.error(error);
@@ -229,55 +194,76 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
             {/* Filters */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1 w-full sm:w-auto -mx-1 px-1">
-                <div className="flex items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 gap-2 cursor-pointer hover:border-primary/50 shrink-0">
-                  <span className="text-xs font-medium text-slate-500">
-                    Status:
-                  </span>
-                  <span className="text-xs font-bold">All Leads</span>
-                  <span className="material-symbols-outlined text-sm">
-                    expand_more
-                  </span>
-                </div>
-                <div className="flex items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 gap-2 cursor-pointer hover:border-primary/50">
-                  <span className="text-xs font-medium text-slate-500">
-                    Agent:
-                  </span>
-                  <span className="text-xs font-bold">All Agents</span>
-                  <span className="material-symbols-outlined text-sm">
-                    expand_more
-                  </span>
-                </div>
-                <div className="flex items-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 gap-2 cursor-pointer hover:border-primary/50">
-                  <span className="text-xs font-medium text-slate-500">
-                    Source:
-                  </span>
-                  <span className="text-xs font-bold">All Sources</span>
-                  <span className="material-symbols-outlined text-sm">
-                    expand_more
-                  </span>
-                </div>
-                <button className="text-primary text-xs font-semibold hover:underline px-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[160px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                    <SelectValue placeholder="Status: All Leads" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Leads</SelectItem>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="contacted">Contacted</SelectItem>
+                    <SelectItem value="qualified">Qualified</SelectItem>
+                    <SelectItem value="lost">Lost</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={agentFilter} onValueChange={setAgentFilter}>
+                  <SelectTrigger className="w-[160px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                    <SelectValue placeholder="Agent: All Agents" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Agents</SelectItem>
+                    {/* Unique agents could be mapped here dynamically, for now we mock a few or use 'Unassigned' */}
+                    <SelectItem value="Unassigned">Unassigned</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={sourceFilter} onValueChange={setSourceFilter}>
+                  <SelectTrigger className="w-[160px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                    <SelectValue placeholder="Source: All Sources" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All Sources</SelectItem>
+                    <SelectItem value="CSV Upload">CSV Upload</SelectItem>
+                    <SelectItem value="Website Form">Website Form</SelectItem>
+                    <SelectItem value="Manual Entry">Manual Entry</SelectItem>
+                    <SelectItem value="Unknown">Unknown</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <button 
+                  onClick={() => {
+                    setStatusFilter("All");
+                    setAgentFilter("All");
+                    setSourceFilter("All");
+                  }}
+                  className="text-primary text-xs font-semibold hover:underline px-2 shrink-0"
+                >
                   Clear filters
                 </button>
               </div>
-              <div className="text-xs text-slate-500">
-                <p className="font-bold text-slate-900 dark:text-slate-100">
-                  Showing
-                  <span className="font-bold text-orange-400 dark:text-orange-600">
-                    {" "}
-                    {leads.length}{" "}
-                  </span>
-                  leads
-                </p>
-              </div>
-              <div className="ml-2">
-                <Button
-                  onClick={() => setUploadModal(true)}
-                  className="w-full sm:w-auto"
-                >
-                  <Upload className="mr-2 h-4 w-4" />
-                  Upload CSV
-                </Button>
+
+              <div className="flex gap-2 items-center justify-between flex-column">
+                <div className="text-xs text-slate-500">
+                  <p className="font-bold text-slate-900 dark:text-slate-100">
+                    Showing
+                    <span className="font-bold text-orange-400 dark:text-orange-600">
+                      {" "}
+                      {filteredLeads.length}{" "}
+                    </span>
+                    leads
+                  </p>
+                </div>
+
+                <div className="ml-2">
+                  <Button
+                    onClick={() => setUploadModal(true)}
+                    className="w-full sm:w-auto"
+                    >
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload CSV
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -285,30 +271,30 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
             <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col">
               <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse min-w-[1000px]">
-                <thead>
-                  <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Client/Company
-                    </th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Status
-                    </th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Product
-                    </th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Next Action
-                    </th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Created At
-                    </th>
-                    <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
-                  {leads.length === 0 ? (
+                  <thead>
+                    <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
+                      <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Client/Company
+                      </th>
+                      <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Status
+                      </th>
+                      <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Product
+                      </th>
+                      <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Next Action
+                      </th>
+                      <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Created At
+                      </th>
+                      <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {filteredLeads.length === 0 ? (
                     <tr>
                       <td
                         colSpan={7}
@@ -318,10 +304,11 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                       </td>
                     </tr>
                   ) : (
-                    leads.map((lead) => (
+                    filteredLeads.map((lead) => (
                       <tr
                         key={lead.id}
-                        className="hover:bg-slate-50 dark:hover:bg-slate-900/40 transition-colors"
+                        className="hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-colors group cursor-pointer"
+                        onClick={() => setSelectedLead(lead)}
                       >
                         <td className="p-4">
                           <div className="flex items-center gap-3">
@@ -483,15 +470,7 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                 className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 relative mx-auto mt-16 mb-8"
                 onClick={(e) => e.stopPropagation()}
               >
-                <button
-                  onClick={() => setUploadModal(false)}
-                  className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-lg">
-                    close
-                  </span>
-                </button>
-                <div className="mb-6 flex justify-between items-start">
+                <div className="mb-6 flex justify-between items-start pr-12">
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
                       Upload Leads
@@ -500,118 +479,139 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                       Bulk import your contacts via CSV file.
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-xs h-8"
-                    onClick={() => {
-                      // Create a dummy CSV for download
-                      const csvContent =
-                        "data:text/csv;charset=utf-8,Client,Contact_Person,Contact_Phone,Email,Institution_Type,Need_Identified,Product,Status,Next_Action,Next_Action_Date,Notes\nAcme Inc,John Doe,+1234567890,john@example.com,Corporate,CRM Upgrade,CRM Cloud,new,Follow up,2024-06-01,Wants a demo";
-                      const encodedUri = encodeURI(csvContent);
-                      const link = document.createElement("a");
-                      link.setAttribute("href", encodedUri);
-                      link.setAttribute("download", "leads_template.csv");
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
-                  >
-                    <span className="material-symbols-outlined text-sm mr-1">
-                      download
-                    </span>
-                    Template
-                  </Button>
-                </div>
-                <div
-                  className="mt-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-10 flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all cursor-pointer group relative overflow-hidden"
-                  onClick={() =>
-                    !isUploading &&
-                    document.getElementById("csv-upload")?.click()
-                  }
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onDrop={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (isUploading) return;
-                    const file = e.dataTransfer.files?.[0];
-                    if (
-                      file &&
-                      (file.type === "text/csv" || file.name.endsWith(".csv"))
-                    ) {
-                      handleUpload(file);
-                    } else if (file) {
-                      showToast("error", "Please upload a CSV file");
-                    }
-                  }}
-                >
-                  <input
-                    id="csv-upload"
-                    type="file"
-                    accept=".csv"
-                    className="hidden"
-                    disabled={isUploading}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleUpload(file);
-                    }}
-                  />
-
-                  <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    {isUploading ? (
-                      <Loader2 className="h-8 w-8 text-primary animate-spin" />
-                    ) : (
-                      <Upload className="h-8 w-8 text-primary" />
+                  <div className="flex items-center gap-3">
+                    {!csvPreview && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-8"
+                        asChild
+                      >
+                        <a href="/templates/leads-template.csv" download>
+                          <span className="material-symbols-outlined text-sm mr-1">download</span>
+                          Template
+                        </a>
+                      </Button>
                     )}
                   </div>
-
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {isUploading
-                        ? "Uploading leads..."
-                        : "Click to upload or drag and drop"}
-                    </p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      CSV files only (max. 10MB)
-                    </p>
-                  </div>
-
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-white/60 dark:bg-slate-950/60 flex items-center justify-center backdrop-blur-[2px]">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                          <span className="w-2 h-2 bg-primary rounded-full animate-bounce"></span>
-                        </div>
-                        <span className="text-xs font-bold text-primary uppercase tracking-wider">
-                          Processing File
-                        </span>
-                      </div>
-                    </div>
-                  )}
                 </div>
+                <button
+                  onClick={() => setUploadModal(false)}
+                  className="absolute top-6 right-6 h-8 w-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">
+                    close
+                  </span>
+                </button>
+
+                {!csvPreview ? (
+                  <div
+                    className="mt-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-xl p-10 flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-slate-900/50 transition-all cursor-pointer group relative overflow-hidden"
+                    onClick={() => document.getElementById("csv-upload")?.click()}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      const file = e.dataTransfer.files?.[0];
+                      if (file && (file.type === "text/csv" || file.name.endsWith(".csv"))) {
+                        handleUpload(file);
+                      } else if (file) {
+                        showToast("error", "Please upload a CSV file");
+                      }
+                    }}
+                  >
+                    <input
+                      id="csv-upload"
+                      type="file"
+                      accept=".csv"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUpload(file);
+                      }}
+                    />
+                    <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                      <Upload className="h-8 w-8 text-primary" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        Click to upload or drag and drop
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">CSV files only</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <div className="max-h-[300px] overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-lg">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">
+                            <th className="p-2 font-bold text-slate-500">Status</th>
+                            <th className="p-2 font-bold text-slate-500">Client Name</th>
+                            <th className="p-2 font-bold text-slate-500">Contact</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                          {csvPreview.map((item, idx) => (
+                            <tr key={idx} className={item.errors.length > 0 ? "bg-red-50/50 dark:bg-red-900/10" : ""}>
+                              <td className="p-2">
+                                {item.errors.length > 0 ? (
+                                  <div className="flex items-center text-red-500 gap-1" title={item.errors.join(", ")}>
+                                    <XCircle className="w-4 h-4" />
+                                    <span>Error</span>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center text-emerald-500 gap-1">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span>Valid</span>
+                                  </div>
+                                )}
+                              </td>
+                              <td className="p-2 font-medium">{item.row.client_name || item.row.company_name}</td>
+                              <td className="p-2">{item.row.contact_name}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-2 text-xs text-slate-500 flex justify-between">
+                      <span>{csvPreview.filter(p => p.errors.length === 0).length} valid rows</span>
+                      <span className="text-red-500">{csvPreview.filter(p => p.errors.length > 0).length} errors</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                   <Button
                     variant="ghost"
-                    onClick={() => setUploadModal(false)}
+                    onClick={() => {
+                      setUploadModal(false);
+                      setCsvPreview(null);
+                    }}
                     disabled={isUploading}
                   >
                     Cancel
                   </Button>
-                  <Button
-                    onClick={() =>
-                      document.getElementById("csv-upload")?.click()
-                    }
-                    disabled={isUploading}
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    Select File
-                  </Button>
+                  {!csvPreview ? (
+                    <Button
+                      onClick={() => document.getElementById("csv-upload")?.click()}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      Select File
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={confirmBulkUpload}
+                      disabled={isUploading || csvPreview.filter(p => p.errors.length === 0).length === 0}
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      {isUploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                      Confirm & Import
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

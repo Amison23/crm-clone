@@ -90,6 +90,15 @@ supabase.from('view_expansive_revenue_audit')
     supabase.from('analytics_snapshots').select('*').eq('tenant_id', tenantId).order('recorded_at', { ascending: true })
   ]);
 
+  if (companyReq.error) console.error("Executive Dashboard - Error fetching company:", companyReq.error);
+  if (leadsReq.error) console.error("Executive Dashboard - Error fetching leads:", leadsReq.error);
+  if (dealsReq.error) console.error("Executive Dashboard - Error fetching deals:", dealsReq.error);
+  if (revenueAuditReq.error) console.error("Executive Dashboard - Error fetching revenue audit:", revenueAuditReq.error);
+  if (sourceDistReq.error) console.error("Executive Dashboard - Error fetching source distribution:", sourceDistReq.error);
+  if (tasksReq.error) console.error("Executive Dashboard - Error fetching tasks:", tasksReq.error);
+  if (ticketsReq.error) console.error("Executive Dashboard - Error fetching tickets:", ticketsReq.error);
+  if (trendsReq.error) console.error("Executive Dashboard - Error fetching trends:", trendsReq.error);
+
   console.log("Fetched Revenue Audit Data:", revenueAuditReq.data); // Debug log for audit data
 
   // 3. BUSINESS LOGIC PROCESSING
