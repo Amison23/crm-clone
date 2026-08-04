@@ -34,11 +34,16 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
   const [activeInvites, setActiveInvites] = useState<any[]>([])
   const [agentMetrics, setAgentMetrics] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  const reloadData = () => setRefreshTrigger(prev => prev + 1)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        setLoading(true)
+        if (refreshTrigger === 0) {
+          setLoading(true)
+        }
 
         // Fetch company details
         if (!initialCompany) {
@@ -165,7 +170,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
       }
     }
     fetchData()
-  }, [companyId])
+  }, [companyId, refreshTrigger])
 
   const totalOpenIssues = issues.filter((i) => i.status !== "Resolved").length
   const criticalIssues = issues.filter((i) => i.priority === "Critical").length
@@ -278,10 +283,10 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
 
         {/* Tab Content */}
         {activeTab === "overview" && <OverviewTab issues={issues} agents={agents} customers={customers} />}
-        {activeTab === "agents" && <AgentsTab company={company} companyId={companyId} agents={agents} issues={issues} customers={customers} products={products} agentProducts={agentProducts} activeInvites={activeInvites} agentMetrics={agentMetrics} onAgentAdded={() => window.location.reload()} />}
-        {activeTab === "products" && <ProductsTab companyId={companyId} products={products} onProductAdded={() => window.location.reload()} />}
+        {activeTab === "agents" && <AgentsTab company={company} companyId={companyId} agents={agents} issues={issues} customers={customers} products={products} agentProducts={agentProducts} activeInvites={activeInvites} agentMetrics={agentMetrics} onAgentAdded={reloadData} />}
+        {activeTab === "products" && <ProductsTab companyId={companyId} products={products} onProductAdded={reloadData} />}
         {activeTab === "customers" && <ClientsTab customers={customers} />}
-        {activeTab === "issues" && <IssuesTab issues={issues} agents={agents} companyId={companyId} onReassign={() => window.location.reload()} />}
+        {activeTab === "issues" && <IssuesTab issues={issues} agents={agents} companyId={companyId} onReassign={reloadData} />}
       </div>
     </div>
   )
@@ -387,6 +392,9 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
   const [agentRole, setAgentRole] = useState("sales_agent")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isGeneratingCode, setIsGeneratingCode] = useState(false)
+  const [showInviteCode, setShowInviteCode] = useState(false)
+
+  const latestInviteCode = activeInvites?.[0]?.code;
 
   const handleGenerateCode = async () => {
     if (!companyId) return;
@@ -439,18 +447,30 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
         <div className="flex items-center gap-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 pl-4 rounded-2xl shadow-sm">
           <div className="flex flex-col">
             <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Company Invite Code</span>
-            {company?.invite_code ? (
+            {latestInviteCode ? (
               <div className="flex items-center gap-2">
-                <span className="text-lg font-black tracking-widest text-slate-900 dark:text-white uppercase">{company.invite_code}</span>
-                <button 
-                  onClick={() => {
-                    navigator.clipboard.writeText(company.invite_code || "");
-                    toast.success("Copied to clipboard!");
-                  }}
-                  className="text-indigo-500 hover:text-indigo-600 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-sm">content_copy</span>
-                </button>
+                <span className="text-lg font-black tracking-widest text-slate-900 dark:text-white uppercase">
+                  {showInviteCode ? latestInviteCode : "•".repeat(latestInviteCode.length || 8)}
+                </span>
+                <div className="flex items-center">
+                  <button 
+                    onClick={() => setShowInviteCode(!showInviteCode)}
+                    className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1.5 transition-colors"
+                    title={showInviteCode ? "Hide code" : "Show code"}
+                  >
+                    <span className="material-symbols-outlined text-sm">{showInviteCode ? "visibility_off" : "visibility"}</span>
+                  </button>
+                  <button 
+                    onClick={() => {
+                      navigator.clipboard.writeText(latestInviteCode || "");
+                      toast.success("Copied to clipboard!");
+                    }}
+                    className="text-indigo-500 hover:text-indigo-600 p-1.5 transition-colors"
+                    title="Copy code"
+                  >
+                    <span className="material-symbols-outlined text-sm">content_copy</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <span className="text-sm font-semibold text-slate-500 italic">None generated</span>
@@ -462,7 +482,7 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
             className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-sm">{isGeneratingCode ? "sync" : "refresh"}</span>
-            {company?.invite_code ? "Regenerate" : "Generate"}
+            {latestInviteCode ? "Regenerate" : "Generate"}
           </button>
         </div>
 
@@ -474,39 +494,6 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
           Add Sales Agent
         </button>
       </div>
-
-      {activeInvites && activeInvites.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-sm font-black uppercase text-slate-400 tracking-wider mb-4">Active Invites</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {activeInvites.map(invite => (
-              <div key={invite.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                <div>
-                  <p className="font-mono text-lg font-bold text-slate-900 dark:text-white">{invite.code}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Expires: {new Date(invite.expires_at).toLocaleString()}
-                  </p>
-                </div>
-                <button
-                  onClick={async () => {
-                    if (!companyId) return;
-                    const res = await revokeInviteCode(companyId, invite.id);
-                    if (res.success) {
-                      toast.success("Invite revoked successfully");
-                      onAgentAdded?.();
-                    } else {
-                      toast.error(res.error || "Failed to revoke");
-                    }
-                  }}
-                  className="px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 rounded-lg text-xs font-bold transition-colors"
-                >
-                  Revoke
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {isAddingAgent && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
