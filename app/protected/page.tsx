@@ -34,9 +34,14 @@ async function DashboardContent() {
     .eq("id", user.id)
     .single();
 
-  const role = profile?.role || user.user_metadata?.role || "sales_agent";
-  const companyId = profile?.company_id || user.user_metadata?.company_id;
+  const role = profile?.role;
+  const companyId = profile?.company_id;
   
+  // If no employee row exists, redirect to unassigned
+  if (!role) {
+    redirect("/protected/unassigned");
+  }
+
   if (!companyId && role !== "superadmin") {
     redirect("/protected/unassigned");
   }

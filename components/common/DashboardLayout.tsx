@@ -47,10 +47,17 @@ async function AuthGate({ children }: { children: ReactNode }) {
     .single();
 
   const name = user.user_metadata?.full_name || user.email?.split('@')[0] || "Operator";
-  const role = profile?.role || user.user_metadata?.role || "sales_agent";
 
-  // No-Tenant Gating
-  if (role === "sales_agent" && !profile?.company_id) {
+  // Role MUST come from the employees table only — never trust user_metadata for RBAC.
+  // If the user has no employee row yet (brand new signup), send them to the unassigned screen.
+  if (!profile) {
+    return <UnlinkedAgentScreen />;
+  }
+
+  const role = profile.role;
+
+  // No-Tenant Gating: unassigned role OR no company linked
+  if (role === "unassigned" || (role !== "superadmin" && !profile.company_id)) {
     return <UnlinkedAgentScreen />;
   }
 
