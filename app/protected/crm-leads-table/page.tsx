@@ -20,7 +20,7 @@ async function CrmLeadsTableData() {
   }
 
   return (
-    <LeadsClientWrapper initialLeads={result.leads || []} />
+    <LeadsClientWrapper initialLeads={result.leads || []} salesAgents = {result.salesAgents || []} />
   );
 }
 

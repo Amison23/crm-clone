@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import SystemSettingsForm from "./components/SystemSettingsForm";
 import { checkSuperAdmin } from "../actions";
+import PageHeader from "@/components/common/PageHeader";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -27,14 +27,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">
-            System <span className="text-orange-600">Configuration</span>
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 font-medium truncate">
-            Configure global environment variables and platform-wide behavior.
-        </p>
-      </div>
+      <PageHeader
+        title="System Settings"
+        description="Configure platform-wide behavior and global environment settings."
+      />
 
       <section>
         <SystemSettingsForm initialSettings={settings?.length ? settings : defaultSettings} />
