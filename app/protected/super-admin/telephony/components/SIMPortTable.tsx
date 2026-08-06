@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Smartphone, Building2, Save, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EmptyState from "@/components/common/EmptyState";
 
 export default function SIMPortTable({ 
     initialData, 
@@ -68,7 +69,18 @@ export default function SIMPortTable({
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {ports.map((port) => (
+                    {ports.length === 0 ? (
+                        <TableRow>
+                            <TableCell colSpan={5}>
+                                <EmptyState
+                                    icon={Smartphone}
+                                    title="No SIM ports allocated yet"
+                                    description="Provision a gateway first, then SIM ports will be assigned and appear here."
+                                />
+                            </TableCell>
+                        </TableRow>
+                    ) : (
+                        ports.map((port) => (
                         <TableRow key={port.id} className="border-b border-slate-50 dark:border-slate-800/50 h-20 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                             <TableCell className="px-8 flex flex-col justify-center">
                                 <p className="font-bold text-slate-900 dark:text-white text-xs uppercase">{port.gateway?.name || 'Unknown Gateway'}</p>
@@ -146,7 +158,7 @@ export default function SIMPortTable({
                                 )}
                             </TableCell>
                         </TableRow>
-                    ))}
+                    )))}
                 </TableBody>
             </Table>
         </div>

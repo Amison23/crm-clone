@@ -176,5 +176,30 @@ export async function getLeads() {
     .order("created_at", { ascending: false });
 
   if (error) return { error: error.message };
-  return { leads };
+
+  const {data: salesAgents} = await supabase
+    .from("employees")
+    .select("id, full_name")
+    .eq("role", "sales_agent")
+    .eq("company_id", tenantId)
+  
+  
+    return { leads, salesAgents };
+}
+
+export async function assignSalesAgents(leadId: string, employeeId: string){
+  const supabase = await createClient()
+
+  const {data: {user}} = await supabase.auth.getUser()
+  if(!user) return {error: 'Unauthorized'}
+
+  const {error} = await supabase
+    .from("leads")
+    .update({ assigned_to: employeeId })
+    .eq("id", leadId);
+
+  if(error) return {error: error.message};
+
+  revalidatePath("/protected/crm-leads-table");
+  return {success: true};
 }

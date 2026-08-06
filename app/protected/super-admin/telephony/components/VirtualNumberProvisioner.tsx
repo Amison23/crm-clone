@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { Hash, Building2, Smartphone, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EmptyState from "@/components/common/EmptyState";
 
 interface Company {
     id: string;
@@ -177,7 +178,18 @@ export default function VirtualNumberProvisioner({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {numbers.map((vn) => (
+                        {numbers.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={4}>
+                                    <EmptyState
+                                        icon={Hash}
+                                        title="No virtual numbers provisioned"
+                                        description="Assign a company and SIM port above to provision a virtual number."
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            numbers.map((vn) => (
                             <TableRow key={vn.id} className="border-b border-slate-50 dark:border-slate-800/50 h-20 hover:bg-slate-50/50 transition-colors">
                                 <TableCell className="px-8">
                                     <div className="flex items-center gap-3">
@@ -221,7 +233,8 @@ export default function VirtualNumberProvisioner({
                                     </Button>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                            ))
+                        )}
                     </TableBody>
                 </Table>
             </div>

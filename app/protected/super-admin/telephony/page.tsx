@@ -3,8 +3,8 @@ import GatewayTable from "./components/GatewayTable";
 import SIMPortTable from "./components/SIMPortTable";
 import VirtualNumberProvisioner from "./components/VirtualNumberProvisioner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Server, Smartphone, Hash, Radio, Activity } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Server, Smartphone, Hash } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
 
 export default async function TelephonyPage() {
   const supabase = await createClient();
@@ -23,39 +23,39 @@ export default async function TelephonyPage() {
   ]);
 
   return (
-    <div className="w-full space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none italic">
-            Telephony <span className="text-orange-600">Core</span>
-          </h1>
-          <p className="mt-2 text-slate-500 dark:text-slate-400 font-medium italic border-l-2 border-orange-500 ml-1 pl-4">
-            Infrastructure mapping, SIM port allocation, and multi-tenant virtual number provisioning.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 bg-white dark:bg-slate-900 px-6 py-3 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none">
-            <Radio className="size-4 text-orange-500 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Syncing with Node API</span>
-        </div>
-      </header>
+    <div className="w-full space-y-8 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <PageHeader
+        title="Telephony"
+        description="Infrastructure mapping, SIM port allocation, and multi-tenant virtual number provisioning."
+        badge={{ label: "Node API", verified: true }}
+      />
 
       <Tabs defaultValue="gateways" className="w-full">
-        <TabsList className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-[1.5rem] mb-10 overflow-x-auto justify-start border border-slate-200/50 dark:border-slate-800/50">
-          <TabsTrigger value="gateways" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-lg data-[state=active]:text-orange-600 transition-all font-black text-[10px] uppercase tracking-[0.15em] flex items-center gap-2.5">
-            <Server className="size-3.5" />
+        <TabsList className="bg-slate-100 dark:bg-slate-900 p-1 rounded-xl mb-8 overflow-x-auto justify-start border border-slate-200/50 dark:border-slate-800/50">
+          <TabsTrigger
+            value="gateways"
+            className="rounded-lg px-5 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 transition-all font-medium text-sm flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+          >
+            <Server className="size-4" />
             Gateways
           </TabsTrigger>
-          <TabsTrigger value="sim-ports" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-lg data-[state=active]:text-orange-600 transition-all font-black text-[10px] uppercase tracking-[0.15em] flex items-center gap-2.5">
-            <Smartphone className="size-3.5" />
+          <TabsTrigger
+            value="sim-ports"
+            className="rounded-lg px-5 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 transition-all font-medium text-sm flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+          >
+            <Smartphone className="size-4" />
             SIM Ports
           </TabsTrigger>
-          <TabsTrigger value="virtual-numbers" className="rounded-xl px-8 py-3 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-lg data-[state=active]:text-orange-600 transition-all font-black text-[10px] uppercase tracking-[0.15em] flex items-center gap-2.5">
-            <Hash className="size-3.5" />
+          <TabsTrigger
+            value="virtual-numbers"
+            className="rounded-lg px-5 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 data-[state=active]:shadow-sm data-[state=active]:text-indigo-600 dark:data-[state=active]:text-indigo-400 transition-all font-medium text-sm flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:outline-none"
+          >
+            <Hash className="size-4" />
             Virtual Numbers
           </TabsTrigger>
         </TabsList>
 
-        <section className="bg-white dark:bg-slate-900 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-2xl shadow-slate-200/50 dark:shadow-none overflow-hidden p-2">
+        <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
             <TabsContent value="gateways" className="mt-0 focus-visible:ring-0">
                 <GatewayTable initialData={gateways || []} />
             </TabsContent>

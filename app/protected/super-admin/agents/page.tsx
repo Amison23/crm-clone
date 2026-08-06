@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import AgentManagementClient from "./components/AgentManagementClient";
+import PageHeader from "@/components/common/PageHeader";
 
 export default async function AgentsPage() {
   const supabase = await createClient();
@@ -29,15 +30,11 @@ export default async function AgentsPage() {
     .order("name", { ascending: true });
 
   return (
-    <div className="space-y-10">
-      <header>
-        <h1 className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white uppercase italic">
-          Agent <span className="text-primary">Management</span>
-        </h1>
-        <p className="mt-2 text-slate-500 dark:text-slate-400 font-medium italic border-l-2 border-primary ml-1 pl-4">
-          Orchestrate lead routing, audit operator friction, and provision administrative identities.
-        </p>
-      </header>
+    <div className="space-y-8">
+      <PageHeader
+        title="Agent Management"
+        description="Manage operator roles, lead routing, and product assignments across all tenants."
+      />
 
       <AgentManagementClient 
         initialAgents={agents || []}

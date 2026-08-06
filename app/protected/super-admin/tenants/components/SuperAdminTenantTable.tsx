@@ -20,6 +20,7 @@ import { archiveTenant, restoreTenant, purgeTenant } from "../../actions";
 import { toast } from "react-hot-toast";
 import TenantDialog from "./TenantDialog";
 import TenantManagementModal from "./TenantManagementModal";
+import EmptyState from "@/components/common/EmptyState";
 
 interface Tenant {
   id: string;
@@ -211,13 +212,20 @@ export default function SuperAdminTenantTable({ initialTenants }: { initialTenan
               </tr>
             )) : (
               <tr>
-                <td colSpan={4} className="px-8 py-20 text-center">
-                    <div className="flex flex-col items-center gap-3">
-                        <div className="bg-slate-100 dark:bg-slate-800 p-4 rounded-full">
-                            <Search className="size-8 text-slate-300 dark:text-slate-600" />
-                        </div>
-                        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">No matching infrastructure nodes found</p>
-                    </div>
+                <td colSpan={4}>
+                  {tenants.length === 0 ? (
+                    <EmptyState
+                      icon={Users}
+                      title="No tenants provisioned yet"
+                      description="Use 'New Company' above to provision the first workspace."
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={Search}
+                      title="No tenants match this filter"
+                      description="Try adjusting the search term or switching the status filter."
+                    />
+                  )}
                 </td>
               </tr>
             )}

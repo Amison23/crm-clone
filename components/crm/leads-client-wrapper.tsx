@@ -21,6 +21,8 @@ import { Input } from "../ui/input";
 const supabase = createClient();
 
 export type Lead = {
+  user: any;
+  assigned_to: string | undefined;
   id: string;
   company_name: string | null;
   first_name: string | null;
@@ -94,7 +96,7 @@ function validateLeadRow(row: any) {
   return errors;
 }
 
-export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
+export function LeadsClientWrapper({ initialLeads, salesAgents }: { initialLeads: Lead[], salesAgents: any[] }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
@@ -291,6 +293,11 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                       <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
                         Actions
                       </th>
+                      {role === "admin" && (
+                        <th className="p-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+                          Assigned to
+                        </th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -381,6 +388,31 @@ export function LeadsClientWrapper({ initialLeads }: { initialLeads: Lead[] }) {
                             </button>
                           </div>
                         </td>
+                        {role === "admin" && (
+                          <td className="p-4">
+                            <div className="flex items-center gap-1">
+                              <Select value={lead.assigned_to}>
+                                <SelectTrigger className="w-[160px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                                  <SelectValue placeholder="Assigned to" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Unassigned">Unassigned</SelectItem>
+                                  {salesAgents.map((agent) => (
+                                    <SelectItem key={agent.id} value={agent.id}>
+                                      {agent.full_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <Button size="icon" variant="ghost" 
+                                  // onClick={() => assignSalesAgents(lead.id, lead.assigned_to)}
+                                  disabled={true}
+                              >
+                                <CheckCircle2 />
+                              </Button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}

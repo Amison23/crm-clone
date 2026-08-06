@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Server, Activity, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EmptyState from "@/components/common/EmptyState";
 
 export default function GatewayTable({ initialData }: { initialData: any[] }) {
     const [gateways, setGateways] = useState(initialData);
@@ -98,7 +99,18 @@ export default function GatewayTable({ initialData }: { initialData: any[] }) {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {gateways.map((gw) => (
+                        {gateways.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5}>
+                                    <EmptyState
+                                        icon={Server}
+                                        title="No gateways provisioned yet"
+                                        description="Add your first infrastructure node using the form above."
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            gateways.map((gw) => (
                             <TableRow key={gw.id} className="border-b border-slate-50 dark:border-slate-800/50 h-20 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                                 <TableCell className="px-8 font-bold text-slate-900 dark:text-white">
                                     <div className="flex items-center gap-3">
@@ -133,7 +145,7 @@ export default function GatewayTable({ initialData }: { initialData: any[] }) {
                                     </Button>
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        )))}
                     </TableBody>
                 </Table>
             </div>

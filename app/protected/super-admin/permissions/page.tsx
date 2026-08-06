@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import PermissionsGrid from "./components/PermissionsGrid";
+import PageHeader from "@/components/common/PageHeader";
 
 export default async function PermissionsPage() {
   const supabase = await createClient();
@@ -27,12 +27,10 @@ export default async function PermissionsPage() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-500">
-      <div className="mb-8">
-        <h1 className="text-4xl font-black tracking-tighter mb-2 text-slate-900 dark:text-white uppercase">
-            Permissions <span className="text-orange-600">Matrix</span>
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 font-medium">Configure real-time role-based access control (RBAC) across system modules.</p>
-      </div>
+      <PageHeader
+        title="Permissions"
+        description="Configure role-based access control across system modules in real time."
+      />
 
       <section>
         <PermissionsGrid 

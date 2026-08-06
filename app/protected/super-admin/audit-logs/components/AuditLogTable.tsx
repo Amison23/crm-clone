@@ -13,9 +13,11 @@ import {
   Download,
   ArrowRight,
   MinusCircle,
-  PlusCircle
+  PlusCircle,
+  Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EmptyState from "@/components/common/EmptyState";
 
 interface AuditLog {
   id: string;
@@ -104,7 +106,17 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
             </thead>
 
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {logs.map((log) => (
+              {logs.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      icon={History}
+                      title="No audit logs recorded yet"
+                      description="Administrative actions and platform state changes will appear here."
+                    />
+                  </td>
+                </tr>
+              ) : logs.map((log) => (
                 <tr 
                     key={log.id} 
                     className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"

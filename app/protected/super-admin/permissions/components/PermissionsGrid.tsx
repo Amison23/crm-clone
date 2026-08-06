@@ -21,6 +21,7 @@ import {
   Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EmptyState from "@/components/common/EmptyState";
 import { updateRolePermission } from "../../actions";
 import { toast } from "react-hot-toast";
 import React from "react";
@@ -134,7 +135,17 @@ export default function PermissionsGrid({ initialPermissions, roles, modules }: 
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-              {modules.map((mod) => (
+              {modules.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      icon={ShieldCheck}
+                      title="No modules registered"
+                      description="Permissions matrices are generated automatically once system modules are installed."
+                    />
+                  </td>
+                </tr>
+              ) : modules.map((mod) => (
                 <ModuleRow 
                     key={mod.id} 
                     module={mod} 

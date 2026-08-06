@@ -1,8 +1,13 @@
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import SuperAdminSidebar from "./components/SuperAdminSidebar";
 
+/**
+ * Super Admin Layout — Auth guard only.
+ * The outer DashboardShell (from /protected/layout.tsx) provides
+ * the sidebar and shell. This layout just enforces the superadmin
+ * role check before allowing any child page to render.
+ */
 export default async function SuperAdminLayout({
   children,
 }: {
@@ -10,12 +15,10 @@ export default async function SuperAdminLayout({
 }) {
   const supabase = await createClient();
 
-  // 1. AUTH & ROLE CHECK (Server-side)
-  // We check the role from the 'employees' table for strict RBAC
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   if (!user) {
-    redirect("/login"); // or whatever your login path is, /login seems standard here
+    redirect("/auth/login");
   }
 
   const { data: profile, error } = await supabase
@@ -26,20 +29,8 @@ export default async function SuperAdminLayout({
 
   if (error || !profile || profile.role !== "superadmin") {
     console.error("Super Admin access denied for user:", user.id);
-    redirect("/protected"); // Redirect to regular dashboard if not super admin
+    redirect("/protected");
   }
 
-  return (
-    <div className="flex h-screen overflow-hidden bg-background-light dark:bg-background-dark">
-      {/* Sidebar Navigation */}
-      <SuperAdminSidebar />
-      
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-4 md:p-8">
-          {children}
-        </div>
-      </main>
-    </div>
-  );
+  return <>{children}</>;
 }

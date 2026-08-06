@@ -14,19 +14,40 @@ const navItems = [
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "superadmin"] },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "superadmin"] },
   { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "superadmin"] },
-  // { href: "/protected/admin", icon: "admin_panel_settings", label: "Admin", roles: ["admin", "superadmin"] },
   { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin"] },
 ];
 
 const systemItems = [
-  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles:["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles:["sales_agent", "admin", "superadmin"], disabled: true },
-  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles:["sales_agent", "admin", "superadmin"], disabled: true },
+  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles: ["sales_agent", "admin", "superadmin"] },
+  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles: ["sales_agent", "admin", "superadmin"], disabled: true },
+  // Telephony is hidden for superadmin — they get the real route in platformItems below
+  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles: ["sales_agent", "admin"], disabled: true },
+];
+
+// Superadmin-only: platform control routes
+const platformItems = [
+  { href: "/protected/super-admin/overview", icon: "monitoring", label: "Overview" },
+  { href: "/protected/super-admin/tenants", icon: "corporate_fare", label: "Tenants" },
+  { href: "/protected/super-admin/agents", icon: "manage_accounts", label: "Agent Management" },
+  { href: "/protected/super-admin/users", icon: "group", label: "Users" },
+  { href: "/protected/super-admin/telephony", icon: "call", label: "Telephony" },
+  { href: "/protected/super-admin/permissions", icon: "shield", label: "Permissions" },
+  { href: "/protected/super-admin/audit-logs", icon: "history", label: "Audit Logs" },
+  { href: "/protected/super-admin/settings", icon: "settings", label: "System Settings" },
 ];
 export default function DashboardShell({ children, role, name }: { children: ReactNode; role?: string; name?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [platformOpen, setPlatformOpen] = useState(pathname.startsWith('/protected/super-admin'));
+  const [systemOpen, setSystemOpen] = useState(false);
+  const [throughputOpen, setThroughputOpen] = useState(false);
+
+  useEffect(() => {
+    if (pathname.startsWith('/protected/super-admin')) {
+      setPlatformOpen(true);
+    }
+  }, [pathname]);
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -58,11 +79,59 @@ export default function DashboardShell({ children, role, name }: { children: Rea
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-4 space-y-1">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {filteredNav.map(({ href, icon, label }) => {
-          const isActive = href === "/protected"
-            ? pathname === href
-            : pathname.startsWith(href);
+          const isPlatformTrigger = href === "/protected/super-admin";
+          const isActive = isPlatformTrigger
+            ? pathname.startsWith(href)
+            : href === "/protected"
+              ? pathname === href
+              : pathname.startsWith(href);
+
+          if (isPlatformTrigger) {
+            return (
+              <div key={href} className="space-y-1">
+                <button
+                  onClick={() => setPlatformOpen(!platformOpen)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+                      : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="material-symbols-outlined text-[22px]">{icon}</span>
+                    <span>{label}</span>
+                  </div>
+                  <span className={`material-symbols-outlined text-[18px] transition-transform ${platformOpen ? "rotate-180" : ""}`}>
+                    expand_more
+                  </span>
+                </button>
+                {platformOpen && (
+                  <div className="pl-9 space-y-1 mt-1">
+                    {platformItems.map((item) => {
+                      const isItemActive = pathname.startsWith(item.href);
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            isItemActive
+                              ? "text-indigo-600 dark:text-indigo-400 bg-indigo-50/50 dark:bg-indigo-500/5"
+                              : "text-slate-500 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[18px] opacity-70">{item.icon}</span>
+                          <span>{item.label}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <Link
               key={href}
@@ -80,12 +149,20 @@ export default function DashboardShell({ children, role, name }: { children: Rea
         })}
 
         <div className="pt-4 pb-2">
-          <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            System
-          </p>
+          <button
+            onClick={() => setSystemOpen(!systemOpen)}
+            className="w-full flex items-center justify-between px-3 group"
+          >
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+              System
+            </p>
+            <span className={`material-symbols-outlined text-[14px] text-slate-400 transition-transform ${systemOpen ? "rotate-180" : ""}`}>
+              expand_more
+            </span>
+          </button>
         </div>
 
-        {filteredSystem.map(({ href, icon, label, disabled }) => {
+        {systemOpen && filteredSystem.map(({ href, icon, label, disabled }) => {
           const isActive = pathname.startsWith(href);
           return disabled ? (
             <div
@@ -113,30 +190,39 @@ export default function DashboardShell({ children, role, name }: { children: Rea
           );
         })}
 
-        {/* ── Personal Throughput (Dummy Data) ── */}
-        <div className="pt-8 pb-4 px-3">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-4">
-            Throughput
-          </p>
-          <div className="space-y-4">
-            {role === 'superadmin' || role === 'super_admin' ? (
-              <>
-                <SidebarProgress label="Node Deployment" value={82} color="bg-indigo-500" />
-                <SidebarProgress label="Security Audit" value={95} color="bg-emerald-500" />
-              </>
-            ) : role === 'admin' ? (
-              <>
-                <SidebarProgress label="Team Objectives" value={64} color="bg-indigo-500" />
-                <SidebarProgress label="SLA Compliance" value={88} color="bg-blue-500" />
-              </>
-            ) : (
-              <>
-                <SidebarProgress label="Daily Outreach" value={45} color="bg-indigo-500" />
-                <SidebarProgress label="Lead Follow-up" value={72} color="bg-amber-500" />
-              </>
+        {/* Platform Control section is now rendered inline as a dropdown inside the nav items map above */}
+
+        {/* ── Personal Throughput (sales_agent & admin only) ── */}
+        {role !== 'superadmin' && (
+          <div className="pt-8 pb-4">
+            <button
+              onClick={() => setThroughputOpen(!throughputOpen)}
+              className="w-full flex items-center justify-between px-3 mb-4 group"
+            >
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
+                Throughput
+              </p>
+              <span className={`material-symbols-outlined text-[14px] text-slate-400 transition-transform ${throughputOpen ? "rotate-180" : ""}`}>
+                expand_more
+              </span>
+            </button>
+            {throughputOpen && (
+              <div className="space-y-4 px-3">
+                {role === 'admin' ? (
+                  <>
+                    <SidebarProgress label="Team Objectives" value={64} color="bg-indigo-500" />
+                    <SidebarProgress label="SLA Compliance" value={88} color="bg-blue-500" />
+                  </>
+                ) : (
+                  <>
+                    <SidebarProgress label="Daily Outreach" value={45} color="bg-indigo-500" />
+                    <SidebarProgress label="Lead Follow-up" value={72} color="bg-amber-500" />
+                  </>
+                )}
+              </div>
             )}
           </div>
-        </div>
+        )}
       </nav>
 
       {/* User footer */}

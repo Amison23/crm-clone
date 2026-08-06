@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import { 
   Building2, 
   Users, 
@@ -11,6 +10,7 @@ import {
   Cpu
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import PageHeader from "@/components/common/PageHeader";
 
 export default async function SuperAdminOverview() {
   const supabase = await createClient();
@@ -43,15 +43,11 @@ export default async function SuperAdminOverview() {
   ];
 
   return (
-    <div className="w-full space-y-10 animate-in fade-in duration-700">
-      <header>
-        <h1 className="text-5xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
-          Command <span className="text-orange-600">Center</span>
-        </h1>
-        <p className="mt-2 text-slate-500 dark:text-slate-400 font-medium max-w-2xl px-1 italic border-l-2 border-orange-500 ml-1 pl-4">
-          Global platform state, infrastructure health, and administrative audit streams.
-        </p>
-      </header>
+    <div className="w-full space-y-8 animate-in fade-in duration-700">
+      <PageHeader
+        title="Overview"
+        description="Platform health, infrastructure nodes, and recent administrative activity."
+      />
 
       {/* Primary Stats Grid */}
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

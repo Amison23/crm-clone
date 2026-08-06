@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { updateUserRole } from "../../actions";
 import { toast } from "react-hot-toast";
+import EmptyState from "@/components/common/EmptyState";
 
 interface User {
   id: string;
@@ -93,12 +94,22 @@ export default function UserManagementTable({ initialUsers, companies }: { initi
           </thead>
 
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {employees.map((u) => (
-              <UserRow 
-                key={u.id} 
-                user={u} 
-                roles={roles} 
-                companies={companies} 
+            {employees.length === 0 ? (
+              <tr>
+                <td colSpan={4}>
+                  <EmptyState
+                    icon={Users}
+                    title="No users found"
+                    description="Users appear here once provisioned via tenant creation or direct agent provisioning."
+                  />
+                </td>
+              </tr>
+            ) : employees.map((u) => (
+              <UserRow
+                key={u.id}
+                user={u}
+                roles={roles}
+                companies={companies}
                 onUpdate={handleUpdate}
                 isLoading={loadingId === u.id}
               />

@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import SuperAdminTenantTable from "./components/SuperAdminTenantTable";
-import { Building2, Plus, LayoutDashboard } from "lucide-react";
 import TenantDialog from "./components/TenantDialog";
+import { Plus } from "lucide-react";
+import PageHeader from "@/components/common/PageHeader";
 
 export default async function TenantsPage() {
   const supabase = await createClient();
@@ -30,24 +30,18 @@ export default async function TenantsPage() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none italic">
-            Tenant <span className="text-orange-600">Inventory</span>
-          </h1>
-          <p className="mt-2 text-slate-500 dark:text-slate-400 font-medium italic border-l-2 border-orange-500 ml-1 pl-4">
-            Manage multi-tenant isolation, company-specific provisioning, and lifecycle states.
-          </p>
-        </div>
-        
-        <TenantDialog mode="create">
-            <button 
-              className="flex items-center gap-2 px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:scale-[1.02] active:scale-95 transition-all group overflow-hidden">
-                <Plus className="size-4 group-hover:rotate-90 transition-transform" />
-                New Company
+      <PageHeader
+        title="Tenants"
+        description="Manage company workspaces, provisioning lifecycle, and tenant isolation."
+        action={
+          <TenantDialog mode="create">
+            <button className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-lg text-sm font-medium shadow hover:opacity-90 active:scale-95 transition-all">
+              <Plus className="size-4" />
+              New Company
             </button>
-        </TenantDialog>
-      </header>
+          </TenantDialog>
+        }
+      />
 
       <section>
         <SuperAdminTenantTable initialTenants={tenants} />

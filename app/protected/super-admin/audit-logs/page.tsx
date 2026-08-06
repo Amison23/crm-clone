@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import AuditLogTable from "./components/AuditLogTable";
+import PageHeader from "@/components/common/PageHeader";
 
 export default async function AuditLogsPage() {
   const supabase = await createClient();
@@ -18,14 +18,10 @@ export default async function AuditLogsPage() {
 
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-500">
-      <div>
-        <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white uppercase">
-            Audit <span className="text-orange-600">Intelligence</span>
-        </h1>
-        <p className="text-slate-500 dark:text-slate-400 font-medium truncate">
-            Transparent record of all administrative actions and system state modifications.
-        </p>
-      </div>
+      <PageHeader
+        title="Audit Logs"
+        description="Transparent record of all administrative actions and platform state changes."
+      />
 
       <section>
         <AuditLogTable initialLogs={logs || []} />
