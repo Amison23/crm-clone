@@ -130,35 +130,35 @@ supabase.from('view_expansive_revenue_audit')
   }));
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-32 font-sans">
-      <div className="w-full p-4 lg:p-10 space-y-10 animate-in fade-in duration-1000">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-12 font-sans">
+      <div className="w-full p-4 lg:p-6 space-y-6">
         
         {/* --- TIER 1: HEADER --- */}
-        <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-8 bg-white dark:bg-slate-900 p-10 rounded-[3.5rem] border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
+        <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 pointer-events-none text-primary">
             <Layers size={140} />
           </div>
-          <div className="relative z-10 space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-              <h2 className="text-[10px] font-black uppercase text-slate-400 tracking-[0.5em]">Product Intelligence: {companyReq.data?.plan_type || 'Pro Node'}</h2>
+          <div className="relative z-10 space-y-2">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-primary" />
+              <h2 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Product Intelligence: {companyReq.data?.plan_type || 'Pro Node'}</h2>
             </div>
-            <h1 className="text-6xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
+            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-none">
               {companyReq.data?.name || "Merchant Pro"} <span className="text-primary italic">Console</span>
             </h1>
-            <p className="text-slate-500 font-medium italic text-lg max-w-xl leading-snug">
+            <p className="text-slate-500 font-medium text-sm max-w-xl">
               Strategic overview of lead conversion and expansive financial settlements.
             </p>
           </div>
           
           <div className="flex items-center gap-4 relative z-10">
-            <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-3xl border border-slate-100 dark:border-slate-700">
-               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Node ID</p>
-               <p className="text-xs font-mono font-bold text-slate-900 dark:text-white uppercase tracking-tighter">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
+               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 text-right">Node ID</p>
+               <p className="text-xs font-mono font-medium text-slate-900 dark:text-white uppercase">
                   {tenantId?.slice(0, 14)}...
                </p>
             </div>
-            <button className="px-10 py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-[1.8rem] text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.03] transition-all active:scale-95">
+            <button className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-xs font-bold shadow hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors">
               Export Audit Trail
             </button>
           </div>
@@ -182,7 +182,7 @@ supabase.from('view_expansive_revenue_audit')
         </section>
 
         {/* --- TIER 3: REVENUE & PIPELINE ANALYTICS --- */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2">
             <PerformanceDeepDive data={performanceHistory} />
           </div>
@@ -192,7 +192,7 @@ supabase.from('view_expansive_revenue_audit')
         </div>
 
         {/* --- TIER 4: ACQUISITION & EXPANSIVE SOURCE AUDIT --- */}
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           <div className="xl:col-span-8">
              {/* 🎯 Data from view_expansive_revenue_audit flows here */}
              <RevenueAuditTable data={revenueAuditReq.data || []} />
@@ -203,13 +203,13 @@ supabase.from('view_expansive_revenue_audit')
         </div>
 
         {/* --- TIER 5: AGENT PRODUCTIVITY --- */}
-        <section className="bg-white dark:bg-slate-900 p-10 rounded-[4rem] border border-slate-200 dark:border-slate-800 shadow-sm">
-           <div className="flex items-center justify-between mb-10">
-              <div className="flex items-center gap-4">
-                 <div className="p-3 bg-primary/10 text-primary rounded-2xl">
-                    <ShieldCheck size={24} />
+        <section className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+           <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                 <div className="p-2 bg-primary/10 text-primary rounded-xl">
+                    <ShieldCheck size={20} />
                  </div>
-                 <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white italic">Agent Throughput Audit</h2>
+                 <h2 className="text-xl font-bold uppercase tracking-tight text-slate-900 dark:text-white">Agent Throughput Audit</h2>
               </div>
            </div>
            <AgentReport agents={agentPerformance} />
@@ -224,9 +224,9 @@ supabase.from('view_expansive_revenue_audit')
 function NodeIsolatedError() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#020617] p-10 text-center font-sans">
-      <div className="max-w-md space-y-6 bg-white dark:bg-slate-900 p-12 rounded-[3.5rem] border-2 border-dashed border-rose-100">
-        <Lock size={64} className="mx-auto text-rose-500 animate-pulse mb-2" />
-        <h1 className="text-3xl font-black uppercase tracking-tighter">Security Loop Isolated</h1>
+      <div className="max-w-md space-y-4 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-rose-200 dark:border-rose-900/50">
+        <Lock size={48} className="mx-auto text-rose-500 mb-2" />
+        <h1 className="text-xl font-bold uppercase tracking-tight">Security Loop Isolated</h1>
         <p className="text-slate-500 text-sm italic">Multi-tenant context missing. Access denied to Merchant Pro analytics node.</p>
         <Link href="/login" className="block w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px]">Re-Validate Session</Link>
       </div>
