@@ -44,5 +44,7 @@ next-env.d.ts
 # prettier
 .prettierrc
 
+SKILL.md
+
 Momentum VOIP wbs.pdf
 MULTI TENANT PART (DENZEL).pdf
