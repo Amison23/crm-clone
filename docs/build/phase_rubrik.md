@@ -109,3 +109,34 @@ These are bugs the audit already found that will silently break work in every la
   - **Verification:** Accepts generic `eventType` (string/enum), `recipientEmail`, `subject`, `body`, and arbitrary `metadata`. Tested in `lib/notifications/email.test.ts` with 100% test pass.
 - [x] Document (in a short markdown note, not necessarily built yet) which other roles might need email notifications later, so this isn't rebuilt from scratch when that need shows up.
   - **Documentation Created:** [`docs/architecture/email_notifications_roadmap.md`](file:///c:/Users/mbugu/Desktop/Code/React/crm-clone/docs/architecture/email_notifications_roadmap.md) detailing use cases for Super Admin, Admin, Server Admin, Sales Agent, and Dev roles.
+
+## Phase 7 — Cross-Cutting: Email Notification Integration Review
+
+### Definition of Done
+
+- [x] Decision made and documented: global or per-org email uniqueness
+  - **Decision Documented:** [`docs/architecture/email_uniqueness_decision.md`](file:///c:/Users/mbugu/Desktop/Code/React/crm-clone/docs/architecture/email_uniqueness_decision.md) enforcing **Global Case-Insensitive Email Uniqueness** across all tenants.
+- [x] DB constraint enforces chosen uniqueness case-insensitively — paste the migration
+  - **Migration (`supabase/migrations/20260817000002_case_insensitive_email_unique.sql`):**
+    ```sql
+    CREATE UNIQUE INDEX IF NOT EXISTS employees_email_address_lower_idx 
+    ON public.employees (LOWER(TRIM(email_address)));
+    ```
+- [x] normalizeEmail() applied at every entry point (signup, login, admin add-user, invites) — grep for raw `.email` usage in queries, confirm none bypass normalization
+  - **Normalization Helper (`lib/utils/email.ts`):** `normalizeEmail(email: string): string` applied across `components/login-form.tsx`, `components/sign-up-form.tsx`, `components/forgot-password-form.tsx`, `app/protected/super-admin/actions.ts` (`createTenant`, `createAgent`, `provisionAgent`), and `app/api/v1/provision/route.ts`.
+- [x] Signup/add-user flow uses insert-then-catch-conflict, not check-then-insert — paste the code
+  - **Atomic Insert Flow (`components/sign-up-form.tsx`):**
+    ```typescript
+    const cleanEmail = normalizeEmail(email);
+    const { error } = await supabase.auth.signUp({
+      email: cleanEmail,
+      password,
+      options: { data: { full_name: fullName, role: "unassigned" } }
+    });
+    if (error) setError(formatEmailError(error));
+    ```
+  - **Bot Verification Added:** Added security bot protection check on signup form (`components/sign-up-form.tsx`).
+- [x] Test: submitting the same email twice in rapid succession (simulated concurrent requests) results in exactly one account created, not zero or two
+  - **Verified:** Tested in `lib/utils/email-uniqueness.test.ts` via `Promise.all([registerUserAtomic("Concurrent@Example.com"), registerUserAtomic("concurrent@example.com")])`. Exactly 1 succeeds and 1 fails with a user-friendly duplicate account error message.
+- [x] Test: 'User@Test.com' and 'user@test.com' are correctly treated as the same account
+  - **Verified:** Tested in `lib/utils/email-uniqueness.test.ts`. Passes 100%.
