@@ -20,7 +20,7 @@ export default async function PermissionsPage() {
   const roles = Array.from(new Set([
     ...(employees?.map(e => e.role) || []),
     ...(permissions?.map(p => p.role) || []),
-    "superadmin", "admin", "sales_agent", "support", "billing" // Baseline fallbacks
+    "superadmin", "admin", "sales_agent", "server_admin", "dev", "client" // Baseline fallbacks
   ])).sort();
 
   const modules = moduleRows || [];

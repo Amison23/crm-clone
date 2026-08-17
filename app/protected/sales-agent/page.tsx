@@ -23,21 +23,18 @@ export default async function SalesAgentPage() {
   const tenantId = user.user_metadata?.tenant_id;
 
   // 2. PARALLEL DATA FETCHING (Personal Scoping)
-  const [tasksReq, ticketsReq, leadsReq, dealsReq] = await Promise.all([
+  const [tasksReq, ticketsReq, leadsReq] = await Promise.all([
     // Operational Tasks assigned to THIS agent
     supabase.from('tasks').select('*').eq('assigned_to', agentId).order('due_date', { ascending: true }),
     // Support Tickets assigned to THIS agent
     supabase.from('tickets').select('*').eq('assigned_to', agentId),
-    // CRM: Every lead assigned to this agent (for Win Rate math)
+    // CRM: Every lead assigned to this agent (for Win Rate math & Revenue Yield)
     supabase.from('leads').select('*').eq('employee_id', agentId),
-    // Financial: Won deals only
-    supabase.from('deals').select('amount').eq('assigned_to', agentId).eq('status', 'won')
   ]);
 
   if (tasksReq.error) console.error("Error fetching tasks:", tasksReq.error);
   if (ticketsReq.error) console.error("Error fetching tickets:", ticketsReq.error);
   if (leadsReq.error) console.error("Error fetching leads:", leadsReq.error);
-  if (dealsReq.error) console.error("Error fetching deals:", dealsReq.error);
 
   const tasksToMap = tasksReq.data || [];
   const ticketsToMap = ticketsReq.data || [];
@@ -51,8 +48,10 @@ export default async function SalesAgentPage() {
   // Win Rate Calculation (Section 5.1)
   const winRate = totalClosed > 0 ? Math.round((wonLeads / totalClosed) * 100) : 0;
   
-  // Revenue Yield
-  const settledRevenue = (dealsReq.data || []).reduce((sum, d) => sum + Number(d.amount), 0);
+  // Revenue Yield (calculated directly from leads with potential_value and status = 'won')
+  const settledRevenue = allLeads
+    .filter(l => l.status === 'won')
+    .reduce((sum, l) => sum + Number(l.potential_value || 0), 0);
 
   // Task Velocity Math (Section 5.2)
   const totalTasks = tasksToMap.length;
