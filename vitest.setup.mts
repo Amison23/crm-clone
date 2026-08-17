@@ -32,6 +32,12 @@ vi.mock('next/navigation', () => ({
   usePathname: vi.fn(),
 }))
 
+// Mock next/cache
+vi.mock('next/cache', () => ({
+  revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
+}))
+
 // Mock react-hot-toast
 vi.mock('react-hot-toast', () => ({
   default: {
