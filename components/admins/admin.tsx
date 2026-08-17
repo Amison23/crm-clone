@@ -4,8 +4,9 @@ import { toast } from "react-hot-toast"
 import { provisionAgent } from "@/app/protected/super-admin/actions"
 import { generateInviteCode, linkExistingUser, getActiveInvites, revokeInviteCode, getAgentMetrics } from "@/app/actions/tenant"
 import { getCompanyProducts, createCompanyProduct, getAgentProducts, toggleAgentProduct } from "@/app/actions/products"
+import { ActivityTab, RolesTab } from "./OrgActivityAndRoles"
 
-type Tab = "overview" | "agents" | "products" | "customers" | "issues"
+type Tab = "overview" | "agents" | "products" | "customers" | "issues" | "activity" | "roles"
 type Company = {
   name: string,
   logo: string,
@@ -182,6 +183,8 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
     { key: "products", label: "Products", icon: "inventory_2" },
     { key: "customers", label: "Customers", icon: "business" },
     { key: "issues", label: "Issues", icon: "bug_report" },
+    { key: "activity", label: "Worker Activity", icon: "monitoring" },
+    { key: "roles", label: "Org Roles", icon: "badge" },
   ]
 
   if (loading) {
@@ -260,7 +263,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
 
       {/* Tab Bar */}
       <div className="w-full">
-        <div className="flex gap-1 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm w-fit mb-8">
+        <div className="flex gap-1 p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm w-fit mb-8 flex-wrap">
           {tabs.map((t) => (
             <button
               key={t.key}
@@ -287,6 +290,8 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
         {activeTab === "products" && <ProductsTab companyId={companyId} products={products} onProductAdded={reloadData} />}
         {activeTab === "customers" && <ClientsTab customers={customers} />}
         {activeTab === "issues" && <IssuesTab issues={issues} agents={agents} companyId={companyId} onReassign={reloadData} />}
+        {activeTab === "activity" && <ActivityTab companyId={companyId} />}
+        {activeTab === "roles" && <RolesTab companyId={companyId} onSelectRoleFilter={() => setActiveTab("agents")} />}
       </div>
     </div>
   )
