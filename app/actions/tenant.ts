@@ -179,8 +179,10 @@ export async function linkExistingUser(companyId: string, email: string, role: s
     return { success: false, error: "Unauthorized" };
   }
   
-  if (profile.role === "admin" && profile.company_id !== companyId) {
-    return { success: false, error: "Unauthorized" };
+  const targetCompanyId = profile.role === "admin" ? profile.company_id! : companyId;
+
+  if (!targetCompanyId) {
+    return { success: false, error: "Invalid organization context" };
   }
 
   // Look up the target user by email in the employees table
@@ -200,7 +202,7 @@ export async function linkExistingUser(companyId: string, email: string, role: s
   // Update their company_id and role
   const { error: updateError } = await supabase
     .from("employees")
-    .update({ company_id: companyId, role: role })
+    .update({ company_id: targetCompanyId, role: role })
     .eq("id", targetEmployee.id);
 
   if (updateError) {
