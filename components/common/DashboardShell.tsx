@@ -8,12 +8,12 @@ import { createClient } from "@/lib/supabase/client";
 import toast from "react-hot-toast";
 
 const navItems = [
-  { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "superadmin"] },
+  { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin"] },
   { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "superadmin"] },
+  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "superadmin"] },
+  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["server_admin", "superadmin"] },
   { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin"] },
 ];
 
