@@ -3,6 +3,7 @@
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
+import { normalizeEmail, formatEmailError } from "@/lib/utils";
 
 interface PermissionUpdate {
   [key: string]: boolean | undefined;
@@ -63,12 +64,14 @@ function slugify(text: string) {
 
 // --- TENANT ACTIONS ---
 
-export async function createTenant(name: string, adminEmail?: string, adminName?: string) {
+export async function createTenant(name: string, rawAdminEmail?: string, adminName?: string) {
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) {
       return { success: false, error: "Unauthorized: Super Admin access required" };
   }
  
+  const adminEmail = rawAdminEmail ? normalizeEmail(rawAdminEmail) : undefined;
+
   const { data, error } = await supabase
     .from("companies")
     .insert({ 
@@ -98,7 +101,7 @@ export async function createTenant(name: string, adminEmail?: string, adminName?
     });
 
     if (inviteError) {
-      return { success: false, error: `Tenant created but failed to create admin: ${inviteError.message}` };
+      return { success: false, error: `Tenant created but failed to create admin: ${formatEmailError(inviteError)}` };
     }
 
     if (inviteData?.user) {
@@ -464,7 +467,7 @@ export async function createProduct(data: { name: string, description: string })
   return { success: true, data: product };
 }
 
-export async function provisionAgent(companyId: string, name: string, email: string) {
+export async function provisionAgent(companyId: string, name: string, rawEmail: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Unauthorized" };
@@ -476,6 +479,8 @@ export async function provisionAgent(companyId: string, name: string, email: str
   if (profile.role === 'admin' && profile.company_id !== companyId) {
       return { success: false, error: "Unauthorized to add agents for another company" };
   }
+
+  const email = normalizeEmail(rawEmail);
 
   const adminClient = createAdminClient();
   const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
@@ -489,7 +494,7 @@ export async function provisionAgent(companyId: string, name: string, email: str
   });
 
   if (inviteError) {
-    return { success: false, error: inviteError.message };
+    return { success: false, error: formatEmailError(inviteError) };
   }
 
   if (inviteData?.user) {

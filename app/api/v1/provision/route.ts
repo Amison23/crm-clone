@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto"
+import crypto from "crypto";
+import { normalizeEmail } from "@/lib/utils";
 
 export async function POST (req: NextRequest){
   const supabase = createClient(
@@ -21,7 +22,8 @@ export async function POST (req: NextRequest){
       )
     }
 
-    const {name, slug, product, email, website} = await req.json()
+    const {name, slug, product, email: rawEmail, website} = await req.json()
+    const email = rawEmail ? normalizeEmail(rawEmail) : null;
 
     if(!name || !slug || !product){
       return NextResponse.json(
