@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sendNotificationEmail } from "@/lib/notifications/email";
 
 /**
  * INTELLIGENCE ENGINE v3.0 - LEAD PROTOCOLS
@@ -195,10 +196,28 @@ export async function assignSalesAgents(leadId: string, employeeId: string){
 
   const {error} = await supabase
     .from("leads")
-    .update({ assigned_to: employeeId })
+    .update({ employee_id: employeeId })
     .eq("id", leadId);
 
   if(error) return {error: error.message};
+
+  // Fetch assigned agent email for notification
+  const { data: agent } = await supabase
+    .from("employees")
+    .select("email_address, full_name")
+    .eq("id", employeeId)
+    .single();
+
+  if (agent?.email_address) {
+    await sendNotificationEmail({
+      recipientEmail: agent.email_address,
+      recipientName: agent.full_name || undefined,
+      eventType: "LEAD_REASSIGNED",
+      subject: "New Lead Assigned To You",
+      body: `You have been assigned ownership of lead ${leadId}. Please log in to your console to review details.`,
+      metadata: { leadId, assignedBy: user.id }
+    });
+  }
 
   revalidatePath("/protected/crm-leads-table");
   return {success: true};

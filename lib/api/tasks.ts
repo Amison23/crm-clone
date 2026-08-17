@@ -34,7 +34,7 @@ export async function getTasks() {
     .eq("company_id", tenantId)
     .order("created_at", { ascending: false });
 
-  if (role === "sales_agent") {
+  if (role === "sales_agent" || role === "server_admin" || role === "dev") {
     query = query.eq("assigned_to", user.id);
   }
 

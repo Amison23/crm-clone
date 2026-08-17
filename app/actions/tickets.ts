@@ -9,18 +9,18 @@ export async function reassignTicket(ticketId: string, newAgentId: string | null
 
   if (!user) return { success: false, error: "Unauthorized" };
 
-  // Verify the user is a company admin or superadmin
+  // Verify the user is a server_admin or superadmin
   const { data: profile } = await supabase
     .from("employees")
     .select("role, company_id")
     .eq("id", user.id)
     .single();
 
-  if (!profile || (profile.role !== "admin" && profile.role !== "superadmin")) {
+  if (!profile || (profile.role !== "server_admin" && profile.role !== "superadmin")) {
     return { success: false, error: "Unauthorized" };
   }
   
-  if (profile.role === "admin" && profile.company_id !== companyId) {
+  if (profile.role === "server_admin" && profile.company_id !== companyId) {
     return { success: false, error: "Unauthorized" };
   }
 
