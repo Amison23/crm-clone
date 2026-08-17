@@ -21,6 +21,8 @@ export default function AdminPermissionsMatrix() {
 <button className="border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 px-4 py-4 text-sm font-bold transition-all whitespace-nowrap">Company Admin</button>
 <button className="border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 px-4 py-4 text-sm font-bold transition-all whitespace-nowrap">Sales Agent</button>
 <button className="border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 px-4 py-4 text-sm font-bold transition-all whitespace-nowrap">Server Admin</button>
+<button className="border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 px-4 py-4 text-sm font-bold transition-all whitespace-nowrap">Developer (Dev)</button>
+<button className="border-b-2 border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 px-4 py-4 text-sm font-bold transition-all whitespace-nowrap">Client</button>
 </div>
 {/*  Permissions Table Card  */}
 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">

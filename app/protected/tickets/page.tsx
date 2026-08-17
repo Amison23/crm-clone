@@ -20,9 +20,14 @@ export default async function TicketsPage() {
       .eq("id", user.id)
       .single();
 
-    if (employee?.role === "super_admin" || employee?.role === "admin") {
+    if (
+      employee?.role === "superadmin" ||
+      employee?.role === "super_admin" ||
+      employee?.role === "admin" ||
+      employee?.role === "server_admin"
+    ) {
       role = "admin";
-    } else if (employee?.role === "sales_agent") {
+    } else if (employee?.role === "sales_agent" || employee?.role === "dev") {
       role = "sales_agent";
     } else {
       role = "customer";

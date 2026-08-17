@@ -35,14 +35,24 @@ export default function VisualBotBuilder() {
   const [form, setForm] = useState(emptyFAQ)
   const [saving, setSaving] = useState(false)
   const [tenantId, setTenantId] = useState<string | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      // Derive company_id from user metadata if available
-      // const tid = user?.user_metadata?.company_id || user?.id || null
-      const tid = 'c2b4fc9e-b23e-450a-9f33-0edca935d1ac' // Hardcoded the company id for now until auth.id is wired up
-      setTenantId(tid)
+      if (user) {
+        setUserId(user.id)
+        let tid = user.user_metadata?.company_id || user.user_metadata?.tenant_id
+        if (!tid) {
+          const { data: emp } = await supabase
+            .from('employees')
+            .select('company_id')
+            .eq('id', user.id)
+            .single()
+          tid = emp?.company_id
+        }
+        setTenantId(tid || 'c2b4fc9e-b23e-450a-9f33-0edca935d1ac')
+      }
       await loadFAQs()
       setLoading(false)
     }
@@ -70,8 +80,7 @@ export default function VisualBotBuilder() {
         department: form.department,
         triggers_routing: form.triggers_routing,
         company_id: tenantId,
-        created_by: null, // null for now until auth.id is wired up
-        // created_by: user?.id,
+        created_by: user?.id || userId,
         is_active: true,
       }
 

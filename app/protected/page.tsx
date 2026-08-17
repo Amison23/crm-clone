@@ -115,6 +115,15 @@ async function DashboardContent() {
       desc: "AI routing & automation",
     },
     {
+      name: "Dev workspace",
+      href: "/protected/dev",
+      icon: Cpu,
+      bg: "bg-slate-100 dark:bg-slate-800",
+      iconColor: "text-slate-600 dark:text-slate-400",
+      roles: ["dev", "superadmin"],
+      desc: "Developer engineering tools & tasks",
+    },
+    {
       name: "Admin matrix",
       href: "/protected/admin-permissions-matrix",
       icon: Settings,
