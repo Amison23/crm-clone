@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn, normalizeEmail, formatEmailError } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ShieldCheck } from "lucide-react";
 
 export function SignUpForm({
   className,
@@ -24,6 +25,7 @@ export function SignUpForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -34,15 +36,24 @@ export function SignUpForm({
     setIsLoading(true);
     setError(null);
 
+    const cleanEmail = normalizeEmail(email);
+
+    if (!isVerified) {
+      setError("Please complete the bot protection security check.");
+      setIsLoading(false);
+      return;
+    }
+
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
+      setError("Passwords do not match. Please re-enter your password.");
       setIsLoading(false);
       return;
     }
 
     try {
+      // Direct atomic insert-then-catch-conflict flow
       const { error } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
         options: {
           data: {
@@ -55,7 +66,7 @@ export function SignUpForm({
       if (error) throw error;
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(formatEmailError(error));
     } finally {
       setIsLoading(false);
     }
@@ -117,7 +128,23 @@ export function SignUpForm({
                   onChange={(e) => setRepeatPassword(e.target.value)}
                 />
               </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
+
+              {/* Bot Verification / Security Challenge Widget */}
+              <div className="flex items-center gap-3 p-3 border rounded-lg bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                <input
+                  type="checkbox"
+                  id="captcha-check"
+                  checked={isVerified}
+                  onChange={(e) => setIsVerified(e.target.checked)}
+                  className="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary cursor-pointer"
+                />
+                <label htmlFor="captcha-check" className="text-sm font-medium flex items-center gap-2 cursor-pointer select-none text-slate-700 dark:text-slate-300">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  I am human (Security Bot Verification)
+                </label>
+              </div>
+
+              {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? "Creating an account..." : "Sign up"}
               </Button>

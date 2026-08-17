@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn, normalizeEmail, formatEmailError } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,15 +34,14 @@ export function LoginForm({
     setIsLoading(true);
     setError(null);
 
+    const cleanEmail = normalizeEmail(email);
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: cleanEmail,
         password,
       });
       if (error) {
-        if (error.message.includes("Email not confirmed")) {
-          throw new Error("Please confirm your email address before logging in.");
-        }
         throw error;
       }
       
@@ -61,7 +60,7 @@ export function LoginForm({
       // Update this route to redirect to an authenticated route. The user already has an active session.
       router.push("/protected");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(formatEmailError(error));
     } finally {
       setIsLoading(false);
     }
