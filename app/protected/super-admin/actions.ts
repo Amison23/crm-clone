@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { normalizeEmail, formatEmailError } from "@/lib/utils";
+import { sendResendEmail } from "@/lib/email/resend";
 
 interface PermissionUpdate {
   [key: string]: boolean | undefined;
@@ -577,12 +578,32 @@ export async function adminResetUserPassword(
   let emailDispatched = false;
   if (sendEmailNotification) {
     try {
-      const { error: emailErr } = await adminClient.auth.admin.generateLink({
-        type: "recovery",
-        email: targetUser.email_address,
+      const emailRes = await sendResendEmail({
+        to: targetUser.email_address,
+        subject: "Your Account Credentials - Password Reset",
+        html: `
+          <div style="font-family: sans-serif; max-width: 500px; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+            <h2 style="color: #4f46e5; margin-top: 0;">Account Password Reset</h2>
+            <p>Hello <strong>${targetUser.full_name || 'Staff Member'}</strong>,</p>
+            <p>Your account password has been updated by an administrator. Here are your temporary access credentials:</p>
+            <div style="background-color: #f8fafc; padding: 16px; border-radius: 12px; font-family: monospace; font-size: 15px; border: 1px solid #cbd5e1; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>Email:</strong> ${targetUser.email_address}</p>
+              <p style="margin: 4px 0;"><strong>Password:</strong> ${finalPassword}</p>
+            </div>
+            <p style="font-size: 13px; color: #64748b;">Please log in to your dashboard using these new credentials.</p>
+          </div>
+        `,
       });
-      if (!emailErr) {
+
+      if (emailRes.success) {
         emailDispatched = true;
+      } else {
+        // Fallback to Supabase auth mailer
+        const { error: emailErr } = await adminClient.auth.admin.generateLink({
+          type: "recovery",
+          email: targetUser.email_address,
+        });
+        if (!emailErr) emailDispatched = true;
       }
     } catch (e) {
       console.warn("Automated email notification dispatch warning:", e);
