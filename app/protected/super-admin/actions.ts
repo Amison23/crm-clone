@@ -518,7 +518,11 @@ export async function provisionAgent(companyId: string, name: string, rawEmail: 
   };
 }
 
-export async function adminResetUserPassword(targetUserId: string, customPassword?: string) {
+export async function adminResetUserPassword(
+  targetUserId: string,
+  customPassword?: string,
+  sendEmailNotification: boolean = true
+) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { success: false, error: "Unauthorized" };
@@ -570,9 +574,25 @@ export async function adminResetUserPassword(targetUserId: string, customPasswor
     return { success: false, error: formatEmailError(updateError) };
   }
 
+  let emailDispatched = false;
+  if (sendEmailNotification) {
+    try {
+      const { error: emailErr } = await adminClient.auth.admin.generateLink({
+        type: "recovery",
+        email: targetUser.email_address,
+      });
+      if (!emailErr) {
+        emailDispatched = true;
+      }
+    } catch (e) {
+      console.warn("Automated email notification dispatch warning:", e);
+    }
+  }
+
   await logAction(supabase, "ADMIN_RESET_PASSWORD", "employee", targetUserId, {
     target_email: targetUser.email_address,
     target_role: targetUser.role,
+    email_dispatched: emailDispatched,
   });
 
   return {
@@ -580,6 +600,7 @@ export async function adminResetUserPassword(targetUserId: string, customPasswor
     email: targetUser.email_address,
     fullName: targetUser.full_name,
     generatedPassword: finalPassword,
+    emailDispatched,
   };
 }
 
