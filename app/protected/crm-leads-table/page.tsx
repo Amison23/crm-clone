@@ -4,6 +4,9 @@ import { getLeads } from "@/lib/api/leads";
 import { getTasks } from "@/lib/api/tasks";
 import { LeadsClientWrapper } from "@/components/crm/leads-client-wrapper";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function CrmLeadsTablePage() {
   return (
     <Suspense fallback={<LeadsTableSkeleton />}>
