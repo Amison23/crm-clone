@@ -11,6 +11,7 @@ import toast from "react-hot-toast";
 const navItems = [
   { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/dev", icon: "code", label: "Dev Workspace", roles: ["dev", "superadmin"] },
+  { href: "/protected/sales-agent", icon: "badge", label: "My Workspace", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin"] },
   { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin", "superadmin"] },
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
@@ -20,10 +21,9 @@ const navItems = [
 ];
 
 const systemItems = [
-  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles: ["sales_agent", "admin", "superadmin"], disabled: true },
-  // Telephony is hidden for superadmin — they get the real route in platformItems below
-  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles: ["sales_agent", "admin"], disabled: true },
+  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles: ["sales_agent", "admin", "dev", "superadmin"] },
+  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles: ["sales_agent", "admin", "dev", "superadmin"], disabled: true },
+  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles: ["sales_agent", "admin", "dev"], disabled: true },
 ];
 
 // Superadmin-only: platform control routes
@@ -159,7 +159,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
           );
         })}
 
-        {role !== 'admin' && role !== 'sales_agent' && (
+        {filteredSystem.length > 0 && (
           <div className="pt-4 pb-2">
           <button
             onClick={() => setSystemOpen(!systemOpen)}
