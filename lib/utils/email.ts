@@ -65,5 +65,14 @@ export function formatEmailError(error: unknown): string {
     return "Email rate limit reached. Please wait 60 seconds before requesting another email.";
   }
 
+  if (
+    message.toLowerCase().includes("internal server error") ||
+    message.toLowerCase().includes("500") ||
+    message.toLowerCase().includes("error sending") ||
+    message.toLowerCase().includes("smtp")
+  ) {
+    return "Email Delivery Error: Could not send recovery email via server. Please try again later or contact your system administrator.";
+  }
+
   return message || "An unexpected error occurred. Please try again.";
 }
