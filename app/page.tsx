@@ -1,5 +1,6 @@
 import { AuthButton } from "@/components/auth-button";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { AuthErrorRedirect } from "@/components/auth/AuthErrorRedirect";
 import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -10,6 +11,7 @@ import { ArrowRight, LayoutDashboard, MessageSquare, PhoneCall, Users } from "lu
 export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center overflow-x-hidden selection:bg-primary/30">
+      <AuthErrorRedirect />
       {/* Dynamic Backgrounds */}
       <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-br from-primary/20 via-transparent to-transparent -z-10 blur-3xl rounded-full" />
       <div className="absolute top-40 right-0 w-[500px] h-[500px] bg-gradient-to-bl from-orange-400/10 via-transparent to-transparent -z-10 blur-3xl rounded-full" />
