@@ -39,11 +39,23 @@ export default async function DevWorkspacePage() {
     redirect("/protected");
   }
 
+  const isSuperAdmin = role === "superadmin" || role === "super_admin";
+
+  let logsQuery = supabase
+    .from("audit_logs")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(8);
+
+  if (!isSuperAdmin && companyId) {
+    logsQuery = logsQuery.eq("company_id", companyId);
+  }
+
   // 2. FETCH DEV ASSIGNED TASKS, COMPANY CONTEXT & AUDIT LOGS
   const [tasksRes, companyRes, logsRes] = await Promise.all([
     getTasks(),
     companyId ? supabase.from("companies").select("name").eq("id", companyId).single() : Promise.resolve({ data: null }),
-    supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(8)
+    logsQuery,
   ]);
 
   const devTasks = tasksRes.tasks || [];
