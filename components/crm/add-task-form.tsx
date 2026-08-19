@@ -54,7 +54,9 @@ export function AddTaskForm({
           <select id="assigned_to" name="assigned_to" className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-sm">
             <option value="">Assign to myself</option>
             {agents?.map((a: any) => (
-              <option key={a.id} value={a.id}>{a.full_name || a.email_address}</option>
+              <option key={a.id} value={a.id}>
+                {a.full_name || a.email_address} ({a.email_address}{a.role ? ` · ${a.role.replace('_', ' ')}` : ''})
+              </option>
             ))}
           </select>
         </div>

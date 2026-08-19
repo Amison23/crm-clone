@@ -49,7 +49,7 @@ export async function getTasks() {
   if (isAdmin) {
     const { data: agentsData } = await supabase
       .from("employees")
-      .select("id, full_name, email_address")
+      .select("id, full_name, email_address, role")
       .eq("company_id", tenantId);
     if (agentsData) agents = agentsData;
   }
