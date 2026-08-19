@@ -5,13 +5,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { type ReactNode, useState, useEffect } from "react";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
+import { getThroughputMetrics, type ThroughputMetrics } from "@/app/actions/throughput";
 import toast from "react-hot-toast";
 
 const navItems = [
   { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/dev", icon: "code", label: "Dev Workspace", roles: ["dev", "superadmin"] },
   { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin"] },
   { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin", "superadmin"] },
-  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "superadmin"] },
+  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["server_admin", "superadmin"] },
   { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin"] },
@@ -41,13 +43,22 @@ export default function DashboardShell({ children, role, name }: { children: Rea
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [platformOpen, setPlatformOpen] = useState(pathname.startsWith('/protected/super-admin'));
   const [systemOpen, setSystemOpen] = useState(false);
-  const [throughputOpen, setThroughputOpen] = useState(false);
+  const [throughputOpen, setThroughputOpen] = useState(true);
+  const [metrics, setMetrics] = useState<ThroughputMetrics | null>(null);
 
   useEffect(() => {
     if (pathname.startsWith('/protected/super-admin')) {
       setPlatformOpen(true);
     }
   }, [pathname]);
+
+  useEffect(() => {
+    getThroughputMetrics().then((res) => {
+      if (res.success && res.metrics) {
+        setMetrics(res.metrics);
+      }
+    });
+  }, []);
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -148,7 +159,8 @@ export default function DashboardShell({ children, role, name }: { children: Rea
           );
         })}
 
-        <div className="pt-4 pb-2">
+        {role !== 'admin' && role !== 'sales_agent' && (
+          <div className="pt-4 pb-2">
           <button
             onClick={() => setSystemOpen(!systemOpen)}
             className="w-full flex items-center justify-between px-3 group"
@@ -161,6 +173,9 @@ export default function DashboardShell({ children, role, name }: { children: Rea
             </span>
           </button>
         </div>
+        )}
+
+        
 
         {systemOpen && filteredSystem.map(({ href, icon, label, disabled }) => {
           const isActive = pathname.startsWith(href);
@@ -192,7 +207,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
 
         {/* Platform Control section is now rendered inline as a dropdown inside the nav items map above */}
 
-        {/* ── Personal Throughput (sales_agent & admin only) ── */}
+        {/* ── Personal & Team Throughput Performance (Real DB Metrics) ── */}
         {role !== 'superadmin' && (
           <div className="pt-8 pb-4">
             <button
@@ -200,7 +215,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
               className="w-full flex items-center justify-between px-3 mb-4 group"
             >
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
-                Throughput
+                Throughput Performance
               </p>
               <span className={`material-symbols-outlined text-[14px] text-slate-400 transition-transform ${throughputOpen ? "rotate-180" : ""}`}>
                 expand_more
@@ -208,16 +223,13 @@ export default function DashboardShell({ children, role, name }: { children: Rea
             </button>
             {throughputOpen && (
               <div className="space-y-4 px-3">
-                {role === 'admin' ? (
+                {metrics ? (
                   <>
-                    <SidebarProgress label="Team Objectives" value={64} color="bg-indigo-500" />
-                    <SidebarProgress label="SLA Compliance" value={88} color="bg-blue-500" />
+                    <SidebarProgress label={metrics.primaryLabel} value={metrics.primaryValue} color={metrics.primaryColor} />
+                    <SidebarProgress label={metrics.secondaryLabel} value={metrics.secondaryValue} color={metrics.secondaryColor} />
                   </>
                 ) : (
-                  <>
-                    <SidebarProgress label="Daily Outreach" value={45} color="bg-indigo-500" />
-                    <SidebarProgress label="Lead Follow-up" value={72} color="bg-amber-500" />
-                  </>
+                  <div className="text-[11px] text-slate-400 py-1 animate-pulse">Calculating telemetry...</div>
                 )}
               </div>
             )}
@@ -225,26 +237,52 @@ export default function DashboardShell({ children, role, name }: { children: Rea
         )}
       </nav>
 
-      {/* User footer */}
-      <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-1">
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors text-sm"
-        >
-          <span className="material-symbols-outlined text-base">logout</span>
-          Sign out
-        </button>
+      {/* Dynamic User Profile Footer */}
+      {(() => {
+        const userInitials = (name || role || "User")
+          .trim()
+          .split(" ")
+          .filter(Boolean)
+          .map((part) => part[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
 
-        <div className="flex items-center gap-3 px-3 py-2">
-          <div className="size-8 rounded-full bg-indigo-100 dark:bg-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-medium text-xs flex-shrink-0">
-            AD
+        return (
+          <div className="p-4 border-t border-slate-200/80 dark:border-slate-800/80">
+            <div className="p-3 bg-slate-50/80 dark:bg-slate-900/60 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative flex-shrink-0">
+                    <div className="size-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center text-white font-black text-xs shadow-md shadow-indigo-500/20 tracking-wider">
+                      {userInitials}
+                    </div>
+                    <span className="absolute -bottom-0.5 -right-0.5 size-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-900 shadow-sm animate-pulse" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate tracking-tight">
+                      {name || "Authenticated User"}
+                    </p>
+                    <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 truncate uppercase tracking-wider mt-0.5">
+                      {role ? role.replace('_', ' ') : "User"}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleLogout}
+                  title="Sign out"
+                  className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all duration-200 group active:scale-95 flex items-center justify-center flex-shrink-0"
+                >
+                  <span className="material-symbols-outlined text-lg transition-transform group-hover:translate-x-0.5">
+                    logout
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-slate-900 dark:text-slate-100 truncate">{name}</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">{role || "User"}</p>
-          </div>
-        </div>
-      </div>
+        );
+      })()}
     </>
   );
 

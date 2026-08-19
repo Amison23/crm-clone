@@ -69,7 +69,7 @@ export default function OmnichannelChatInbox() {
             .select('id, full_name, email_address, role')
             .eq('company_id', employee.company_id)
             .neq('id', user.id)
-            .in('role', ['admin', 'sales_agent'])
+            .in('role', ['admin', 'sales_agent', 'dev', 'superadmin', 'server_admin'])
           setTeamMembers(team || [])
         }
 
@@ -382,7 +382,7 @@ export default function OmnichannelChatInbox() {
                         <div className="flex items-center gap-1">
                           <span className="material-symbols-outlined text-[13px] text-indigo-500">badge</span>
                           <span className="text-[10px] uppercase font-bold text-slate-400">
-                            {member.role === 'admin' ? 'Admin' : 'Sales Agent'}
+                            {member.role === 'admin' ? 'Admin' : member.role === 'dev' ? 'Dev' : member.role === 'superadmin' ? 'Super Admin' : 'Sales Agent'}
                           </span>
                         </div>
                       </div>
@@ -542,7 +542,7 @@ export default function OmnichannelChatInbox() {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{member.full_name || 'Unknown'}</p>
-                          <p className="text-xs text-slate-400">{member.role === 'admin' ? 'Admin' : 'Sales Agent'}</p>
+                          <p className="text-xs text-slate-400">{member.role === 'admin' ? 'Admin' : member.role === 'dev' ? 'Dev' : member.role === 'superadmin' ? 'Super Admin' : 'Sales Agent'}</p>
                         </div>
                       </div>
                       <span className="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors text-sm">chat</span>

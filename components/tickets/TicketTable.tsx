@@ -46,7 +46,7 @@ function AssignAgentModal({ currentAgentName, onAssign, onClose }: AssignAgentMo
       const { data } = await supabase
         .from("employees")
         .select("id, full_name, role")
-        .in("role", ["super_admin", "company_admin", "sales_agent", "server_admin"])
+        .in("role", ["superadmin", "admin", "sales_agent", "server_admin", "dev"])
         .order("full_name");
       setEmployees(data ?? []);
       setLoading(false);
@@ -59,10 +59,11 @@ function AssignAgentModal({ currentAgentName, onAssign, onClose }: AssignAgentMo
   );
 
   const roleLabel: Record<string, string> = {
-    super_admin: "Super Admin",
-    company_admin: "Company Admin",
+    superadmin: "Super Admin",
+    admin: "Admin",
     sales_agent: "Sales Agent",
     server_admin: "Server Admin",
+    dev: "Developer",
   };
 
   return (
