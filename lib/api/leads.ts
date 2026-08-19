@@ -178,14 +178,13 @@ export async function getLeads() {
 
   if (error) return { error: error.message };
 
-  const {data: salesAgents} = await supabase
+  const { data: salesAgents } = await supabase
     .from("employees")
     .select("id, full_name")
-    .eq("role", "sales_agent")
-    .eq("company_id", tenantId)
-  
-  
-    return { leads, salesAgents };
+    .in("role", ["sales_agent", "dev", "admin"])
+    .eq("company_id", tenantId);
+
+  return { leads, salesAgents };
 }
 
 export async function assignSalesAgents(leadId: string, employeeId: string){
@@ -200,6 +199,15 @@ export async function assignSalesAgents(leadId: string, employeeId: string){
     .eq("id", leadId);
 
   if(error) return {error: error.message};
+
+  // Record action in audit_logs
+  await supabase.from("audit_logs").insert({
+    actor_id: user.id,
+    action: "ASSIGN_LEAD",
+    entity_type: "lead",
+    entity_id: leadId,
+    payload: { employee_id: employeeId }
+  });
 
   // Fetch assigned agent email for notification
   const { data: agent } = await supabase

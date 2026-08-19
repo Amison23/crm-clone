@@ -93,7 +93,7 @@ export async function createTaskAction(formData: FormData) {
   }
 
   // 3. PERSISTENCE
-  const { error } = await supabase.from("tasks").insert([
+  const { data: newTask, error } = await supabase.from("tasks").insert([
     {
       company_id: tenantId,
       assigned_to: assignedTo,
@@ -103,9 +103,17 @@ export async function createTaskAction(formData: FormData) {
       priority,
       due_date: due_date ? new Date(due_date).toISOString() : null,
     },
-  ]);
+  ]).select("id").single();
 
   if (error) return { error: `Insertion Failure: ${error.message}` };
+
+  await supabase.from("audit_logs").insert({
+    actor_id: user.id,
+    action: "CREATE_TASK",
+    entity_type: "task",
+    entity_id: newTask?.id || "task",
+    payload: { title, assigned_to: assignedTo, status, priority }
+  });
 
   // 4. CROSS-NODE REVALIDATION
   // Updates the Task Board, Analytics Engine, and Executive Command Center
@@ -125,6 +133,14 @@ export async function updateTaskStatusAction(taskId: string, status: string) {
     .eq("id", taskId);
 
   if (error) return { error: error.message };
+
+  await supabase.from("audit_logs").insert({
+    actor_id: user.id,
+    action: "UPDATE_TASK_STATUS",
+    entity_type: "task",
+    entity_id: taskId,
+    payload: { status }
+  });
 
   triggerGlobalRevalidation();
   return { success: true };
