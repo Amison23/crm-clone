@@ -3,6 +3,9 @@ import { redirect } from "next/navigation";
 import { getTasks } from "@/lib/api/tasks";
 import { DevWorkspaceView } from "@/components/dev/DevWorkspaceView";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 /**
  * DEV ROLE WORKSPACE NODE
  * Dedicated dashboard for Developers ('dev' role).
@@ -36,14 +39,16 @@ export default async function DevWorkspacePage() {
     redirect("/protected");
   }
 
-  // 2. FETCH DEV ASSIGNED TASKS & COMPANY CONTEXT
-  const [tasksRes, companyRes] = await Promise.all([
+  // 2. FETCH DEV ASSIGNED TASKS, COMPANY CONTEXT & AUDIT LOGS
+  const [tasksRes, companyRes, logsRes] = await Promise.all([
     getTasks(),
-    companyId ? supabase.from("companies").select("name").eq("id", companyId).single() : Promise.resolve({ data: null })
+    companyId ? supabase.from("companies").select("name").eq("id", companyId).single() : Promise.resolve({ data: null }),
+    supabase.from("audit_logs").select("*").order("created_at", { ascending: false }).limit(8)
   ]);
 
   const devTasks = tasksRes.tasks || [];
   const companyName = companyRes.data?.name || "Dev Node";
+  const auditLogs = logsRes.data || [];
 
   return (
     <div className="p-6 md:p-10 w-full animate-in fade-in duration-700 pb-24">
@@ -51,6 +56,7 @@ export default async function DevWorkspacePage() {
         initialTasks={devTasks}
         companyName={companyName}
         userId={user.id}
+        auditLogs={auditLogs}
       />
     </div>
   );

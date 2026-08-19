@@ -6,6 +6,9 @@ import {
   TrendingUp, Zap, Layers, ArrowRight 
 } from 'lucide-react';
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Intelligence Engine Components
 import SummaryCards from '@/app/ui/dashboard/analytics/components/SummaryCards';
 import AgentReport from '@/app/ui/dashboard/analytics/components/AgentReport';
@@ -135,33 +138,26 @@ supabase.from('view_expansive_revenue_audit')
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#020617] pb-12 font-sans">
       <div className="w-full p-4 lg:p-6 space-y-6">
         
-        {/* --- TIER 1: HEADER --- */}
-        <header className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5 dark:opacity-10 pointer-events-none text-primary">
-            <Layers size={140} />
-          </div>
-          <div className="relative z-10 space-y-2">
+        {/* ── HEADER ── */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+          <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 rounded-full bg-primary" />
-              <h2 className="text-[10px] font-bold uppercase text-slate-500 tracking-widest">Product Intelligence: {companyReq.data?.plan_type || 'Pro Node'}</h2>
+              <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Executive Overview · {companyReq.data?.name || "Company Overview"}
+              </span>
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-slate-900 dark:text-white uppercase leading-none">
-              {companyReq.data?.name || "Merchant Pro"} <span className="text-primary italic">Console</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              Executive Dashboard
             </h1>
-            <p className="text-slate-500 font-medium text-sm max-w-xl">
-              Strategic overview of lead conversion and expansive financial settlements.
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium max-w-xl">
+              Strategic overview of revenue performance, pipeline conversion, and team productivity.
             </p>
           </div>
           
-          <div className="flex items-center gap-4 relative z-10">
-            <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-               <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1 text-right">Node ID</p>
-               <p className="text-xs font-mono font-medium text-slate-900 dark:text-white uppercase">
-                  {tenantId?.slice(0, 14)}...
-               </p>
-            </div>
-            <button className="px-6 py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-xs font-bold shadow hover:bg-slate-800 dark:hover:bg-slate-200 transition-colors">
-              Export Audit Trail
+          <div className="flex items-center gap-3">
+            <button className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all">
+              Export Overview
             </button>
           </div>
         </header>
@@ -225,12 +221,12 @@ supabase.from('view_expansive_revenue_audit')
 // Minimal Error State
 function NodeIsolatedError() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-[#020617] p-10 text-center font-sans">
-      <div className="max-w-md space-y-4 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-rose-200 dark:border-rose-900/50">
-        <Lock size={48} className="mx-auto text-rose-500 mb-2" />
-        <h1 className="text-xl font-bold uppercase tracking-tight">Security Loop Isolated</h1>
-        <p className="text-slate-500 text-sm italic">Multi-tenant context missing. Access denied to Merchant Pro analytics node.</p>
-        <Link href="/login" className="block w-full py-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px]">Re-Validate Session</Link>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50/50 dark:bg-slate-950 p-6 text-center font-sans">
+      <div className="max-w-md space-y-4 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+        <Lock className="size-10 mx-auto text-indigo-500 mb-2" />
+        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Company Context Required</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Please sign in with a valid company account to access Executive Analytics.</p>
+        <Link href="/login" className="block w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-500/20 transition-all">Re-Validate Session</Link>
       </div>
     </div>
   );

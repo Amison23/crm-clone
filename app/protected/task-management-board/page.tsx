@@ -3,6 +3,9 @@ import { connection } from "next/server";
 import { getTasks } from "@/lib/api/tasks";
 import { TasksClientWrapper } from "@/components/crm/tasks-client-wrapper";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function TaskManagementBoardPage() {
   return (
     <Suspense fallback={<TasksBoardSkeleton />}>

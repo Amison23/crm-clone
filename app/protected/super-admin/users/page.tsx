@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import UserManagementTable from "./components/UserManagementTable";
 import PageHeader from "@/components/common/PageHeader";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function UsersPage() {
   const supabase = await createClient();
 
