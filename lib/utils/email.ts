@@ -57,5 +57,13 @@ export function formatEmailError(error: unknown): string {
     return "Please confirm your email address before logging in.";
   }
 
+  if (
+    message.toLowerCase().includes("rate limit") ||
+    message.toLowerCase().includes("too many requests") ||
+    code === "over_email_send_rate_limit"
+  ) {
+    return "Email rate limit reached. Please wait 60 seconds before requesting another email.";
+  }
+
   return message || "An unexpected error occurred. Please try again.";
 }

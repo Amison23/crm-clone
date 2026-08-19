@@ -517,3 +517,69 @@ export async function provisionAgent(companyId: string, name: string, rawEmail: 
     credentials: { email, password: "SystemCRM2026!" }
   };
 }
+
+export async function adminResetUserPassword(targetUserId: string, customPassword?: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  const { data: actorProfile } = await supabase
+    .from("employees")
+    .select("role, company_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!actorProfile || (actorProfile.role !== "admin" && actorProfile.role !== "superadmin")) {
+    return { success: false, error: "Unauthorized: Admin privileges required" };
+  }
+
+  // Fetch target user employee profile
+  const { data: targetUser } = await supabase
+    .from("employees")
+    .select("id, email_address, role, company_id, full_name")
+    .eq("id", targetUserId)
+    .single();
+
+  if (!targetUser) {
+    return { success: false, error: "Target user not found" };
+  }
+
+  // RBAC Enforcement:
+  // - Company Admins can ONLY reset password for workers in their own company
+  // - Company Admins CANNOT reset password for Superadmins
+  if (actorProfile.role === "admin") {
+    if (targetUser.company_id !== actorProfile.company_id) {
+      return { success: false, error: "Unauthorized: Cannot modify worker outside your organization" };
+    }
+    if (targetUser.role === "superadmin") {
+      return { success: false, error: "Unauthorized: Cannot modify superadmin credentials" };
+    }
+  }
+
+  // Generate a secure random password if customPassword is not provided
+  const finalPassword = customPassword && customPassword.trim().length >= 6
+    ? customPassword.trim()
+    : `Pass!${Math.random().toString(36).substring(2, 8).toUpperCase()}${Math.floor(100 + Math.random() * 900)}`;
+
+  const adminClient = createAdminClient();
+  const { error: updateError } = await adminClient.auth.admin.updateUserById(targetUserId, {
+    password: finalPassword,
+  });
+
+  if (updateError) {
+    return { success: false, error: formatEmailError(updateError) };
+  }
+
+  await logAction(supabase, "ADMIN_RESET_PASSWORD", "employee", targetUserId, {
+    target_email: targetUser.email_address,
+    target_role: targetUser.role,
+  });
+
+  return {
+    success: true,
+    email: targetUser.email_address,
+    fullName: targetUser.full_name,
+    generatedPassword: finalPassword,
+  };
+}
+

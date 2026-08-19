@@ -9,12 +9,14 @@ import {
   Check, 
   ChevronDown, 
   Loader2,
-  AlertCircle
+  AlertCircle,
+  KeyRound
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { updateUserRole } from "../../actions";
 import { toast } from "react-hot-toast";
 import EmptyState from "@/components/common/EmptyState";
+import { ResetPasswordModal } from "@/components/common/ResetPasswordModal";
 
 interface User {
   id: string;
@@ -33,6 +35,7 @@ interface Company {
 export default function UserManagementTable({ initialUsers, companies }: { initialUsers: User[], companies: Company[] }) {
   const [employees, setEmployees] = useState(initialUsers);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [resettingUser, setResettingUser] = useState<User | null>(null);
 
   const roles = [
     { value: "superadmin", label: "Super Admin", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
@@ -111,21 +114,30 @@ export default function UserManagementTable({ initialUsers, companies }: { initi
                 roles={roles}
                 companies={companies}
                 onUpdate={handleUpdate}
+                onResetPassword={() => setResettingUser(u)}
                 isLoading={loadingId === u.id}
               />
             ))}
           </tbody>
         </table>
       </div>
+
+      {resettingUser && (
+        <ResetPasswordModal
+          user={resettingUser}
+          onClose={() => setResettingUser(null)}
+        />
+      )}
     </div>
   );
 }
 
-function UserRow({ user, roles, companies, onUpdate, isLoading }: { 
+function UserRow({ user, roles, companies, onUpdate, onResetPassword, isLoading }: { 
     user: User, 
     roles: any[], 
     companies: Company[], 
     onUpdate: (userId: string, role: string, companyId: string | null) => void,
+    onResetPassword: () => void,
     isLoading: boolean
 }) {
   const [role, setRole] = useState(user.role || "sales_agent");
@@ -185,19 +197,30 @@ function UserRow({ user, roles, companies, onUpdate, isLoading }: {
       </td>
 
       <td className="px-8 py-5 text-right">
-        <button 
-            disabled={!hasChanges || isLoading}
-            onClick={() => onUpdate(user.id, role, companyId)}
-            className={cn(
-                "px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 ml-auto",
-                hasChanges 
-                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl" 
-                    : "bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed"
-            )}
-        >
-            {isLoading ? <Loader2 className="animate-spin size-3" /> : <Check className="size-3" />}
-            Save Commit
-        </button>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onResetPassword}
+            title="Reset/Generate Password"
+            className="p-2 bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all"
+          >
+            <KeyRound className="size-4" />
+          </button>
+
+          <button 
+              disabled={!hasChanges || isLoading}
+              onClick={() => onUpdate(user.id, role, companyId)}
+              className={cn(
+                  "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2",
+                  hasChanges 
+                      ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl" 
+                      : "bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed"
+              )}
+          >
+              {isLoading ? <Loader2 className="animate-spin size-3" /> : <Check className="size-3" />}
+              Save Commit
+          </button>
+        </div>
       </td>
     </tr>
   );

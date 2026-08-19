@@ -5,6 +5,7 @@ import { provisionAgent } from "@/app/protected/super-admin/actions"
 import { generateInviteCode, linkExistingUser, getActiveInvites, revokeInviteCode, getAgentMetrics } from "@/app/actions/tenant"
 import { getCompanyProducts, createCompanyProduct, getAgentProducts, toggleAgentProduct } from "@/app/actions/products"
 import { ActivityTab, RolesTab } from "./OrgActivityAndRoles"
+import { ResetPasswordModal } from "@/components/common/ResetPasswordModal"
 
 type Tab = "overview" | "agents" | "products" | "customers" | "issues" | "activity" | "roles"
 type Company = {
@@ -847,6 +848,7 @@ function AgentDetailModal({ agent, issues, customers, products, agentProducts, c
   const agentIssues = issues.filter((i) => i.agent === agent.name && i.status !== "Resolved")
   const [localAgentProducts, setLocalAgentProducts] = useState(agentProducts.filter(ap => ap.agent_id === agent.id).map(ap => ap.product_id));
   const [isToggling, setIsToggling] = useState<string | null>(null);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onClose()
@@ -875,6 +877,7 @@ function AgentDetailModal({ agent, issues, customers, products, agentProducts, c
   }
 
   return (
+    <>
     <div
       onClick={handleBackdrop}
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
@@ -882,12 +885,22 @@ function AgentDetailModal({ agent, issues, customers, products, agentProducts, c
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 dark:border-slate-800">
         {/* Header */}
         <div className="p-6 pb-0 relative">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 size-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-all"
-          >
-            <span className="material-symbols-outlined text-base">close</span>
-          </button>
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <button
+              onClick={() => setShowResetModal(true)}
+              title="Reset Worker Password"
+              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+            >
+              <span className="material-symbols-outlined text-sm">key</span>
+              Reset Password
+            </button>
+            <button
+              onClick={onClose}
+              className="size-8 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-all"
+            >
+              <span className="material-symbols-outlined text-base">close</span>
+            </button>
+          </div>
           <div className="flex items-center gap-4">
             <div className="relative">
               <img src={agent.avatar} alt={agent.name} className="size-16 rounded-2xl bg-slate-100" />
@@ -982,6 +995,19 @@ function AgentDetailModal({ agent, issues, customers, products, agentProducts, c
         )}
       </div>
     </div>
+
+    {showResetModal && (
+      <ResetPasswordModal
+        user={{
+          id: agent.id,
+          email_address: agent.email,
+          full_name: agent.name,
+          role: agent.role,
+        }}
+        onClose={() => setShowResetModal(false)}
+      />
+    )}
+    </>
   )
 }
 
