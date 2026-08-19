@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { getLeads } from "@/lib/api/leads";
+import { getTasks } from "@/lib/api/tasks";
 import { LeadsClientWrapper } from "@/components/crm/leads-client-wrapper";
 
 export default function CrmLeadsTablePage() {
@@ -13,14 +14,24 @@ export default function CrmLeadsTablePage() {
 
 async function CrmLeadsTableData() {
   await connection();
-  const result = await getLeads();
+  const [leadsRes, tasksRes] = await Promise.all([
+    getLeads(),
+    getTasks(),
+  ]);
 
-  if (result.error) {
-    console.error("Failed to fetch leads:", result.error);
+  if (leadsRes.error) {
+    console.error("Failed to fetch leads:", leadsRes.error);
+  }
+  if (tasksRes.error) {
+    console.error("Failed to fetch tasks:", tasksRes.error);
   }
 
   return (
-    <LeadsClientWrapper initialLeads={result.leads || []} salesAgents = {result.salesAgents || []} />
+    <LeadsClientWrapper
+      initialLeads={leadsRes.leads || []}
+      salesAgents={leadsRes.salesAgents || []}
+      initialTasks={tasksRes.tasks || []}
+    />
   );
 }
 

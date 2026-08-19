@@ -96,10 +96,11 @@ function validateLeadRow(row: any) {
   return errors;
 }
 
-export function LeadsClientWrapper({ initialLeads, salesAgents }: { initialLeads: Lead[], salesAgents: any[] }) {
+export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [] }: { initialLeads: Lead[], salesAgents: any[], initialTasks?: any[] }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
+  const [tasks, setTasks] = useState<any[]>(initialTasks);
   const [uploadModal, setUploadModal] = useState(false);
   const [csvPreview, setCsvPreview] = useState<{ row: any, errors: string[] }[] | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -122,13 +123,13 @@ export function LeadsClientWrapper({ initialLeads, salesAgents }: { initialLeads
   
   useEffect(() => {
     setLeads(initialLeads);
+    setTasks(initialTasks);
     
     // Fetch user to determine role
     supabase.auth.getUser().then(({ data: { user } }) => {
-      // Typically the application role is stored in user_metadata or it defaults to 'sales_agent'
       setRole(user?.user_metadata?.role || 'sales_agent');
     });
-  }, [initialLeads]);
+  }, [initialLeads, initialTasks]);
 
   const handleUpload = async (file: File) => {
     Papa.parse(file, {
@@ -193,6 +194,53 @@ export function LeadsClientWrapper({ initialLeads, salesAgents }: { initialLeads
         {/* Main Content */}
         <div className="w-full flex-1 relative flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 relative">
+            
+            {/* Assigned Tasks Quick View */}
+            {tasks && tasks.length > 0 && (
+              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="size-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                      <span className="material-symbols-outlined text-lg">assignment</span>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-sm">My Assigned Tasks ({tasks.length})</h3>
+                      <p className="text-[11px] text-slate-400 font-medium">Tasks assigned directly to your workflow</p>
+                    </div>
+                  </div>
+                  <a href="/protected/task-management-board" className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                    Full Task Board <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                  </a>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {tasks.slice(0, 6).map((t: any) => (
+                    <div key={t.id} className="p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-xl space-y-2 hover:border-indigo-500/40 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
+                          t.priority === "high" || t.priority === "critical" ? "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400" :
+                          t.priority === "medium" ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400" :
+                          "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                        }`}>
+                          {t.priority}
+                        </span>
+                        <span className={`text-[10px] font-bold uppercase ${t.status === "completed" ? "text-emerald-500" : "text-indigo-500"}`}>
+                          {t.status.replace("_", " ")}
+                        </span>
+                      </div>
+                      <p className="font-bold text-xs text-slate-900 dark:text-white line-clamp-1">{t.title}</p>
+                      {t.due_date && (
+                        <p className="text-[10px] text-slate-400 flex items-center gap-1 font-medium">
+                          <span className="material-symbols-outlined text-xs">schedule</span>
+                          Due: {new Date(t.due_date).toLocaleDateString("en-GB")}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Filters */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1 w-full sm:w-auto -mx-1 px-1">
