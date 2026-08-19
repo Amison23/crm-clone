@@ -1,6 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import TicketsClient from "@/components/tickets/TicketsClient";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function TicketsPage() {
   const supabase = await createClient();
 
@@ -80,12 +83,6 @@ export default async function TicketsPage() {
               : "Track and manage active customer support requests"}
           </p>
         </div>
-        {role !== "customer" && (
-          <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition-colors">
-            <span className="material-symbols-outlined text-xl">ios_share</span>
-            Export
-          </button>
-        )}
       </div>
 
       {/* Tickets Client side logic */}

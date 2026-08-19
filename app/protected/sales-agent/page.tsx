@@ -35,26 +35,31 @@ export default async function SalesAgentPage() {
     .eq("id", agentId)
     .single();
 
+  const role = employee?.role || "sales_agent";
+  const companyId = employee?.company_id;
+  const isAdmin = role === "admin" || role === "superadmin";
   const agentName = employee?.full_name || user.user_metadata?.full_name || user.email?.split("@")[0] || "Sales Agent";
   const firstName = agentName.split(" ")[0];
 
-  // 2. Parallel Data Fetching (Strictly Agent-Scoped)
+  // 2. Data Fetching with Role-Based Scoping
+  let taskQuery = supabase.from("tasks").select("*, assignee:employees!tasks_assigned_to_fkey(full_name, email_address)").order("due_date", { ascending: true });
+  let ticketQuery = supabase.from("tickets").select("*").order("created_at", { ascending: false });
+  let leadQuery = supabase.from("leads").select("*").order("created_at", { ascending: false });
+
+  if (!isAdmin) {
+    taskQuery = taskQuery.eq("assigned_to", agentId);
+    ticketQuery = ticketQuery.eq("assigned_to", agentId);
+    leadQuery = leadQuery.eq("employee_id", agentId);
+  } else if (companyId) {
+    taskQuery = taskQuery.eq("company_id", companyId);
+    ticketQuery = ticketQuery.eq("company_id", companyId);
+    leadQuery = leadQuery.eq("company_id", companyId);
+  }
+
   const [tasksReq, ticketsReq, leadsReq] = await Promise.all([
-    supabase
-      .from("tasks")
-      .select("*")
-      .eq("assigned_to", agentId)
-      .order("due_date", { ascending: true }),
-    supabase
-      .from("tickets")
-      .select("*")
-      .eq("assigned_to", agentId)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("leads")
-      .select("*")
-      .eq("employee_id", agentId)
-      .order("created_at", { ascending: false }),
+    taskQuery,
+    ticketQuery,
+    leadQuery,
   ]);
 
   const tasks = tasksReq.data || [];

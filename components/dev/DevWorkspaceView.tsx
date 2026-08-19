@@ -22,9 +22,10 @@ interface DevWorkspaceProps {
   initialTasks: DevTask[];
   companyName?: string;
   userId: string;
+  auditLogs?: any[];
 }
 
-export function DevWorkspaceView({ initialTasks, companyName, userId }: DevWorkspaceProps) {
+export function DevWorkspaceView({ initialTasks, companyName, userId, auditLogs = [] }: DevWorkspaceProps) {
   const [tasks, setTasks] = useState<DevTask[]>(initialTasks);
   const [messages, setMessages] = useState<any[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -302,10 +303,20 @@ export function DevWorkspaceView({ initialTasks, companyName, userId }: DevWorks
           </div>
 
           <div className="bg-[#050505] p-6 rounded-3xl border border-slate-800 text-white font-mono text-xs space-y-2">
-            <p className="text-emerald-400 font-bold">[Dev Environment Audit Buffer]</p>
-            <p className="text-slate-400">&gt; GET /api/tasks?role=dev -&gt; Filtered by assigned_to = {userId.slice(0, 8)}...</p>
-            <p className="text-slate-400">&gt; GET /api/messages -&gt; Filtered by tenant company_id context</p>
-            <p className="text-slate-400">&gt; POST /api/admin/superadmin-action -&gt; 403 Forbidden for non-superadmins</p>
+            <p className="text-emerald-400 font-bold">[Dev Environment & Audit Log Stream]</p>
+            {auditLogs.length > 0 ? (
+              auditLogs.map((log: any) => (
+                <p key={log.id} className="text-slate-300 truncate">
+                  &gt; <span className="text-indigo-400">{new Date(log.created_at).toLocaleTimeString()}</span> [{log.action || 'EVENT'}]: {log.entity_type || 'System'}
+                </p>
+              ))
+            ) : (
+              <>
+                <p className="text-slate-400">&gt; GET /api/tasks?role=dev -&gt; Filtered by assigned_to = {userId.slice(0, 8)}...</p>
+                <p className="text-slate-400">&gt; GET /api/messages -&gt; Filtered by tenant company_id context</p>
+                <p className="text-slate-400">&gt; POST /api/admin/superadmin-action -&gt; 403 Forbidden for non-superadmins</p>
+              </>
+            )}
             <p className="text-emerald-500/80 pt-2 animate-pulse">&gt; Active Developer Stream Listening on af-south-1...</p>
           </div>
         </div>

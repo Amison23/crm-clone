@@ -42,6 +42,27 @@ export default function TicketsClient({
   const [activeSla, setActiveSla] = useState<SlaStatus | "All SLA">("All SLA");
   const [expandedWorker, setExpandedWorker] = useState<string | null>(null);
 
+  const handleExportCSV = () => {
+    const listToExport = ticketsData || [];
+    if (listToExport.length === 0) return;
+    const headers = ["ID", "Title", "Status", "Priority", "Created At"];
+    const rows = listToExport.map((t: any) => [
+      t.id,
+      `"${(t.title || '').replace(/"/g, '""')}"`,
+      t.status,
+      t.priority || 'medium',
+      new Date(t.created_at).toLocaleDateString("en-GB")
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `tickets_export_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Map DB tickets to UI format
   const dbTickets: Ticket[] = (ticketsData || []).map((t) => {
     const statusMap: Record<string, TicketStatus> = {
@@ -228,6 +249,19 @@ export default function TicketsClient({
 
       {/* ── Filters & Table ── */}
       <div>
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Ticket Queue</h2>
+          {(role as string) !== "customer" && (
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+            >
+              <span className="material-symbols-outlined text-base">ios_share</span>
+              Export CSV
+            </button>
+          )}
+        </div>
+
         <TicketFilters
           active={activeFilter}
           onFilterChange={setActiveFilter}

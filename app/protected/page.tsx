@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import {
   Users,
   BarChart3,
@@ -189,25 +192,28 @@ async function DashboardContent() {
     ];
   } else {
     // Sales Agent / Default
-    const [leadsRes, tasksRes, ticketsRes] = await Promise.all([
+    const [leadsRes, tasksRes, pendingTasksRes, ticketsRes] = await Promise.all([
       supabase.from('leads').select('*', { count: 'exact', head: true }).eq('employee_id', user.id),
       supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id),
+      supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id).neq('status', 'completed'),
       supabase.from('tickets').select('*', { count: 'exact', head: true }).eq('assigned_to', user.id).eq('status', 'open')
     ]);
     
     if (leadsRes.error) console.error("Agent Dashboard - Error fetching leads count:", leadsRes.error);
     if (tasksRes.error) console.error("Agent Dashboard - Error fetching tasks count:", tasksRes.error);
+    if (pendingTasksRes.error) console.error("Agent Dashboard - Error fetching pending tasks count:", pendingTasksRes.error);
     if (ticketsRes.error) console.error("Agent Dashboard - Error fetching tickets count:", ticketsRes.error);
 
     const myLeads = leadsRes.count;
     const myTasks = tasksRes.count;
+    const pendingTasks = pendingTasksRes.count;
     const myTickets = ticketsRes.count;
     
     stats = [
       { label: "My Leads", value: myLeads?.toString() || "0", sub: "Assigned to me" },
       { label: "My Tasks", value: myTasks?.toString() || "0", sub: "Total tasks" },
+      { label: "Pending Tasks", value: pendingTasks?.toString() || "0", sub: "Action required" },
       { label: "Open Tickets", value: myTickets?.toString() || "0", sub: "Requires attention" },
-      { label: "Unread Messages", value: "0", sub: "All caught up" },
     ];
   }
 
