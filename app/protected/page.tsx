@@ -69,7 +69,7 @@ async function DashboardContent() {
       icon: Globe,
       bg: "bg-purple-100 dark:bg-purple-900/40",
       iconColor: "text-purple-600 dark:text-purple-400",
-      roles: ["superadmin"],
+      roles: ["superadmin", "super_admin"],
       desc: "Platform-wide management",
     },
     {
@@ -87,7 +87,7 @@ async function DashboardContent() {
       icon: LayoutDashboard,
       bg: "bg-green-100 dark:bg-green-900/40",
       iconColor: "text-green-600 dark:text-green-400",
-      roles: ["sales_agent", "admin", "superadmin"],
+      roles: ["sales_agent", "admin", "dev", "superadmin", "super_admin"],
       desc: "Tasks & pipeline queue",
     },
     {
@@ -96,7 +96,7 @@ async function DashboardContent() {
       icon: Target,
       bg: "bg-orange-100 dark:bg-orange-900/40",
       iconColor: "text-orange-600 dark:text-orange-400",
-      roles: ["sales_agent", "admin", "superadmin"],
+      roles: ["sales_agent", "admin", "dev", "server_admin", "superadmin", "super_admin"],
       desc: "SLA objective board",
     },
     {
@@ -105,7 +105,7 @@ async function DashboardContent() {
       icon: Headset,
       bg: "bg-red-100 dark:bg-red-900/40",
       iconColor: "text-red-600 dark:text-red-400",
-      roles: ["sales_agent", "admin", "server_admin", "superadmin"],
+      roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin", "super_admin"],
       desc: "Incident resolution queue",
     },
     {
@@ -114,7 +114,7 @@ async function DashboardContent() {
       icon: Bot,
       bg: "bg-indigo-100 dark:bg-indigo-900/40",
       iconColor: "text-indigo-600 dark:text-indigo-400",
-      roles: ["admin", "superadmin"],
+      roles: ["admin", "dev", "superadmin", "super_admin"],
       desc: "AI routing & automation",
     },
     {
@@ -123,8 +123,17 @@ async function DashboardContent() {
       icon: Cpu,
       bg: "bg-slate-100 dark:bg-slate-800",
       iconColor: "text-slate-600 dark:text-slate-400",
-      roles: ["dev", "superadmin"],
+      roles: ["dev", "superadmin", "super_admin"],
       desc: "Developer engineering tools & tasks",
+    },
+    {
+      name: "Server Node",
+      href: "/protected/server-admin",
+      icon: Activity,
+      bg: "bg-amber-100 dark:bg-amber-900/40",
+      iconColor: "text-amber-600 dark:text-amber-400",
+      roles: ["server_admin", "superadmin", "super_admin"],
+      desc: "Infrastructure & server management",
     },
     {
       name: "Admin matrix",
@@ -132,7 +141,7 @@ async function DashboardContent() {
       icon: Settings,
       bg: "bg-slate-100 dark:bg-slate-800",
       iconColor: "text-slate-600 dark:text-slate-400",
-      roles: ["superadmin"],
+      roles: ["superadmin", "super_admin"],
       desc: "Global ACL & role provisioning",
     },
   ];
