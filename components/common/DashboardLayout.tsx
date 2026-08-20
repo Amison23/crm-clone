@@ -28,11 +28,13 @@ function DashboardSkeleton() {
   );
 }
 
+// Roles that are platform-wide (not company-scoped)
+const PLATFORM_ROLES = new Set(["superadmin", "super_admin"]);
+
 // 2. The AuthGate handles the actual async data fetching
 async function AuthGate({ children }: { children: ReactNode }) {
   const supabase = await createClient();
   
-  // This is the call that was blocking navigation
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -40,24 +42,33 @@ async function AuthGate({ children }: { children: ReactNode }) {
   }
 
   // Fetch role and company_id from employees table to ensure sidebar has authoritative info
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("employees")
-    .select("role, company_id")
+    .select("role, company_id, full_name")
     .eq("id", user.id)
     .single();
 
-  const name = user.user_metadata?.full_name || user.email?.split('@')[0] || "Operator";
+  const name = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || "Operator";
 
   // Role MUST come from the employees table only — never trust user_metadata for RBAC.
   // If the user has no employee row yet (brand new signup), send them to the unassigned screen.
-  if (!profile) {
+  if (!profile || profileError) {
+    console.error("[AuthGate] No employee profile found for user:", user.id, profileError?.message);
     return <UnlinkedAgentScreen />;
   }
 
-  const role = profile.role;
+  const role = profile.role as string;
 
-  // No-Tenant Gating: unassigned role OR no company linked
-  if (role === "unassigned" || (role !== "superadmin" && !profile.company_id)) {
+  console.log("[AuthGate] Resolved role:", role, "| company_id:", profile.company_id, "| for user:", user.id);
+
+  // No-Tenant Gating: unassigned role OR no company linked (platform admins are exempt)
+  if (role === "unassigned") {
+    return <UnlinkedAgentScreen />;
+  }
+
+  // Non-superadmin roles MUST have a company to work within
+  if (!PLATFORM_ROLES.has(role) && !profile.company_id) {
+    console.warn("[AuthGate] Non-platform role has no company_id:", role, user.id);
     return <UnlinkedAgentScreen />;
   }
 
