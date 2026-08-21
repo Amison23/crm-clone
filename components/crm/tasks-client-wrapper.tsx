@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Calendar, MessageSquare, AlertCircle, Trash2, CheckCircle2, Eye, X, Archive, RotateCcw } from "lucide-react";
+import { Plus, Loader2, Calendar, MessageSquare, AlertCircle, Trash2, CheckCircle2, Eye, X, Archive, RotateCcw, Lock } from "lucide-react";
 import {
   updateTaskStatusAction,
   deleteTaskAction,
@@ -14,7 +14,10 @@ import {
   getArchivedTasks,
 } from "@/lib/api/tasks";
 import toast from "react-hot-toast";
+import { showToast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
+import { ConfirmModal } from "@/components/common/ConfirmModal";
+import { AddTaskForm } from "@/components/crm/add-task-form";
 import {
   Select,
   SelectContent,
@@ -37,6 +40,9 @@ export type Task = {
   is_overdue?: boolean;
   archived_at?: string | null;
   archived_by?: string | null;
+  unarchive_used?: boolean;
+  unarchive_count?: number;
+  max_unarchives?: number;
   assignee?: { full_name: string | null; email_address: string | null } | null;
 };
 
@@ -97,10 +103,7 @@ export function TasksClientWrapper({
     setLoadingArchived(false);
   };
 
-  const showToast = (type: "success" | "error", text: string) => {
-    if (type === "success") toast.success(text);
-    else toast.error(text);
-  };
+
 
   const isOverdue = (task: Task) => {
     if (task.archived_at || !task.due_date || task.status === "completed") return false;
@@ -171,65 +174,129 @@ export function TasksClientWrapper({
     }
   };
 
-  const archiveTask = async (taskId: string) => {
-    if (!confirm("Are you sure you want to archive this task?")) return;
-    const res = await archiveTaskAction(taskId);
-    if (res.error) {
-      showToast("error", res.error);
-    } else {
-      showToast("success", "Task archived!");
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
-      setSelectedTaskIds((prev) => prev.filter((id) => id !== taskId));
-      loadArchivedTasks();
-      router.refresh();
-    }
+  // ConfirmModal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel: string;
+    variant: "danger" | "warning" | "primary";
+    isLoading: boolean;
+    onConfirm: () => void | Promise<void>;
+  }>({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmLabel: "Confirm",
+    variant: "primary",
+    isLoading: false,
+    onConfirm: () => {},
+  });
+
+  const closeConfirmModal = () => {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false, isLoading: false }));
   };
 
-  const unarchiveTask = async (taskId: string) => {
-    if (!confirm("Are you sure you want to restore/unarchive this task?")) return;
-    const res = await unarchiveTaskAction(taskId);
-    if (res.error) {
-      showToast("error", res.error);
-    } else {
-      showToast("success", "Task unarchived!");
-      setArchivedTasks((prev) => prev.filter((t) => t.id !== taskId));
-      router.refresh();
-    }
+  const archiveTask = (taskId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Archive Task",
+      message: "Are you sure you want to archive this task? You can restore it later from the Archived tab.",
+      confirmLabel: "Archive Task",
+      variant: "warning",
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isLoading: true }));
+        const res = await archiveTaskAction(taskId);
+        if (res.error) {
+          showToast("error", res.error);
+        } else {
+          showToast("success", "Task archived!");
+          setTasks((prev) => prev.filter((t) => t.id !== taskId));
+          setSelectedTaskIds((prev) => prev.filter((id) => id !== taskId));
+          loadArchivedTasks();
+          router.refresh();
+        }
+        closeConfirmModal();
+      },
+    });
   };
 
-  const handleBulkArchive = async () => {
+  const unarchiveTask = (taskId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Restore Task",
+      message: "Are you sure you want to unarchive and restore this task back to the active task board?",
+      confirmLabel: "Restore Task",
+      variant: "primary",
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isLoading: true }));
+        const res = await unarchiveTaskAction(taskId);
+        if (res.error) {
+          showToast("error", res.error);
+        } else {
+          showToast("success", "Task unarchived!");
+          setArchivedTasks((prev) => prev.filter((t) => t.id !== taskId));
+          router.refresh();
+        }
+        closeConfirmModal();
+      },
+    });
+  };
+
+  const handleBulkArchive = () => {
     if (selectedTaskIds.length === 0) return;
-    if (!confirm(`Are you sure you want to archive ${selectedTaskIds.length} selected task(s)?`)) return;
-    setBulkArchiving(true);
-
-    const res = await bulkArchiveTasksAction(selectedTaskIds);
-    if (res.error) {
-      showToast("error", res.error);
-    } else {
-      showToast(
-        "success",
-        `Archived ${res.archivedCount} task(s). ${res.skippedIds.length > 0 ? `${res.skippedIds.length} skipped (unauthorized).` : ""}`
-      );
-      setTasks((prev) => prev.filter((t) => !selectedTaskIds.includes(t.id) || res.skippedIds.includes(t.id)));
-      setSelectedTaskIds([]);
-      loadArchivedTasks();
-      router.refresh();
-    }
-    setBulkArchiving(false);
+    setConfirmModal({
+      isOpen: true,
+      title: "Archive Multiple Tasks",
+      message: `Are you sure you want to archive ${selectedTaskIds.length} selected task(s)?`,
+      confirmLabel: `Archive (${selectedTaskIds.length}) Tasks`,
+      variant: "warning",
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isLoading: true }));
+        const res = await bulkArchiveTasksAction(selectedTaskIds);
+        if (res.error) {
+          showToast("error", res.error);
+        } else {
+          const skipped = res.skippedIds || [];
+          showToast(
+            "success",
+            `Archived ${res.archivedCount || 0} task(s). ${skipped.length > 0 ? `${skipped.length} skipped (unauthorized).` : ""}`
+          );
+          setTasks((prev) => prev.filter((t) => !selectedTaskIds.includes(t.id) || skipped.includes(t.id)));
+          setSelectedTaskIds([]);
+          loadArchivedTasks();
+          router.refresh();
+        }
+        closeConfirmModal();
+      },
+    });
   };
 
-  const deleteTask = async (taskId: string) => {
-    if (confirm("Are you sure you want to delete this task?")) {
-      const res = await deleteTaskAction(taskId);
-      if (res.error) {
-        showToast("error", res.error);
-      } else {
-        showToast("success", "Task deleted!");
-        setTasks((prev) => prev.filter((t) => t.id !== taskId));
-        setArchivedTasks((prev) => prev.filter((t) => t.id !== taskId));
-        router.refresh();
-      }
-    }
+  const deleteTask = (taskId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Task Permanently",
+      message: "Are you sure you want to delete this task? This action cannot be undone.",
+      confirmLabel: "Delete Permanently",
+      variant: "danger",
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isLoading: true }));
+        const res = await deleteTaskAction(taskId);
+        if (res.error) {
+          showToast("error", res.error);
+        } else {
+          showToast("success", "Task deleted!");
+          setTasks((prev) => prev.filter((t) => t.id !== taskId));
+          setArchivedTasks((prev) => prev.filter((t) => t.id !== taskId));
+          router.refresh();
+        }
+        closeConfirmModal();
+      },
+    });
   };
 
   const openDetailDrawer = async (task: Task) => {
@@ -567,13 +634,37 @@ export function TasksClientWrapper({
                             </button>
 
                             {isArchivedTab ? (
-                              <button
-                                onClick={() => unarchiveTask(task.id)}
-                                className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
-                                title="Unarchive Task"
-                              >
-                                <RotateCcw className="w-4 h-4" />
-                              </button>
+                              (() => {
+                                const cnt = task.unarchive_count || 0;
+                                const limit = task.max_unarchives || 5;
+                                const isLocked = cnt >= limit || task.unarchive_used;
+                                const remaining = Math.max(0, limit - cnt);
+
+                                if (isLocked) {
+                                  return (
+                                    <span
+                                      title={`This task has reached its maximum unarchive limit (${cnt}/${limit}) and is now permanently locked.`}
+                                      className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-slate-400 text-[11px] font-bold rounded flex items-center gap-1 opacity-75 cursor-not-allowed"
+                                    >
+                                      <Lock className="w-3 h-3 text-slate-400" />
+                                      Locked ({cnt}/{limit})
+                                    </span>
+                                  );
+                                }
+
+                                return (
+                                  <button
+                                    onClick={() => unarchiveTask(task.id)}
+                                    className="p-1.5 text-slate-400 hover:text-indigo-600 transition-colors rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-1.5"
+                                    title={`Unarchive Task (${remaining} of ${limit} unarchives remaining)`}
+                                  >
+                                    <RotateCcw className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                                    <span className="text-[10px] bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-bold">
+                                      {remaining} left
+                                    </span>
+                                  </button>
+                                );
+                              })()
                             ) : (
                               <>
                                 <button
@@ -786,6 +877,18 @@ export function TasksClientWrapper({
             </div>
           </div>
         )}
+
+        {/* CUSTOM CONFIRMATION MODAL DIALOG */}
+        <ConfirmModal
+          isOpen={confirmModal.isOpen}
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          variant={confirmModal.variant}
+          isLoading={confirmModal.isLoading}
+          onConfirm={confirmModal.onConfirm}
+          onClose={closeConfirmModal}
+        />
       </div>
     </>
   );
