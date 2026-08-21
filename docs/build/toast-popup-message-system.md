@@ -1,21 +1,25 @@
-# Pop-Up Toast & Notification Message System Documentation
+# Custom Glassmorphic Toast & Notification System Documentation
 
 **Application:** Cloudora CRM  
-**Global Config Location:** [`app/layout.tsx`](file:///c:/Users/mbugu/Desktop/Code/React/crm-clone/app/layout.tsx#L37-L47)  
-**Package:** `react-hot-toast`  
+**Global Provider Location:** [`app/layout.tsx`](file:///c:/Users/mbugu/Desktop/Code/React/crm-clone/app/layout.tsx#L37-L43)  
+**Custom Component Location:** [`lib/toast.tsx`](file:///c:/Users/mbugu/Desktop/Code/React/crm-clone/lib/toast.tsx)  
 **Date:** August 21, 2026  
 
 ---
 
 ## 1. Overview
 
-Pop-up notification messages (toasts) across Cloudora CRM are powered by `react-hot-toast`. They provide real-time visual feedback for asynchronous server action completions, authorization errors, background task status updates, and form submissions.
+The notification toast system across Cloudora CRM has been upgraded from full-width banners to **Custom Glassmorphic Cards** (`lib/toast.tsx`) powered by `react-hot-toast` custom renders.
+
+It provides clean, elevated floating notifications with:
+- **Dark Mode Support**: Adapts automatically with backdrop blur (`backdrop-blur-md bg-white/95 dark:bg-slate-950/95`).
+- **Smooth Animations**: Animated entrance (`animate-in fade-in slide-in-from-top-4`) and exit transitions.
+- **Contextual Color Badges**: Elevated icons for `success` (Emerald green), `error` (Rose red), and `info` (Indigo blue).
+- **Manual Dismissal**: Interactive close button (`X`) on every toast.
 
 ---
 
-## 2. Global Provider Configuration
-
-The notification provider (`<Toaster />`) is mounted globally at the root layout ([`app/layout.tsx`](file:///c:/Users/mbugu/Desktop/Code/React/crm-clone/app/layout.tsx#L37-L47)) inside Next-Themes' `<ThemeProvider>`:
+## 2. Global Provider Configuration ([`app/layout.tsx`](file:///c:/Users/mbugu/Desktop/Code/React/crm-clone/app/layout.tsx#L37-L43))
 
 ```tsx
 // app/layout.tsx
@@ -28,16 +32,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider attribute="class">
           {children}
 
-          {/* Global Pop-Up Notification Toast Provider */}
+          {/* Clean Floating Pop-Up Notification Provider */}
           <Toaster 
-            position="top-center"
-            containerClassName="lg:ml-64 mt-4" // Offsets pop-up to clear left sidebar on desktop
+            position="top-right"
+            containerClassName="mt-2 mr-2 z-[9999]"
             toastOptions={{
-              className: "w-full shadow-xl !max-w-4xl",
-              style: {
-                maxWidth: "100%",
-                width: "100%",
-              }
+              duration: 3500,
             }} 
           />
         </ThemeProvider>
@@ -47,70 +47,82 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-### Configuration Details
-- **Position**: `top-center` (appears at the top center of the main viewport content area).
-- **Sidebar Offset**: `containerClassName="lg:ml-64 mt-4"` prevents toasts from covering the left navigation sidebar.
-- **Max Width**: Scaled up with `!max-w-4xl` for readable long error/status messages.
-
 ---
 
-## 3. Usage Pattern in Client Components
+## 3. Custom Toast Implementation ([`lib/toast.tsx`](file:///c:/Users/mbugu/Desktop/Code/React/crm-clone/lib/toast.tsx))
 
-To display pop-up messages from any client component (`"use client"`):
-
-### Direct Invocation
-```typescript
+```tsx
 import toast from "react-hot-toast";
+import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
-// 1. Success Pop-Up
-toast.success("Task updated successfully!");
+export function showToast(
+  type: "success" | "error" | "info",
+  title: string,
+  description?: string
+) {
+  toast.custom((t) => (
+    <div
+      className={`${
+        t.visible
+          ? "animate-in fade-in slide-in-from-top-4 duration-200"
+          : "animate-out fade-out slide-out-to-top-2 duration-150"
+      } flex items-center gap-3 px-4 py-3.5 bg-white/95 dark:bg-slate-950/95 border border-slate-200/90 dark:border-slate-800/90 shadow-2xl shadow-slate-900/10 rounded-2xl max-w-sm w-full backdrop-blur-md pointer-events-auto`}
+    >
+      <div
+        className={`size-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+          type === "success"
+            ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400"
+            : type === "error"
+            ? "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
+            : "bg-indigo-100 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400"
+        }`}
+      >
+        {type === "success" ? (
+          <CheckCircle2 className="w-5 h-5" />
+        ) : type === "error" ? (
+          <AlertCircle className="w-5 h-5" />
+        ) : (
+          <Info className="w-5 h-5" />
+        )}
+      </div>
 
-// 2. Error / Permission Rejection Pop-Up
-toast.error("Access Denied: Insufficient permissions to modify this task.");
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug">
+          {title}
+        </p>
+        {description && (
+          <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5 leading-normal">
+            {description}
+          </p>
+        )}
+      </div>
 
-// 3. Informational / Neutral Pop-Up
-toast("System configuration loaded.");
-```
-
-### Helper Wrapper Pattern (Used in `TasksClientWrapper`)
-```typescript
-const showToast = (type: "success" | "error", text: string) => {
-  if (type === "success") toast.success(text);
-  else toast.error(text);
-};
-
-// Usage inside async handlers:
-const res = await updateTaskStatusAction(taskId, newStatus);
-if (res.error) {
-  showToast("error", res.error);
-} else {
-  showToast("success", "Task status updated!");
+      <button
+        onClick={() => toast.dismiss(t.id)}
+        className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg transition-colors"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  ));
 }
 ```
 
 ---
 
-## 4. Features & Capabilities
+## 4. Usage Pattern in Client Components
 
-1. **Auto Dismissal**: Pop-ups automatically fade out after 4 seconds (default).
-2. **Manual Dismissal**: Users can click or swipe toasts away.
-3. **Promise Toast Binding**: Supports automatic loading $\rightarrow$ success/error transition states:
-   ```typescript
-   toast.promise(archiveTaskAction(taskId), {
-     loading: "Archiving task...",
-     success: "Task archived successfully!",
-     error: "Failed to archive task.",
-   });
-   ```
-4. **Dark Mode Integration**: Inherits dark mode classes seamlessly.
+To display pop-ups from any component:
 
----
+```typescript
+import { showToast } from "@/lib/toast";
 
-## 5. Potential Upgrade / Customization Options
+// Success Pop-Up
+showToast("success", "Task status updated!");
 
-If you wish to customize or upgrade the pop-up notification system in the future:
+// Error Pop-Up
+showToast("error", "Access Denied: Insufficient permissions.");
 
-1. **Option A: Custom Pop-Up Theme & Icons**
-   - Override default icons, background colors, and borders directly in `<Toaster toastOptions={{ ... }} />`.
-2. **Option B: Swap to `Sonner` (`@/components/ui/sonner`)**
-   - If migrating to Shadcn UI standard toasts, `sonner` can be dropped in as a 1-to-1 replacement for `react-hot-toast`.
+// Info Pop-Up with Optional Subtitle
+showToast("info", "Task Auto-Archiving Completed", "3 completed tasks archived.");
+```

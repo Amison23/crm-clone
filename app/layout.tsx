@@ -35,14 +35,10 @@ export default function RootLayout({
         >
           {children}
           <Toaster 
-            position="top-center"
-            containerClassName="lg:ml-64 mt-4"
+            position="top-right"
+            containerClassName="mt-2 mr-2 z-[9999]"
             toastOptions={{
-              className: "w-full shadow-xl !max-w-4xl",
-              style: {
-                maxWidth: "100%",
-                width: "100%",
-              }
+              duration: 3500,
             }} 
           />
         </ThemeProvider>
