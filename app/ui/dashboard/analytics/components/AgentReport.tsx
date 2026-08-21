@@ -16,7 +16,63 @@ export default function AgentReport({ agents = [] }: { agents: AgentPerformance[
   
   return (
     <div className="w-full">
-      <div className="overflow-x-auto min-h-[300px]">
+      {/* Mobile Cards (< md) */}
+      <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+        {agents.length > 0 ? agents.map((agent, index) => {
+          const isTop = agent.win_rate === maxWinRate && agent.win_rate > 0;
+          const isStruggling = agent.win_rate < 20 && agent.total_leads > 5;
+          const isElite = agent.win_rate >= 50;
+
+          return (
+            <div key={agent.agent_name} className="p-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className={`flex items-center justify-center h-8 w-8 rounded-xl font-black text-xs ${
+                    isTop ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'
+                  }`}>
+                    {isTop ? <Trophy size={14} /> : String(index + 1).padStart(2, '0')}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-sm text-slate-900 dark:text-white uppercase tracking-tight">{agent.agent_name}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase">Certified Operator</p>
+                  </div>
+                </div>
+
+                <div className={`inline-flex items-center gap-1 text-[9px] font-black uppercase px-2.5 py-1 rounded-lg border ${
+                  isTop ? 'bg-amber-50 text-amber-600 border-amber-100' : 
+                  isStruggling ? 'bg-rose-50 text-rose-600 border-rose-100' : 
+                  isElite ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 
+                  'bg-slate-50 text-slate-500 border-slate-200'
+                }`}>
+                  {isTop ? 'Top Yield' : isStruggling ? 'Review' : isElite ? 'Elite' : 'Standard'}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl text-xs">
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase block">Leads</span>
+                  <span className="font-mono font-black text-slate-900 dark:text-slate-100">{agent.total_leads}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase block">Wins</span>
+                  <span className="font-mono font-black text-emerald-600 dark:text-emerald-400">{agent.closed_deals}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase block">Win Rate</span>
+                  <span className="font-mono font-black text-amber-600">{agent.win_rate}%</span>
+                </div>
+              </div>
+            </div>
+          );
+        }) : (
+          <div className="p-8 text-center text-xs text-slate-400">
+            Awaiting Operator Telemetry...
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table (>= md) */}
+      <div className="hidden md:block overflow-x-auto min-h-[300px]">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">

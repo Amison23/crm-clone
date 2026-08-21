@@ -210,78 +210,131 @@ export default async function SalesAgentPage() {
               </Link>
             </div>
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50/80 dark:bg-slate-950/50 border-b border-slate-100 dark:border-slate-800">
-                    <th className="p-3.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Task Details</th>
-                    <th className="p-3.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Priority</th>
-                    <th className="p-3.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Due Date</th>
-                    <th className="p-3.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
-                  {tasks.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="p-8 text-center text-slate-400 font-medium">
-                        No assigned tasks in your queue.
-                      </td>
+            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+              {/* Mobile Cards (< md) */}
+              <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                {tasks.length === 0 ? (
+                  <div className="p-8 text-center text-slate-400 font-medium text-xs">
+                    No assigned tasks in your queue.
+                  </div>
+                ) : (
+                  tasks.map((task) => (
+                    <div key={task.id} className="p-4 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">{task.title}</p>
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase shrink-0 ${
+                            task.priority === "high" || task.priority === "critical"
+                              ? "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
+                              : task.priority === "medium"
+                              ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                              : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          }`}
+                        >
+                          {task.priority}
+                        </span>
+                      </div>
+
+                      {task.description && (
+                        <p className="text-xs text-slate-400 line-clamp-2">{task.description}</p>
+                      )}
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="text-slate-400 text-[11px]">
+                          Due: {task.due_date ? new Date(task.due_date).toLocaleDateString("en-GB") : "No date"}
+                        </span>
+
+                        <span
+                          className={`inline-flex items-center gap-1 font-bold capitalize text-xs ${
+                            task.status === "completed"
+                              ? "text-emerald-600 dark:text-emerald-400"
+                              : task.status === "in_progress"
+                              ? "text-indigo-600 dark:text-indigo-400"
+                              : "text-amber-600 dark:text-amber-400"
+                          }`}
+                        >
+                          {task.status.replace("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop Table (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50/80 dark:bg-slate-950/50 border-b border-slate-100 dark:border-slate-800">
+                      <th className="p-3.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Task Details</th>
+                      <th className="p-3.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Priority</th>
+                      <th className="p-3.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Due Date</th>
+                      <th className="p-3.5 text-[10px] font-black uppercase text-slate-400 tracking-wider">Status</th>
                     </tr>
-                  ) : (
-                    tasks.map((task) => (
-                      <tr key={task.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
-                        <td className="p-3.5">
-                          <p className="font-bold text-slate-900 dark:text-white">{task.title}</p>
-                          {task.description && (
-                            <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{task.description}</p>
-                          )}
-                        </td>
-                        <td className="p-3.5">
-                          <span
-                            className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
-                              task.priority === "high" || task.priority === "critical"
-                                ? "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
-                                : task.priority === "medium"
-                                ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                            }`}
-                          >
-                            {task.priority}
-                          </span>
-                        </td>
-                        <td className="p-3.5 text-slate-500 font-medium">
-                          {task.due_date ? (
-                            <span className="flex items-center gap-1">
-                              <Calendar className="size-3.5 text-slate-400" />
-                              {new Date(task.due_date).toLocaleDateString("en-GB")}
-                            </span>
-                          ) : (
-                            "No due date"
-                          )}
-                        </td>
-                        <td className="p-3.5">
-                          <span
-                            className={`inline-flex items-center gap-1 font-bold capitalize ${
-                              task.status === "completed"
-                                ? "text-emerald-600 dark:text-emerald-400"
-                                : task.status === "in_progress"
-                                ? "text-indigo-600 dark:text-indigo-400"
-                                : "text-amber-600 dark:text-amber-400"
-                            }`}
-                          >
-                            {task.status === "completed" ? (
-                              <CheckCircle2 className="size-3.5" />
-                            ) : (
-                              <Clock className="size-3.5" />
-                            )}
-                            {task.status.replace("_", " ")}
-                          </span>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+                    {tasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="p-8 text-center text-slate-400 font-medium">
+                          No assigned tasks in your queue.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      tasks.map((task) => (
+                        <tr key={task.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors">
+                          <td className="p-3.5">
+                            <p className="font-bold text-slate-900 dark:text-white">{task.title}</p>
+                            {task.description && (
+                              <p className="text-[11px] text-slate-400 line-clamp-1 mt-0.5">{task.description}</p>
+                            )}
+                          </td>
+                          <td className="p-3.5">
+                            <span
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase ${
+                                task.priority === "high" || task.priority === "critical"
+                                  ? "bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
+                                  : task.priority === "medium"
+                                  ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                              }`}
+                            >
+                              {task.priority}
+                            </span>
+                          </td>
+                          <td className="p-3.5 text-slate-500 font-medium">
+                            {task.due_date ? (
+                              <span className="flex items-center gap-1">
+                                <Calendar className="size-3.5 text-slate-400" />
+                                {new Date(task.due_date).toLocaleDateString("en-GB")}
+                              </span>
+                            ) : (
+                              "No due date"
+                            )}
+                          </td>
+                          <td className="p-3.5">
+                            <span
+                              className={`inline-flex items-center gap-1 font-bold capitalize ${
+                                task.status === "completed"
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : task.status === "in_progress"
+                                  ? "text-indigo-600 dark:text-indigo-400"
+                                  : "text-amber-600 dark:text-amber-400"
+                              }`}
+                            >
+                              {task.status === "completed" ? (
+                                <CheckCircle2 className="size-3.5" />
+                              ) : (
+                                <Clock className="size-3.5" />
+                              )}
+                              {task.status.replace("_", " ")}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 

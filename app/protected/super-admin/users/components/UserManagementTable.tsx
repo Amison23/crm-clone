@@ -85,7 +85,31 @@ export default function UserManagementTable({ initialUsers, companies }: { initi
         </div>
       </div>
 
-      <div className="overflow-x-auto text-sm">
+      {/* Mobile User Identity Cards (< md) */}
+      <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+        {employees.length === 0 ? (
+          <EmptyState
+            icon={Users}
+            title="No users found"
+            description="Users appear here once provisioned via tenant creation or direct agent provisioning."
+          />
+        ) : (
+          employees.map((u) => (
+            <UserCard
+              key={u.id}
+              user={u}
+              roles={roles}
+              companies={companies}
+              onUpdate={handleUpdate}
+              onResetPassword={() => setResettingUser(u)}
+              isLoading={loadingId === u.id}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table (>= md) */}
+      <div className="hidden md:block overflow-x-auto text-sm">
         <table className="w-full text-left border-collapse">
           <thead className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
             <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
@@ -223,5 +247,92 @@ function UserRow({ user, roles, companies, onUpdate, onResetPassword, isLoading 
         </div>
       </td>
     </tr>
+  );
+}
+
+function UserCard({ user, roles, companies, onUpdate, onResetPassword, isLoading }: { 
+    user: User, 
+    roles: any[], 
+    companies: Company[], 
+    onUpdate: (userId: string, role: string, companyId: string | null) => void,
+    onResetPassword: () => void,
+    isLoading: boolean
+}) {
+  const [role, setRole] = useState(user.role || "sales_agent");
+  const [companyId, setCompanyId] = useState<string | null>(user.company_id);
+  const hasChanges = role !== user.role || companyId !== user.company_id;
+
+  return (
+    <div className="p-4 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className="size-10 rounded-full bg-slate-200 dark:bg-slate-700 flex flex-col items-center justify-center text-xs font-black uppercase text-slate-500 relative shrink-0">
+          {user.full_name?.substring(0, 2) || "U"}
+          {isLoading && <div className="absolute inset-0 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center animate-spin"><Loader2 className="size-4" /></div>}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-slate-900 dark:text-white truncate">{user.full_name || "Unknown Identity"}</p>
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500 font-medium">
+            <Mail className="size-3 shrink-0" />
+            <span className="truncate">{user.email_address}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+        <div className="relative">
+          <Shield className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className="w-full pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 outline-none appearance-none"
+          >
+            {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+        </div>
+
+        <div className="relative">
+          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400" />
+          <select
+            disabled={role === "superadmin"}
+            value={companyId || ""}
+            onChange={(e) => setCompanyId(e.target.value || null)}
+            className={cn(
+              "w-full pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 outline-none appearance-none",
+              role === "superadmin" && "opacity-50 cursor-not-allowed bg-slate-200 dark:bg-slate-950"
+            )}
+          >
+            <option value="">Global (No Tenant)</option>
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 pointer-events-none" />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <button
+          type="button"
+          onClick={onResetPassword}
+          title="Reset/Generate Password"
+          className="p-2 bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all"
+        >
+          <KeyRound className="size-4" />
+        </button>
+
+        <button 
+          disabled={!hasChanges || isLoading}
+          onClick={() => onUpdate(user.id, role, companyId)}
+          className={cn(
+            "px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all flex items-center gap-2",
+            hasChanges 
+              ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg" 
+              : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
+          )}
+        >
+          {isLoading ? <Loader2 className="animate-spin size-3.5" /> : <Check className="size-3.5" />}
+          Save Changes
+        </button>
+      </div>
+    </div>
   );
 }

@@ -242,11 +242,11 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
             )}
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1 w-full sm:w-auto -mx-1 px-1">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[160px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                    <SelectValue placeholder="Status: All Leads" />
+                  <SelectTrigger className="w-full sm:w-[150px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
+                    <SelectValue placeholder="Status: All" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All Leads</SelectItem>
@@ -258,19 +258,18 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
                 </Select>
 
                 <Select value={agentFilter} onValueChange={setAgentFilter}>
-                  <SelectTrigger className="w-[160px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                    <SelectValue placeholder="Agent: All Agents" />
+                  <SelectTrigger className="w-full sm:w-[150px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
+                    <SelectValue placeholder="Agent: All" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All Agents</SelectItem>
-                    {/* Unique agents could be mapped here dynamically, for now we mock a few or use 'Unassigned' */}
                     <SelectItem value="Unassigned">Unassigned</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select value={sourceFilter} onValueChange={setSourceFilter}>
-                  <SelectTrigger className="w-[160px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
-                    <SelectValue placeholder="Source: All Sources" />
+                  <SelectTrigger className="w-full sm:w-[150px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-xs">
+                    <SelectValue placeholder="Source: All" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All Sources</SelectItem>
@@ -287,13 +286,13 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
                     setAgentFilter("All");
                     setSourceFilter("All");
                   }}
-                  className="text-primary text-xs font-semibold hover:underline px-2 shrink-0"
+                  className="text-primary text-xs font-semibold hover:underline px-2 col-span-2 sm:col-span-1 text-center sm:text-left shrink-0"
                 >
                   Clear filters
                 </button>
               </div>
 
-              <div className="flex gap-2 items-center justify-between flex-column">
+              <div className="flex gap-2 items-center justify-between">
                 <div className="text-xs text-slate-500">
                   <p className="font-bold text-slate-900 dark:text-slate-100">
                     Showing
@@ -308,9 +307,10 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
                 <div className="ml-2">
                   <Button
                     onClick={() => setUploadModal(true)}
-                    className="w-full sm:w-auto"
-                    >
-                    <Upload className="mr-2 h-4 w-4" />
+                    className="w-full sm:w-auto text-xs"
+                    size="sm"
+                  >
+                    <Upload className="mr-1.5 h-3.5 w-3.5" />
                     Upload CSV
                   </Button>
                 </div>
@@ -319,7 +319,80 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
 
             {/* Table Card */}
             <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col">
-              <div className="overflow-x-auto w-full">
+              {/* Mobile Cards View (< md) */}
+              <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredLeads.length === 0 ? (
+                  <div className="p-8 text-center text-sm text-slate-500">
+                    No leads found. Add your first lead!
+                  </div>
+                ) : (
+                  filteredLeads.map((lead) => (
+                    <div 
+                      key={lead.id} 
+                      className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0" onClick={() => setSelectedLead(lead)}>
+                          <div className="size-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-primary font-bold text-sm uppercase shrink-0">
+                            {lead.company_name?.[0] || "L"}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                              {lead.company_name || "Unnamed Client"}
+                            </h4>
+                            <p className="text-xs text-slate-500 truncate">{lead.email || lead.phone}</p>
+                          </div>
+                        </div>
+
+                        <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 capitalize">
+                          {lead.status || "new"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg">
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Product</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 capitalize truncate block">
+                            {lead.product || extractFromNotes(lead.notes, "Product") || "N/A"}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Next Action</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 truncate block">
+                            {lead.next_action || extractFromNotes(lead.notes, "Next Action") || "None"}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <span className="text-[11px] text-slate-400 font-medium">
+                          Created: {lead.created_at ? new Date(lead.created_at).toLocaleDateString("en-GB") : "Unknown"}
+                        </span>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:text-primary transition-colors text-xs font-semibold flex items-center gap-1"
+                            onClick={() => setSelectedLead(lead)}
+                          >
+                            <span className="material-symbols-outlined text-base">visibility</span>
+                            View
+                          </button>
+                          <button
+                            className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg hover:text-primary transition-colors text-xs font-semibold flex items-center gap-1"
+                            onClick={() => setEditingLead(lead)}
+                          >
+                            <span className="material-symbols-outlined text-base">edit</span>
+                            Edit
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop Data Table (>= md) */}
+              <div className="hidden md:block overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse min-w-[1000px]">
                   <thead>
                     <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">

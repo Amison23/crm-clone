@@ -115,7 +115,92 @@ export default function SuperAdminTenantTable({ initialTenants }: { initialTenan
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      {/* Mobile Tenant Cards (< md) */}
+      <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+        {filteredTenants.length > 0 ? (
+          filteredTenants.map((t) => (
+            <div
+              key={t.id}
+              onClick={() => setSelectedTenant(t)}
+              className="p-4 space-y-3 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">{t.name}</h4>
+                  <p className="text-[10px] text-slate-400 font-mono mt-0.5">UUID: {t.id}</p>
+                </div>
+
+                {t.deleted_at ? (
+                  <div className="flex items-center gap-1 px-2.5 py-0.5 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-800/50 rounded-lg shrink-0">
+                    <XCircle className="size-3 text-rose-600 dark:text-rose-400" />
+                    <span className="text-[9px] font-black text-rose-700 dark:text-rose-400 uppercase">Archived</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800/50 rounded-lg shrink-0">
+                    <CheckCircle2 className="size-3 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-[9px] font-black text-emerald-700 dark:text-emerald-400 uppercase">Active</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 text-xs">
+                <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700">
+                  <Users className="size-3 text-slate-400" />
+                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{t.user_count || 0} Users</span>
+                </div>
+                <div className="flex items-center gap-1 px-2 py-1 bg-slate-50 dark:bg-slate-800 rounded-md border border-slate-100 dark:border-slate-700">
+                  <Hash className="size-3 text-slate-400" />
+                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{t.number_count || 0} Numbers</span>
+                </div>
+                <div className="flex items-center gap-1 text-[11px] text-slate-400 ml-auto">
+                  <Clock className="size-3" />
+                  <span>{new Date(t.created_at).toLocaleDateString("en-GB")}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" onClick={(e) => e.stopPropagation()}>
+                <TenantDialog mode="edit" tenant={t} onSuccess={() => window.location.reload()}>
+                  <button className="p-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:text-blue-600 transition-all text-xs font-semibold flex items-center gap-1">
+                    <Edit className="size-3.5" /> Edit
+                  </button>
+                </TenantDialog>
+
+                {t.deleted_at ? (
+                  <button 
+                    onClick={() => handleRestore(t.id)}
+                    className="p-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:text-emerald-600 transition-all text-xs font-semibold flex items-center gap-1"
+                  >
+                    <RotateCcw className="size-3.5" /> Restore
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => handleArchive(t.id)}
+                    className="p-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl hover:text-rose-600 transition-all text-xs font-semibold flex items-center gap-1"
+                  >
+                    <Archive className="size-3.5" /> Archive
+                  </button>
+                )}
+                
+                <button 
+                  onClick={() => handlePurge(t.id)}
+                  className="p-2 bg-rose-600 text-white rounded-xl hover:bg-rose-700 transition-all text-xs font-semibold flex items-center gap-1"
+                >
+                  <Trash2 className="size-3.5" /> Purge
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <EmptyState
+            icon={Search}
+            title="No tenants match"
+            description="Try adjusting search or status filter."
+          />
+        )}
+      </div>
+
+      {/* Desktop Table (>= md) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
             <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
