@@ -178,6 +178,9 @@ export interface Database {
           updated_at: string | null
           archived_at: string | null
           archived_by: string | null
+          unarchive_used: boolean
+          unarchive_count: number
+          max_unarchives: number
         }
         Insert: {
           id?: string
@@ -192,6 +195,9 @@ export interface Database {
           updated_at?: string | null
           archived_at?: string | null
           archived_by?: string | null
+          unarchive_used?: boolean
+          unarchive_count?: number
+          max_unarchives?: number
         }
         Update: {
           id?: string
@@ -206,6 +212,9 @@ export interface Database {
           updated_at?: string | null
           archived_at?: string | null
           archived_by?: string | null
+          unarchive_used?: boolean
+          unarchive_count?: number
+          max_unarchives?: number
         }
         Relationships: []
       }
