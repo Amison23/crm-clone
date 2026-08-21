@@ -248,66 +248,124 @@ export default function AgentManagementClient({
             </div>
         </div>
 
-        <div className="bg-slate-900 overflow-x-auto min-h-[200px]">
+        <div className="bg-slate-900 min-h-[200px]">
           {products.length > 0 ? (
-            <table className="w-full text-left border-collapse">
-              <tbody className="divide-y divide-slate-800">
+            <>
+              {/* Mobile Cards (< md) */}
+              <div className="block md:hidden divide-y divide-slate-800">
                 {products.map((product) => (
-                  <tr key={product.id} className={cn(
-                    "group transition-all",
-                    selectedProductId === product.id ? "bg-slate-800/80" : "hover:bg-slate-800/50"
-                  )}>
-                    <td className="px-8 py-8 min-w-[200px]">
-                      <p className="text-lg font-black text-white uppercase tracking-tighter">{product.name}</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{product.description}</p>
-                    </td>
-                    <td className="px-8 py-8">
-                      <div className="space-y-1.5">
-                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Integration Key</p>
-                        <div className="flex items-center gap-2 group/key cursor-pointer" onClick={() => product.api_key && copyToClipboard(product.api_key)}>
-                          <Key size={12} className="text-amber-500" />
-                          <code className="text-[10px] font-mono text-slate-400 truncate max-w-[120px]">
-                            {product.api_key || "NO_KEY_PROVISIONED"}
-                          </code>
-                          <Copy size={12} className="text-slate-600 group-hover/key:text-white transition-colors" />
-                        </div>
+                  <div key={product.id} className="p-5 space-y-3">
+                    <div>
+                      <h4 className="text-base font-black text-white uppercase">{product.name}</h4>
+                      <p className="text-xs font-medium text-slate-400 mt-0.5">{product.description}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 group/key cursor-pointer bg-slate-800/80 p-2.5 rounded-xl border border-slate-700" onClick={() => product.api_key && copyToClipboard(product.api_key)}>
+                      <Key size={14} className="text-amber-500 shrink-0" />
+                      <code className="text-xs font-mono text-slate-300 truncate flex-1">
+                        {product.api_key || "NO_KEY_PROVISIONED"}
+                      </code>
+                      <Copy size={14} className="text-slate-500 shrink-0" />
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Assigned Operators</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.agent_products.length > 0 ? (
+                          product.agent_products.map(ap => (
+                            <span key={ap.agent_id} className="px-2 py-0.5 bg-slate-800 border border-slate-700 rounded text-[10px] font-bold text-slate-300">
+                              {ap.employees.full_name}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-[10px] text-slate-600">No agents assigned</span>
+                        )}
                       </div>
-                    </td>
-                    <td className="px-8 py-8">
-                       <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Assigned Operators</p>
-                       <div className="flex flex-wrap gap-2">
-                         {product.agent_products.length > 0 ? (
-                           product.agent_products.map(ap => (
-                             <span key={ap.agent_id} className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-md text-[9px] font-bold text-slate-300 uppercase">
-                               {ap.employees.full_name}
-                             </span>
-                           ))
-                         ) : (
-                           <span className="text-[9px] font-bold text-slate-600 uppercase">No agents assigned</span>
-                         )}
-                       </div>
-                    </td>
-                    <td className="px-8 py-8 text-right">
+                    </div>
+
+                    <div className="pt-2 flex justify-end">
                       {selectedProductId === product.id ? (
                         <button 
                           onClick={() => setSelectedProductId(null)}
-                          className="px-6 py-3 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                          className="w-full py-2.5 bg-rose-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all"
                         >
                           Finish Selection
                         </button>
                       ) : (
                         <button 
                           onClick={() => setSelectedProductId(product.id)}
-                          className="px-6 py-3 bg-white text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ml-auto hover:bg-amber-500 hover:text-slate-900 transition-all active:scale-95"
+                          className="w-full py-2.5 bg-white text-slate-900 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-amber-500 transition-all"
                         >
                           <PlusCircle size={14} /> Assign Operators <ArrowRight size={14} />
                         </button>
                       )}
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop Table (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <tbody className="divide-y divide-slate-800">
+                    {products.map((product) => (
+                      <tr key={product.id} className={cn(
+                        "group transition-all",
+                        selectedProductId === product.id ? "bg-slate-800/80" : "hover:bg-slate-800/50"
+                      )}>
+                        <td className="px-8 py-8 min-w-[200px]">
+                          <p className="text-lg font-black text-white uppercase tracking-tighter">{product.name}</p>
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">{product.description}</p>
+                        </td>
+                        <td className="px-8 py-8">
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Integration Key</p>
+                            <div className="flex items-center gap-2 group/key cursor-pointer" onClick={() => product.api_key && copyToClipboard(product.api_key)}>
+                              <Key size={12} className="text-amber-500" />
+                              <code className="text-[10px] font-mono text-slate-400 truncate max-w-[120px]">
+                                {product.api_key || "NO_KEY_PROVISIONED"}
+                              </code>
+                              <Copy size={12} className="text-slate-600 group-hover/key:text-white transition-colors" />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-8">
+                           <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Assigned Operators</p>
+                           <div className="flex flex-wrap gap-2">
+                             {product.agent_products.length > 0 ? (
+                               product.agent_products.map(ap => (
+                                 <span key={ap.agent_id} className="px-2 py-1 bg-slate-800 border border-slate-700 rounded-md text-[9px] font-bold text-slate-300 uppercase">
+                                   {ap.employees.full_name}
+                                 </span>
+                               ))
+                             ) : (
+                               <span className="text-[9px] font-bold text-slate-600 uppercase">No agents assigned</span>
+                             )}
+                           </div>
+                        </td>
+                        <td className="px-8 py-8 text-right">
+                          {selectedProductId === product.id ? (
+                            <button 
+                              onClick={() => setSelectedProductId(null)}
+                              className="px-6 py-3 bg-rose-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                            >
+                              Finish Selection
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => setSelectedProductId(product.id)}
+                              className="px-6 py-3 bg-white text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ml-auto hover:bg-amber-500 hover:text-slate-900 transition-all active:scale-95"
+                            >
+                              <PlusCircle size={14} /> Assign Operators <ArrowRight size={14} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
             <div className="py-20 flex flex-col items-center justify-center text-slate-800">
                <Package size={40} className="mb-4 opacity-10" />
@@ -328,46 +386,77 @@ export default function AgentManagementClient({
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div>
           {frictionData.length > 0 ? (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50/50 dark:bg-slate-800/30">
-                  <th className="px-8 py-5">Objective</th>
-                  <th className="px-8 py-5">Assigned Agent</th>
-                  <th className="px-8 py-5 text-center">Priority</th>
-                  <th className="px-8 py-5">Deadline</th>
-                  <th className="px-8 py-5 text-right">Metric</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+            <>
+              {/* Mobile Cards (< md) */}
+              <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
                 {frictionData.map((task) => (
-                  <tr key={task.task_id} className="group hover:bg-slate-50/80 transition-all">
-                    <td className="px-8 py-6 font-bold text-sm text-slate-900 dark:text-white uppercase tracking-tight">{task.title}</td>
-                    <td className="px-8 py-6 text-xs font-bold text-slate-500 uppercase">{task.assigned_to || 'UNASSIGNED'}</td>
-                    <td className="px-8 py-6 text-center">
+                  <div key={task.task_id} className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white uppercase">{task.title}</h4>
                       <span className={cn(
-                        "text-[9px] font-black uppercase px-2 py-1 rounded-md border",
+                        "text-[9px] font-black uppercase px-2 py-0.5 rounded border shrink-0",
                         task.priority === 'high' ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400'
                       )}>
                         {task.priority}
                       </span>
-                    </td>
-                    <td className="px-8 py-6 text-xs font-mono font-bold text-slate-500 italic">
-                      {new Date(task.due_date).toLocaleDateString('en-GB')}
-                    </td>
-                    <td className="px-8 py-6 text-right">
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-slate-500">
+                      <span>Agent: <strong className="text-slate-700 dark:text-slate-300">{task.assigned_to || 'UNASSIGNED'}</strong></span>
                       <span className={cn(
                         "text-[10px] font-black uppercase tracking-widest",
                         task.metric_type === 'FRICTION' ? 'text-rose-500' : 'text-blue-500'
                       )}>
                         {task.metric_type}
                       </span>
-                    </td>
-                  </tr>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+
+              {/* Desktop Table (>= md) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-50/50 dark:bg-slate-800/30">
+                      <th className="px-8 py-5">Objective</th>
+                      <th className="px-8 py-5">Assigned Agent</th>
+                      <th className="px-8 py-5 text-center">Priority</th>
+                      <th className="px-8 py-5">Deadline</th>
+                      <th className="px-8 py-5 text-right">Metric</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
+                    {frictionData.map((task) => (
+                      <tr key={task.task_id} className="group hover:bg-slate-50/80 transition-all">
+                        <td className="px-8 py-6 font-bold text-sm text-slate-900 dark:text-white uppercase tracking-tight">{task.title}</td>
+                        <td className="px-8 py-6 text-xs font-bold text-slate-500 uppercase">{task.assigned_to || 'UNASSIGNED'}</td>
+                        <td className="px-8 py-6 text-center">
+                          <span className={cn(
+                            "text-[9px] font-black uppercase px-2 py-1 rounded-md border",
+                            task.priority === 'high' ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-slate-50 border-slate-100 text-slate-400'
+                          )}>
+                            {task.priority}
+                          </span>
+                        </td>
+                        <td className="px-8 py-6 text-xs font-mono font-bold text-slate-500 italic">
+                          {new Date(task.due_date).toLocaleDateString('en-GB')}
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          <span className={cn(
+                            "text-[10px] font-black uppercase tracking-widest",
+                            task.metric_type === 'FRICTION' ? 'text-rose-500' : 'text-blue-500'
+                          )}>
+                            {task.metric_type}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
             <div className="py-20 flex flex-col items-center justify-center text-slate-300 dark:text-slate-700">
                <CheckCircle size={40} className="mb-4 opacity-20" />

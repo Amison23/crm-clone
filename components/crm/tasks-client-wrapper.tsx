@@ -404,10 +404,10 @@ export function TasksClientWrapper({
         </div>
 
         {/* FILTER & BULK ACTIONS TOOLBAR */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide pb-1 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2.5 w-full sm:w-auto">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-xs bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
                 <SelectValue placeholder="Status: All" />
               </SelectTrigger>
               <SelectContent>
@@ -420,7 +420,7 @@ export function TasksClientWrapper({
             </Select>
 
             <Select value={priorityFilter} onValueChange={setPriorityFilter}>
-              <SelectTrigger className="w-[150px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+              <SelectTrigger className="w-full sm:w-[140px] h-9 text-xs bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
                 <SelectValue placeholder="Priority: All" />
               </SelectTrigger>
               <SelectContent>
@@ -434,7 +434,7 @@ export function TasksClientWrapper({
 
             {isAdmin && agents.length > 0 && (
               <Select value={agentFilter} onValueChange={setAgentFilter}>
-                <SelectTrigger className="w-[160px] bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
+                <SelectTrigger className="w-full sm:w-[150px] h-9 text-xs col-span-2 sm:col-span-1 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800">
                   <SelectValue placeholder="Assignee: All" />
                 </SelectTrigger>
                 <SelectContent>
@@ -454,10 +454,10 @@ export function TasksClientWrapper({
                 disabled={bulkArchiving}
                 size="sm"
                 variant="outline"
-                className="bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100 flex items-center gap-1.5 text-xs font-bold"
+                className="col-span-2 sm:col-span-1 bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 hover:bg-amber-100 flex items-center justify-center gap-1.5 text-xs font-bold"
               >
                 {bulkArchiving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Archive className="w-3.5 h-3.5" />}
-                Archive Selected ({selectedTaskIds.length})
+                Archive ({selectedTaskIds.length})
               </Button>
             )}
 
@@ -467,7 +467,7 @@ export function TasksClientWrapper({
                 setPriorityFilter("All");
                 setAgentFilter("All");
               }}
-              className="text-primary text-xs font-semibold hover:underline px-2 shrink-0"
+              className="text-primary text-xs font-semibold hover:underline px-2 col-span-2 sm:col-span-1 text-center sm:text-left shrink-0"
             >
               Clear filters
             </button>
@@ -480,7 +480,141 @@ export function TasksClientWrapper({
 
         {/* MAIN DATA TABLE */}
         <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col">
-          <div className="overflow-x-auto w-full">
+          {/* Mobile Cards View (< md) */}
+          <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+            {loadingArchived && isArchivedTab ? (
+              <div className="p-8 text-center text-slate-400">
+                <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-primary" />
+                Loading archived tasks...
+              </div>
+            ) : filteredTasks.length === 0 ? (
+              <div className="p-8 text-center text-sm text-slate-500">
+                {isArchivedTab ? "No archived tasks found." : "No active tasks found matching your filters."}
+              </div>
+            ) : (
+              filteredTasks.map((task) => {
+                const overdue = isOverdue(task);
+                const isSelected = selectedTaskIds.includes(task.id);
+                return (
+                  <div
+                    key={task.id}
+                    className={`p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors ${
+                      overdue ? "bg-rose-50/40 dark:bg-rose-950/10" : ""
+                    } ${isSelected ? "bg-primary/5 dark:bg-primary/10" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2.5 min-w-0" onClick={() => openDetailDrawer(task)}>
+                        {!isArchivedTab && (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => { e.stopPropagation(); handleSelectOne(task.id); }}
+                            className="mt-1 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <h4 className={`text-sm font-bold ${task.status === "completed" ? "line-through text-slate-400" : "text-slate-900 dark:text-white"}`}>
+                              {task.title}
+                            </h4>
+                            {overdue && (
+                              <span className="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 uppercase">
+                                Overdue
+                              </span>
+                            )}
+                          </div>
+                          {task.description && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <span className={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                        task.priority === "critical" || task.priority === "high"
+                          ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                          : task.priority === "medium"
+                          ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                          : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                      }`}>
+                        {task.priority || "medium"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2 text-xs bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="size-6 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-[10px] font-bold uppercase shrink-0">
+                          {task.assignee?.full_name?.[0] || "U"}
+                        </div>
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[110px]">
+                          {task.assignee?.full_name || "Unassigned"}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                        <Calendar className={`w-3.5 h-3.5 ${overdue ? "text-rose-500 font-bold" : ""}`} />
+                        <span className={overdue ? "text-rose-600 dark:text-rose-400 font-bold" : ""}>
+                          {isArchivedTab
+                            ? task.archived_at ? new Date(task.archived_at).toLocaleDateString("en-GB") : "Archived"
+                            : task.due_date ? new Date(task.due_date).toLocaleDateString("en-GB") : "No date"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      {!isArchivedTab ? (
+                        <Select value={task.status} onValueChange={(val) => updateStatus(task.id, val)}>
+                          <SelectTrigger className="w-[120px] h-7 text-[11px] font-semibold capitalize bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="in_progress">In Progress</SelectItem>
+                            <SelectItem value="review">Review</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <span className="text-[11px] font-semibold capitalize px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                          {task.status.replace("_", " ")}
+                        </span>
+                      )}
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => openDetailDrawer(task)}
+                          className="p-1.5 text-slate-400 hover:text-primary transition-colors rounded-lg bg-slate-100 dark:bg-slate-800"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        {!isArchivedTab && (
+                          <button
+                            onClick={() => archiveTask(task.id)}
+                            className="p-1.5 text-slate-400 hover:text-amber-600 transition-colors rounded-lg bg-slate-100 dark:bg-slate-800"
+                            title="Archive Task"
+                          >
+                            <Archive className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => deleteTask(task.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors rounded-lg bg-slate-100 dark:bg-slate-800"
+                          title="Delete Task"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Data Table (>= md) */}
+          <div className="hidden md:block overflow-x-auto w-full">
             <table className="w-full text-left border-collapse min-w-[950px]">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800">

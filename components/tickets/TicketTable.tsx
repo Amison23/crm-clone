@@ -404,7 +404,45 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
 
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-      <div className="overflow-x-auto">
+      {/* Mobile Ticket Cards (< md) */}
+      <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+        {tickets.length > 0 ? (
+          tickets.map((ticket) => (
+            <div
+              key={ticket.id}
+              className="p-4 space-y-3 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+              onClick={() => openTicketModal(ticket)}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="text-[11px] font-bold text-slate-400 font-mono block">{ticket.id}</span>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+                    {ticket.subject}
+                  </h4>
+                </div>
+                <StatusBadge status={ticket.status} />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap text-xs">
+                <PriorityBadge priority={ticket.priority} />
+                <SlaBadge sla={ticket.sla} />
+              </div>
+
+              <div className="flex items-center justify-between pt-1 text-xs text-slate-500 dark:text-slate-400">
+                <span>Customer: <strong className="text-slate-700 dark:text-slate-200">{ticket.customer}</strong></span>
+                <span>Agent: <strong className="text-slate-700 dark:text-slate-200">{ticket.agent}</strong></span>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="p-8 text-center text-sm text-slate-500 dark:text-slate-400">
+            No tickets found matching this filter.
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Data Table (>= md) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/50">

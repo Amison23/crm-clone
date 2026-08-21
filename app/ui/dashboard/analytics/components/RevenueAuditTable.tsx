@@ -54,7 +54,53 @@ export default function RevenueAuditTable({ data = [] }: { data: RevenueRow[] })
       </div>
 
       {/* --- 2. DATA GRID --- */}
-      <div className="overflow-x-auto">
+      {/* Mobile Cards (< md) */}
+      <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800">
+        {data.map((row, index) => {
+          const validDate = row.timestamp ? new Date(row.timestamp) : null;
+          const validAmount = Number(row.settled_value) || 0;
+
+          return (
+            <div key={row.transaction_id ? `${row.transaction_id}-${index}` : `rev-${index}`} className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <span className="px-2 py-0.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[8px] font-black rounded uppercase tracking-widest">
+                    {row.internal_node || 'CORE_NODE'}
+                  </span>
+                  <h4 className="text-base font-black text-slate-900 dark:text-white uppercase tracking-tight mt-1">
+                    {row.client_org || 'Direct Acquisition'}
+                  </h4>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-[10px] font-bold text-emerald-600/70 uppercase block">KES</span>
+                  <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                    {new Intl.NumberFormat('en-KE', { minimumFractionDigits: 2 }).format(validAmount)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 text-xs bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl">
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase block">Product</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-200">{row.product_name || 'N/A'}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase block">Closing Operator</span>
+                  <span className="font-bold text-slate-700 dark:text-slate-200">{row.closing_agent || 'System'}</span>
+                </div>
+              </div>
+
+              <div className="text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                <span>{validDate && !isNaN(validDate.getTime()) ? validDate.toLocaleDateString('en-GB') : 'Buffer...'}</span>
+                <span className="text-[9px] font-bold uppercase text-slate-400">ID: {row.lead_identity || 'Verified'}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop Table (>= md) */}
+      <div className="hidden md:block overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.4em] bg-slate-50/50 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800">

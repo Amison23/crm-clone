@@ -93,7 +93,59 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
           </div>
         </div>
 
-        <div className="overflow-x-auto text-[11px]">
+        {/* Mobile Audit Log Cards (< md) */}
+        <div className="block md:hidden divide-y divide-slate-100 dark:divide-slate-800 text-xs">
+          {logs.length === 0 ? (
+            <EmptyState
+              icon={History}
+              title="No audit logs recorded yet"
+              description="Administrative actions and platform state changes will appear here."
+            />
+          ) : (
+            logs.map((log) => (
+              <div 
+                key={log.id} 
+                className="p-4 space-y-2.5 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                onClick={() => setSelectedLog(log)}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="size-7 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+                      <User className="size-3.5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-slate-900 dark:text-white truncate">{log.actor?.full_name || "System Automated"}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{log.actor?.email_address || "Service Node"}</p>
+                    </div>
+                  </div>
+
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border shrink-0",
+                    getActionColor(log.action)
+                  )}>
+                    {formatAction(log.action)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-slate-500 pt-1">
+                  <div className="flex items-center gap-1.5 font-bold uppercase text-[10px]">
+                    <Database className="size-3 text-slate-400" />
+                    <span>{log.entity_type}</span>
+                    <span className="font-mono text-slate-400">#{log.entity_id.split("-")[0]}</span>
+                  </div>
+
+                  <div className="flex items-center gap-1 text-[10px]">
+                    <Clock className="size-3 text-slate-400" />
+                    <span>{new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Desktop Table (>= md) */}
+        <div className="hidden md:block overflow-x-auto text-[11px]">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
               <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
