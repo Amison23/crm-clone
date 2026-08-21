@@ -32,7 +32,7 @@ export default async function ServerAdminPage() {
   }
 
   // Authorization Check: Allow server_admin & superadmin
-  if (role !== 'server_admin' && role !== 'superadmin' && role !== 'super_admin') {
+  if (role !== 'server_admin' && role !== 'superadmin') {
     redirect('/protected');
   }
 

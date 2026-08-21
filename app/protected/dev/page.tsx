@@ -35,11 +35,11 @@ export default async function DevWorkspacePage() {
   }
 
   // ACL Gate: Allow dev & superadmin only
-  if (role !== "dev" && role !== "superadmin" && role !== "super_admin") {
+  if (role !== "dev" && role !== "superadmin") {
     redirect("/protected");
   }
 
-  const isSuperAdmin = role === "superadmin" || role === "super_admin";
+  const isSuperAdmin = role === "superadmin";
 
   let logsQuery = supabase
     .from("audit_logs")

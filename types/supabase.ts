@@ -169,34 +169,67 @@ export interface Database {
           id: string
           company_id: string
           assigned_to: string | null
+          created_by: string | null
           title: string
           description: string | null
           status: string
           due_date: string
           created_at: string
           updated_at: string | null
+          archived_at: string | null
+          archived_by: string | null
         }
         Insert: {
           id?: string
           company_id: string
           assigned_to?: string | null
+          created_by?: string | null
           title: string
           description?: string | null
           status?: string
           due_date: string
           created_at?: string
           updated_at?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
         }
         Update: {
           id?: string
           company_id?: string
           assigned_to?: string | null
+          created_by?: string | null
           title?: string
           description?: string | null
           status?: string
           due_date?: string
           created_at?: string
           updated_at?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
+        }
+        Relationships: []
+      }
+      task_feedback: {
+        Row: {
+          id: string
+          task_id: string
+          author_id: string
+          message: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          task_id: string
+          author_id: string
+          message: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          task_id?: string
+          author_id?: string
+          message?: string
+          created_at?: string
         }
         Relationships: []
       }

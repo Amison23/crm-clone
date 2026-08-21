@@ -46,7 +46,7 @@ export default async function ExecutiveDashboard() {
 
   if (userRole === 'server_admin') redirect('/protected/server-admin');
   if (userRole === 'sales_agent') redirect('/protected/sales-agent');
-  if (userRole !== 'admin' && userRole !== 'superadmin' && userRole !== 'super_admin') redirect('/protected');
+  if (userRole !== 'admin' && userRole !== 'superadmin') redirect('/protected');
   
   if (!tenantId) {
     // For presentation purposes, if no tenant is linked, try to get the first company

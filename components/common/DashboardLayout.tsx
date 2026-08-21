@@ -29,7 +29,7 @@ function DashboardSkeleton() {
 }
 
 // Roles that are platform-wide (not company-scoped)
-const PLATFORM_ROLES = new Set(["superadmin", "super_admin"]);
+const PLATFORM_ROLES = new Set(["superadmin"]);
 
 // 2. The AuthGate handles the actual async data fetching
 async function AuthGate({ children }: { children: ReactNode }) {
