@@ -29,7 +29,7 @@ export async function getThroughputMetrics(): Promise<{ success: boolean; metric
     const companyId = employee.company_id;
     const role = employee.role;
 
-    if (role === "admin" || role === "superadmin" || role === "super_admin") {
+    if (role === "admin" || role === "superadmin") {
       // 1. Admin Level: Org Team Objectives & SLA Compliance
       let leadsQuery = supabase.from("leads").select("id, status");
       let tasksQuery = supabase.from("tasks").select("id, status");

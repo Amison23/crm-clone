@@ -9,21 +9,21 @@ import { getThroughputMetrics, type ThroughputMetrics } from "@/app/actions/thro
 import toast from "react-hot-toast";
 
 const navItems = [
-  { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin", "super_admin"] },
-  { href: "/protected/dev", icon: "code", label: "Dev Workspace", roles: ["dev", "superadmin", "super_admin"] },
-  { href: "/protected/server-admin", icon: "dns", label: "Server Node", roles: ["server_admin", "superadmin", "super_admin"] },
-  { href: "/protected/sales-agent", icon: "badge", label: "My Workspace", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin", "super_admin"] },
-  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin", "super_admin"] },
-  { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin", "superadmin", "super_admin"] },
-  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin", "super_admin"] },
-  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin", "super_admin"] },
-  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin", "super_admin"] },
-  { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin", "super_admin"] },
+  { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/dev", icon: "code", label: "Dev Workspace", roles: ["dev", "superadmin"] },
+  { href: "/protected/server-admin", icon: "dns", label: "Server Node", roles: ["server_admin", "superadmin"] },
+  { href: "/protected/sales-agent", icon: "badge", label: "My Workspace", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin"] },
+  { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin", "superadmin"] },
+  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin"] },
 ];
 
 const systemItems = [
-  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles: ["sales_agent", "admin", "dev", "superadmin", "super_admin"] },
-  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles: ["sales_agent", "admin", "dev", "superadmin", "super_admin"], disabled: true },
+  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles: ["sales_agent", "admin", "dev", "superadmin"] },
+  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles: ["sales_agent", "admin", "dev", "superadmin"], disabled: true },
   { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles: ["sales_agent", "admin", "dev"], disabled: true },
 ];
 
@@ -209,7 +209,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
         {/* Platform Control section is now rendered inline as a dropdown inside the nav items map above */}
 
         {/* ── Personal & Team Throughput Performance (Real DB Metrics) ── */}
-        {role !== 'superadmin' && role !== 'super_admin' && (
+        {role !== 'superadmin' && (
           <div className="pt-8 pb-4">
             <button
               onClick={() => setThroughputOpen(!throughputOpen)}

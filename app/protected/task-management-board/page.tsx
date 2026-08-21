@@ -27,6 +27,7 @@ async function TaskManagementBoardData() {
       initialTasks={result.tasks || []} 
       agents={result.agents || []}
       isAdmin={result.isAdmin || false}
+      userId={result.userId || ""}
     />
   );
 }

@@ -48,7 +48,7 @@ async function seedPresentationData() {
     { id: EMPLOYEES.SARAH_ATIENO, company_id: COMPANIES.CLOUDORA, full_name: 'Sarah Atieno', role: 'admin', email_address: 'sarah@cloudora.test' },
     { id: EMPLOYEES.KEVIN_KIP, company_id: COMPANIES.CLOUDORA, full_name: 'Kevin Kip', role: 'sales_agent', email_address: 'kevin@cloudora.test' },
     { id: EMPLOYEES.JASON_ANYANGO, company_id: COMPANIES.MOMENTUM, full_name: 'Jason Anyango', role: 'admin', email_address: 'jason@momentum.test' },
-    { id: EMPLOYEES.TYEJA_ADMIN, company_id: COMPANIES.STRATHMORE, full_name: 'Tyeja Admin', role: 'super_admin', email_address: 'admin@strathmore.test' }
+    { id: EMPLOYEES.TYEJA_ADMIN, company_id: COMPANIES.STRATHMORE, full_name: 'Tyeja Admin', role: 'superadmin', email_address: 'admin@strathmore.test' }
   );
 
   for (const cid of allCompanyIds) {

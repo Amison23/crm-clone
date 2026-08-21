@@ -25,7 +25,6 @@ export default async function TicketsPage() {
 
     if (
       employee?.role === "superadmin" ||
-      employee?.role === "super_admin" ||
       employee?.role === "admin" ||
       employee?.role === "server_admin"
     ) {
