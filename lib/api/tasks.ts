@@ -365,9 +365,31 @@ export async function unarchiveTaskAction(taskId: string) {
   const authRes = await checkTaskAuth(supabase, user.id, taskId);
   if (!authRes.authorized) return { error: authRes.error };
 
+  // Fetch tokenized unarchive state
+  const { data: currentTask } = await supabase
+    .from("tasks")
+    .select("id, unarchive_count, max_unarchives, unarchive_used, archived_at")
+    .eq("id", taskId)
+    .single();
+
+  const currentCount = currentTask?.unarchive_count || 0;
+  const maxLimit = currentTask?.max_unarchives || 5;
+
+  if (currentCount >= maxLimit || currentTask?.unarchive_used) {
+    return { error: `This task has reached its maximum unarchive limit (${currentCount}/${maxLimit}) and is now permanently locked.` };
+  }
+
+  const newCount = currentCount + 1;
+  const isNowUsedUp = newCount >= maxLimit;
+
   const { error } = await supabase
     .from("tasks")
-    .update({ archived_at: null, archived_by: null })
+    .update({
+      archived_at: null,
+      archived_by: null,
+      unarchive_count: newCount,
+      unarchive_used: isNowUsedUp,
+    })
     .eq("id", taskId);
 
   if (error) return { error: error.message };
@@ -377,7 +399,7 @@ export async function unarchiveTaskAction(taskId: string) {
     action: "UNARCHIVE_TASK",
     entity_type: "task",
     entity_id: taskId,
-    payload: { taskId }
+    payload: { taskId, unarchive_count: newCount, max_unarchives: maxLimit, remaining: Math.max(0, maxLimit - newCount) }
   });
 
   triggerGlobalRevalidation();
