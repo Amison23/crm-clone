@@ -48,3 +48,14 @@ SKILL.md
 
 Momentum VOIP wbs.pdf
 MULTI TENANT PART (DENZEL).pdf
+
+# ============================================================
+# SECURITY: Never commit scratch/throwaway files with secrets
+# ============================================================
+scratch.js
+scratch.ts
+scratch.cjs
+scratch*.js
+scratch*.ts
+test-local*.js
+test-local*.ts
