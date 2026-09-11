@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Papa from "papaparse";
 import { bulkUploadLeads } from "@/app/actions/leads";
+import { LeadEmailTimeline } from "@/components/email-integration/LeadEmailTimeline";
 import {
   Select,
   SelectContent,
@@ -831,13 +832,29 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
                 </div>
 
                 <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
-                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Notes & Details</h4>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Notes & Details</h4>
+                  </div>
                   <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-4 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-mono">
                     {selectedLead.notes || "No additional notes available."}
                   </div>
                 </div>
 
-                <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                      <span className="material-symbols-outlined text-sm">mark_email_read</span>
+                      Email Activity
+                    </h4>
+                  </div>
+                  <LeadEmailTimeline leadId={selectedLead.id} />
+                </div>
+
+                <div className="mt-6 flex justify-between gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <a href={`/protected/lead-360-profile?id=${selectedLead.id}`} className="text-sm font-bold text-primary hover:underline flex items-center gap-1">
+                    View Full 360 Profile
+                    <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  </a>
                   <Button variant="outline" onClick={() => setSelectedLead(null)}>
                     Close
                   </Button>

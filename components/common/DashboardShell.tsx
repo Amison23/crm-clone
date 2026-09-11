@@ -18,7 +18,9 @@ const navItems = [
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/settings/email", icon: "mark_email_read", label: "Email", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin"] },
+  { href: "/protected/settings", icon: "settings", label: "Settings", roles: ["superadmin", "server_admin", "admin", "sales_agent", "dev"] }
 ];
 
 const systemItems = [

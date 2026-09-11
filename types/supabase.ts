@@ -566,6 +566,231 @@ export interface Database {
         }
         Relationships: []
       }
+      connected_email_accounts: {
+        Row: {
+          id: string
+          company_id: string
+          employee_id: string
+          provider: string
+          provider_account_id: string
+          email_address: string
+          display_name: string | null
+          access_token: string | null
+          refresh_token: string | null
+          token_expires_at: string | null
+          scopes: string | null
+          sync_status: string | null
+          sync_cursor: string | null
+          last_successful_sync: string | null
+          last_sync_error: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          employee_id: string
+          provider: string
+          provider_account_id: string
+          email_address: string
+          display_name?: string | null
+          access_token?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          scopes?: string | null
+          sync_status?: string | null
+          sync_cursor?: string | null
+          last_successful_sync?: string | null
+          last_sync_error?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          employee_id?: string
+          provider?: string
+          provider_account_id?: string
+          email_address?: string
+          display_name?: string | null
+          access_token?: string | null
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          scopes?: string | null
+          sync_status?: string | null
+          sync_cursor?: string | null
+          last_successful_sync?: string | null
+          last_sync_error?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "connected_email_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "connected_email_accounts_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      email_messages: {
+        Row: {
+          id: string
+          company_id: string
+          connected_account_id: string
+          provider_message_id: string
+          provider_thread_id: string | null
+          internet_message_id: string | null
+          direction: string
+          subject: string | null
+          body_preview: string | null
+          sent_at: string | null
+          received_at: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          connected_account_id: string
+          provider_message_id: string
+          provider_thread_id?: string | null
+          internet_message_id?: string | null
+          direction: string
+          subject?: string | null
+          body_preview?: string | null
+          sent_at?: string | null
+          received_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          connected_account_id?: string
+          provider_message_id?: string
+          provider_thread_id?: string | null
+          internet_message_id?: string | null
+          direction?: string
+          subject?: string | null
+          body_preview?: string | null
+          sent_at?: string | null
+          received_at?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_messages_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_messages_connected_account_id_fkey"
+            columns: ["connected_account_id"]
+            isOneToOne: false
+            referencedRelation: "connected_email_accounts"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      email_participants: {
+        Row: {
+          id: string
+          company_id: string
+          email_message_id: string
+          participant_type: string
+          email_address: string
+          display_name: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          email_message_id: string
+          participant_type: string
+          email_address: string
+          display_name?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          email_message_id?: string
+          participant_type?: string
+          email_address?: string
+          display_name?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_participants_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_participants_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      email_crm_relations: {
+        Row: {
+          id: string
+          company_id: string
+          email_message_id: string
+          entity_type: string
+          entity_id: string
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          email_message_id: string
+          entity_type: string
+          entity_id: string
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          email_message_id?: string
+          entity_type?: string
+          entity_id?: string
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_crm_relations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_crm_relations_email_message_id_fkey"
+            columns: ["email_message_id"]
+            isOneToOne: false
+            referencedRelation: "email_messages"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never
