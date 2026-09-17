@@ -28,10 +28,32 @@ export async function sendNotificationEmail(payload: EmailNotificationPayload): 
   });
 
   try {
-    // In production, integrate with provider (e.g. Resend, SendGrid, or Supabase Auth Mailer)
-    // Simulated successful dispatch with message reference ID
-    const messageId = `msg_${Math.random().toString(36).substring(2, 12)}_${Date.now()}`;
-    return { success: true, messageId };
+    const { sendResendEmail } = await import('@/lib/email/resend');
+    
+    const htmlBody = `
+      <div style="font-family: sans-serif; padding: 20px; color: #333;">
+        <h2>${subject}</h2>
+        <p>${body}</p>
+        <hr style="border: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #888;">
+          This is an automated notification from Cloudora CRM.
+          <br />Event Type: ${eventType}
+        </p>
+      </div>
+    `;
+
+    const result = await sendResendEmail({
+      to: recipientEmail,
+      subject: subject,
+      html: htmlBody,
+    });
+
+    if (!result.success) {
+      console.error(`[EMAIL NOTIFICATION SERVICE] Provider error (${eventType}):`, result.error);
+      return { success: false, error: result.error };
+    }
+
+    return { success: true, messageId: result.id };
   } catch (err: any) {
     console.error(`[EMAIL NOTIFICATION SERVICE] Error sending email (${eventType}):`, err);
     return { success: false, error: err.message || "Failed to dispatch email notification" };

@@ -14,6 +14,7 @@ export default async function TicketsPage() {
 
   // Fetch the user's role and company from the employees table
   let role: "admin" | "sales_agent" | "customer" = "admin";
+  let actualRole: string | undefined;
   let companyId = "261b9e2d-1351-4733-b760-f0966f44d55a";
 
   if (user) {
@@ -22,6 +23,8 @@ export default async function TicketsPage() {
       .select("role, company_id")
       .eq("id", user.id)
       .single();
+
+    actualRole = employee?.role;
 
     if (
       employee?.role === "superadmin" ||
@@ -87,6 +90,7 @@ export default async function TicketsPage() {
       {/* Tickets Client side logic */}
       <TicketsClient
         role={role}
+        actualRole={actualRole}
         ticketsData={finalTicketsData}
         companyEmployees={employees}
         companyId={companyId}

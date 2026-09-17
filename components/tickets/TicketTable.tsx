@@ -19,6 +19,7 @@ interface TicketsTableProps {
   page: number;
   pageCount: number;
   role: "admin" | "customer" | "sales_agent";
+  actualRole?: string;
 }
 
 // ─── DB Employee type ────────────────────────────────────────────────────────
@@ -146,6 +147,7 @@ interface TicketModalProps {
   setOpenModal: (v: boolean) => void;
   onStatusChange: (status: TicketStatus) => void;
   onClose: () => void;
+  actualRole?: string;
 }
 
 export const TicketModal = ({
@@ -156,6 +158,7 @@ export const TicketModal = ({
   setOpenModal,
   onStatusChange,
   onClose,
+  actualRole,
 }: TicketModalProps) => {
   const supabase = createClient();
   const router = useRouter();
@@ -354,21 +357,25 @@ export const TicketModal = ({
             >
               Close
             </button>
-            <button
-              onClick={() => setShowAssign(true)}
-              disabled={saving}
-              className="px-4 py-2 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-1.5 disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-base leading-none">person_add</span>
-              Assign agent
-            </button>
-            <button
-              onClick={handleResolve}
-              disabled={saving || selectedTicket?.status === "Resolved"}
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50"
-            >
-              {saving ? "Saving…" : "Mark resolved"}
-            </button>
+            {actualRole !== "superadmin" && (
+              <>
+                <button
+                  onClick={() => setShowAssign(true)}
+                  disabled={saving}
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-base leading-none">person_add</span>
+                  Assign agent
+                </button>
+                <button
+                  onClick={handleResolve}
+                  disabled={saving || selectedTicket?.status === "Resolved"}
+                  className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Mark resolved"}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -377,7 +384,7 @@ export const TicketModal = ({
 };
 
 // ─── Ticket Table ─────────────────────────────────────────────────────────────
-export default function TicketTable({ tickets, rawTickets, total, page, pageCount, role }: TicketsTableProps) {
+export default function TicketTable({ tickets, rawTickets, total, page, pageCount, role, actualRole }: TicketsTableProps) {
   const start = tickets.length > 0 ? (page - 1) * tickets.length + 1 : 0;
   const end = start + tickets.length - (tickets.length > 0 ? 1 : 0);
 
@@ -541,6 +548,7 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
           setOpenModal={setOpenModal}
           onStatusChange={setStatus}
           onClose={() => { setSelectedTicket(null); setRawTicketId(""); }}
+          actualRole={actualRole}
         />
       )}
     </div>

@@ -802,7 +802,6 @@ function ClientsTab({ customers }: { customers: any[] }) {
 
 // ─── Issues Tab ───────────────────────────────────────────────────────────────
 
-import { reassignTicket } from "@/app/actions/tickets"
 
 function IssuesTab({ issues, agents, companyId, onReassign }: { issues: any[], agents: any[], companyId?: string | null, onReassign?: () => void }) {
   const [filter, setFilter] = useState<string>("All")
@@ -1107,25 +1106,7 @@ function IssueRow({ issue, compact, agents, companyId, onReassign }: { issue: an
     closed: "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400",
   }
   
-  const [isReassigning, setIsReassigning] = useState(false);
-  const handleReassign = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    if (!companyId) return;
-    const newAgentId = e.target.value || null;
-    setIsReassigning(true);
-    try {
-      const res = await reassignTicket(issue.id, newAgentId, companyId);
-      if (res.success) {
-        toast.success("Ticket reassigned!");
-        onReassign?.();
-      } else {
-        toast.error(res.error || "Failed to reassign");
-      }
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setIsReassigning(false);
-    }
-  }
+  // Reassignment via UI removed to comply with RLS policy
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-sm">
@@ -1152,8 +1133,7 @@ function IssueRow({ issue, compact, agents, companyId, onReassign }: { issue: an
                   <select
                     className="bg-transparent border-none text-[11px] font-semibold text-slate-400 focus:outline-none focus:ring-0 w-24 truncate cursor-pointer disabled:opacity-50"
                     value={issue.assigned_to || ""}
-                    onChange={handleReassign}
-                    disabled={isReassigning}
+                    disabled={true}
                   >
                     <option value="">Unassigned</option>
                     {agents.map(a => (

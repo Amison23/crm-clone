@@ -15,6 +15,7 @@ import {
 
 interface TicketsClientProps {
   role: "admin" | "sales_agent" | "customer";
+  actualRole?: string;
   ticketsData: any[] | null;
   companyEmployees?: any[];
   companyId?: string;
@@ -31,7 +32,8 @@ function computeSla(createdAt: string, status: string): SlaStatus {
 }
 
 export default function TicketsClient({ 
-  role, 
+  role,
+  actualRole,
   ticketsData, 
   companyEmployees = [], 
   companyId, 
@@ -281,6 +283,7 @@ export default function TicketsClient({
             page={1}
             pageCount={1}
             role={role}
+            actualRole={actualRole}
           />
         </div>
       </div>
