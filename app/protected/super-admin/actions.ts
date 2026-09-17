@@ -4,6 +4,7 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { normalizeEmail, formatEmailError } from "@/lib/utils";
+import { sendNotificationEmail } from "@/lib/notifications/email";
 
 interface PermissionUpdate {
   [key: string]: boolean | undefined;
@@ -88,34 +89,62 @@ export async function createTenant(name: string, rawAdminEmail?: string, adminNa
     return { success: false, error: error.message };
   }
 
+  let generatedPassword;
+
   if (adminEmail) {
+    generatedPassword = `Admin!${Math.random().toString(36).substring(2, 10).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`;
     const adminClient = createAdminClient();
-    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
-      email: adminEmail,
-      password: "SystemCRM2026!",
-      email_confirm: true,
-      user_metadata: {
-        company_id: data.id,
-        role: "admin"
-      }
-    });
-
-    if (inviteError) {
-      return { success: false, error: `Tenant created but failed to create admin: ${formatEmailError(inviteError)}` };
-    }
-
-    if (inviteData?.user) {
-      const { error: upsertError } = await adminClient.from("employees").upsert({
-        id: inviteData.user.id,
-        email_address: adminEmail,
-        role: "admin",
-        company_id: data.id,
-        full_name: adminName || "Company Admin"
+    
+    try {
+      const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
+        email: adminEmail,
+        password: generatedPassword,
+        email_confirm: true,
+        user_metadata: {
+          company_id: data.id,
+          role: "admin"
+        }
       });
-      
-      if (upsertError) {
-          console.error("Failed to upsert employee details:", upsertError);
+
+      if (inviteError) {
+        return { success: false, error: `Tenant created but failed to create admin: ${formatEmailError(inviteError)}` };
       }
+
+      if (inviteData?.user?.id) {
+        const { error: upsertError } = await adminClient.from("employees").upsert({
+          id: inviteData.user.id,
+          email_address: adminEmail,
+          role: "admin",
+          company_id: data.id,
+          full_name: adminName || "Company Admin"
+        });
+        
+        if (upsertError) {
+            console.error("Failed to upsert employee details:", upsertError);
+            return { success: false, error: `Tenant created but failed to configure admin profile: ${upsertError.message}` };
+        }
+
+        await sendNotificationEmail({
+          recipientEmail: adminEmail,
+          recipientName: adminName || "Company Admin",
+          eventType: "TENANT_PROVISIONED",
+          subject: `Welcome to Cloudora CRM - ${name}`,
+          body: `Your tenant "<strong>${name}</strong>" has been provisioned successfully.<br/><br/>
+                 <strong>Login Details:</strong><br/>
+                 Email: ${adminEmail}<br/>
+                 Password: <code>${generatedPassword}</code><br/><br/>
+                 Please log in and change your password immediately.`,
+        });
+
+      } else {
+         console.error("User created but no ID returned from Supabase Auth");
+         return { success: false, error: "Tenant created but failed to retrieve new admin account ID." };
+      }
+    } catch (err) {
+      console.error("Exception during admin user creation:", err);
+      return { success: false, error: "Tenant created but an unexpected error occurred while creating the admin account." };
+    } finally {
+      // Optional: Add cleanup or finalize metrics here if needed in the future.
     }
   }
  
@@ -124,7 +153,7 @@ export async function createTenant(name: string, rawAdminEmail?: string, adminNa
   return { 
     success: true, 
     data, 
-    credentials: adminEmail ? { email: adminEmail, password: "SystemCRM2026!" } : undefined 
+    credentials: (adminEmail && generatedPassword) ? { email: adminEmail, password: generatedPassword } : undefined 
   };
 }
 
@@ -483,38 +512,64 @@ export async function provisionAgent(companyId: string, name: string, rawEmail: 
   const email = normalizeEmail(rawEmail);
 
   const adminClient = createAdminClient();
-  const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
-    email,
-    password: "SystemCRM2026!",
-    email_confirm: true,
-    user_metadata: {
-      company_id: companyId,
-      role: "sales_agent"
-    }
-  });
-
-  if (inviteError) {
-    return { success: false, error: formatEmailError(inviteError) };
-  }
-
-  if (inviteData?.user) {
-    const { error: upsertError } = await adminClient.from("employees").upsert({
-      id: inviteData.user.id,
-      email_address: email,
-      role: "sales_agent",
-      company_id: companyId,
-      full_name: name
+  const generatedPassword = `Agent!${Math.random().toString(36).substring(2, 10).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`;
+  
+  try {
+    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
+      email,
+      password: generatedPassword,
+      email_confirm: true,
+      user_metadata: {
+        company_id: companyId,
+        role: "sales_agent"
+      }
     });
-    if (upsertError) {
-       console.error("Failed to upsert agent details:", upsertError);
+
+    if (inviteError) {
+      return { success: false, error: formatEmailError(inviteError) };
     }
+
+    if (inviteData?.user?.id) {
+      const { error: upsertError } = await adminClient.from("employees").upsert({
+        id: inviteData.user.id,
+        email_address: email,
+        role: "sales_agent",
+        company_id: companyId,
+        full_name: name
+      });
+      if (upsertError) {
+         console.error("Failed to upsert agent details:", upsertError);
+         return { success: false, error: `Agent created but failed to configure profile: ${upsertError.message}` };
+      }
+      
+      await logAction(supabase, "CREATE_AGENT", "employee", inviteData.user.id, { companyId, name, email });
+      
+      await sendNotificationEmail({
+          recipientEmail: email,
+          recipientName: name,
+          eventType: "AGENT_PROVISIONED",
+          subject: "Your Cloudora CRM Agent Account",
+          body: `An agent account has been created for you.<br/><br/>
+                 <strong>Login Details:</strong><br/>
+                 Email: ${email}<br/>
+                 Password: <code>${generatedPassword}</code><br/><br/>
+                 Please log in and change your password immediately.`,
+      });
+    } else {
+       console.error("User created but no ID returned from Supabase Auth");
+       return { success: false, error: "Agent created but failed to retrieve new account ID." };
+    }
+  } catch (err) {
+    console.error("Exception during agent user creation:", err);
+    return { success: false, error: "An unexpected error occurred while creating the agent account." };
+  } finally {
+     // Optional cleanup
   }
 
-  await logAction(supabase, "CREATE_AGENT", "employee", inviteData?.user?.id || '', { companyId, name, email });
   revalidatePath("/protected/admin");
   return { 
     success: true,
-    credentials: { email, password: "SystemCRM2026!" }
+    credentials: { email, password: generatedPassword }
   };
 }
 

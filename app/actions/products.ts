@@ -9,9 +9,19 @@ export async function getCompanyProducts(companyId: string) {
 
   if (!user) return { success: false, error: "Unauthorized" };
 
+  // F-2-4 FIX: Verify the caller belongs to this company (or is superadmin)
+  const { data: profile } = await supabase
+    .from("employees")
+    .select("role, company_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) return { success: false, error: "Unauthorized" };
+  if (profile.role !== "superadmin" && profile.company_id !== companyId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
   const adminClient = createAdminClient();
-  
-  // We use adminClient to bypass RLS, because products RLS might be strict
   const { data: products, error } = await adminClient
     .from("products")
     .select("*")
@@ -61,6 +71,22 @@ export async function createCompanyProduct(companyId: string, name: string, prod
 }
 
 export async function getAgentProducts(companyId: string) {
+  // F-2-6 FIX: Added auth and authorization check before using adminClient
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  const { data: profile } = await supabase
+    .from("employees")
+    .select("role, company_id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) return { success: false, error: "Unauthorized" };
+  if (profile.role !== "superadmin" && profile.company_id !== companyId) {
+    return { success: false, error: "Unauthorized" };
+  }
+
   const adminClient = createAdminClient();
   
   // Get all agents in this company

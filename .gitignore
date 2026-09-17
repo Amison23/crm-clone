@@ -59,3 +59,6 @@ scratch*.js
 scratch*.ts
 test-local*.js
 test-local*.ts
+test_*.ts
+test_*.sql
+test_db.ts

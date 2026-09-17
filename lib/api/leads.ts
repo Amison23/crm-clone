@@ -19,7 +19,7 @@ export async function createLeadAction(formData: FormData) {
 
   const { data: employee } = await supabase
     .from("employees")
-    .select("company_id")
+    .select("company_id, email_address, full_name")
     .eq("id", user.id)
     .single();
 
@@ -73,6 +73,16 @@ export async function createLeadAction(formData: FormData) {
   if (error) {
     console.error("Lead Protocol Failure:", error.message);
     return { error: "Database rejected lead insertion. Check constraints." };
+  }
+
+  if (employee?.email_address) {
+    await sendNotificationEmail({
+      recipientEmail: employee.email_address,
+      recipientName: employee.full_name || "Admin",
+      eventType: "LEAD_CREATED",
+      subject: "New Lead Added Successfully",
+      body: `A new lead for <strong>${company_name}</strong> (${first_name} ${last_name}) has been successfully added to your CRM.`
+    });
   }
 
   // 5. CACHE INVALIDATION
