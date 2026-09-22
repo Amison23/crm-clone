@@ -43,7 +43,7 @@ export class GoogleEmailProvider implements EmailProvider {
     throw new EmailProviderError(message, 'google', error);
   }
 
-  private parseEmailParticipant(header: string | undefined): EmailParticipant[] {
+  private parseEmailParticipant(header: string | null | undefined): EmailParticipant[] {
     if (!header) return [];
     return header.split(',').map((part) => {
       part = part.trim();

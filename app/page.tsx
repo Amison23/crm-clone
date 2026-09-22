@@ -5,6 +5,7 @@ import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
 import { ArrowRight, LayoutDashboard, MessageSquare, PhoneCall, Users } from "lucide-react";
+import { CustomerChatWidget } from "@/components/chat/customer-chat-widget";
 
 // export const dynamic = "force-dynamic"
 
@@ -137,6 +138,7 @@ export default function Home() {
           </div>
         </footer>
       </div>
+      <CustomerChatWidget tenantId="cabadf43-8874-43fe-adac-9c7b70889fef" />
     </main>
   );
 }

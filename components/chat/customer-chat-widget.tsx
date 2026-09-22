@@ -24,6 +24,9 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
   const [step, setStep] = useState<Step>('collect-info')
   const [messages, setMessages] = useState<Message[]>([])
   const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [chatClient, setChatClient] = useState<any>(supabase)
+  const [sessionExpired, setSessionExpired] = useState(false)
   const [input, setInput] = useState('')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -36,8 +39,8 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
 
   // Subscribe to incoming agent/bot messages
   useEffect(() => {
-    if (!sessionId) return
-    const channel = supabase
+    if (!sessionId || !sessionToken || !chatClient) return
+    const channel = chatClient
       .channel(`customer_chat_${sessionId}`)
       .on(
         'postgres_changes',
@@ -47,7 +50,7 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
           table: 'messages',
           filter: `chat_session_id=eq.${sessionId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const msg = payload.new as any
           if (msg.role !== 'user') {
             setMessages((prev) => [
@@ -58,8 +61,8 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
         }
       )
       .subscribe()
-    return () => { supabase.removeChannel(channel) }
-  }, [sessionId])
+    return () => { chatClient.removeChannel(channel) }
+  }, [sessionId, sessionToken, chatClient])
 
   const handleOpen = () => {
     setIsOpen(true)
@@ -67,37 +70,71 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
 
   const createSession = async () => {
     if (!name.trim() || !email.trim()) return
-    try {
-      const { data, error } = await supabase
-        .from('chat_sessions')
-        .insert({
-          tenant_id: tenantId,
-          customer_name: name.trim(),
-          customer_email: email.trim(),
-          source: 'landing_page',
-          status: 'unassigned',
-        })
-        .select()
-        .single()
-      if (error) throw error
-      setSessionId(data.id)
-      setStep('chatting')
 
+    let token = crypto.randomUUID()
+    let sessionData = null
+    let activeClient = null
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      const scopedClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+        { global: { headers: { 'x-chat-token': token } } }
+      )
+
+      try {
+        const { data, error } = await scopedClient
+          .from('chat_sessions')
+          .insert({
+            company_id: tenantId,
+            customer_name: name.trim(),
+            customer_email: email.trim(),
+            source: 'landing_page',
+            status: 'unassigned',
+            session_token: token,
+          })
+          .select('id')
+          .single()
+
+        if (error) {
+          if (error.code === '23505' && attempt === 1) {
+            token = crypto.randomUUID()
+            continue
+          }
+          throw error
+        }
+        sessionData = data
+        activeClient = scopedClient
+        setChatClient(scopedClient)
+        break
+      } catch (e) {
+        console.error('Error creating session:', e)
+        return
+      }
+    }
+
+    if (!sessionData || !activeClient) return
+
+    setSessionId(sessionData.id)
+    setSessionToken(token)
+    setStep('chatting')
+
+    try {
       // Send welcome bot message
-      await supabase.from('messages').insert({
-        chat_session_id: data.id,
-        tenant_id: tenantId,
+      await activeClient.from('messages').insert({
+        chat_session_id: sessionData.id,
+        company_id: tenantId,
         content: `Hello ${name}! 👋 How can we help you today?`,
         role: 'assistant',
         is_bot_response: true,
       })
     } catch (e) {
-      console.error('Error creating session:', e)
+      console.error('Error sending welcome message:', e)
     }
   }
 
   const checkFAQ = async (userMessage: string) => {
-    const { data: faqs } = await supabase
+    const { data: faqs } = await chatClient
       .from('faq_entries')
       .select('*')
       .eq('tenant_id', tenantId)
@@ -119,46 +156,50 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
     setMessages((prev) => [...prev, { content, role: 'user', created_at: new Date().toISOString() }])
 
     try {
-      await supabase.from('messages').insert({
+      const { error: msgError } = await chatClient.from('messages').insert({
         chat_session_id: sessionId,
-        tenant_id: tenantId,
+        company_id: tenantId,
         content,
         role: 'user',
       })
+      if (msgError) throw msgError
 
       const faq = await checkFAQ(content)
       if (faq) {
-        await supabase.from('messages').insert({
+        await chatClient.from('messages').insert({
           chat_session_id: sessionId,
-          tenant_id: tenantId,
+          company_id: tenantId,
           content: faq.answer,
           role: 'assistant',
           is_bot_response: true,
         })
         // Increment usage count
-        await supabase.from('faq_entries').update({ usage_count: faq.usage_count + 1 }).eq('id', faq.id)
+        await chatClient.from('faq_entries').update({ usage_count: faq.usage_count + 1 }).eq('id', faq.id)
         if (faq.triggers_routing) {
-          await supabase.from('chat_sessions').update({ status: 'unassigned', department: faq.route_to_department || 'general' }).eq('id', sessionId)
-          await supabase.from('messages').insert({
+          await chatClient.from('chat_sessions').update({ status: 'unassigned', department: faq.route_to_department || 'general' }).eq('id', sessionId)
+          await chatClient.from('messages').insert({
             chat_session_id: sessionId,
-            tenant_id: tenantId,
+            company_id: tenantId,
             content: "I'm connecting you with a team member who can help further. Please hold on!",
             role: 'assistant',
             is_bot_response: true,
           })
         }
       } else {
-        await supabase.from('chat_sessions').update({ status: 'unassigned' }).eq('id', sessionId)
-        await supabase.from('messages').insert({
+        await chatClient.from('chat_sessions').update({ status: 'unassigned' }).eq('id', sessionId)
+        await chatClient.from('messages').insert({
           chat_session_id: sessionId,
-          tenant_id: tenantId,
+          company_id: tenantId,
           content: "Thanks for your message! A team member will be with you shortly.",
           role: 'assistant',
           is_bot_response: true,
         })
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e)
+      if (e.code === '42501' || e.message?.toLowerCase().includes('unauthorized') || e.message?.toLowerCase().includes('policy')) {
+        setSessionExpired(true)
+      }
     } finally {
       setSending(false)
     }
@@ -197,7 +238,26 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
 
           {/* Body */}
           <div className="flex-1 overflow-y-auto">
-            {step === 'collect-info' ? (
+            {sessionExpired ? (
+              <div className="flex h-full flex-col items-center justify-center p-6 text-center space-y-4">
+                <span className="material-symbols-outlined text-4xl text-slate-400">timer_off</span>
+                <p className="text-sm font-semibold text-slate-700">Session Expired</p>
+                <p className="text-xs text-slate-500">Your chat session has expired. Please start a new chat.</p>
+                <button
+                  onClick={() => {
+                    setSessionId(null)
+                    setSessionToken(null)
+                    setChatClient(supabase)
+                    setSessionExpired(false)
+                    setMessages([])
+                    setStep('collect-info')
+                  }}
+                  className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  Start New Chat
+                </button>
+              </div>
+            ) : step === 'collect-info' ? (
               <div className="p-6 space-y-4">
                 <p className="text-sm text-slate-600">Please introduce yourself before we get started:</p>
                 <div className="space-y-3">
@@ -260,7 +320,7 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
           </div>
 
           {/* Input */}
-          {step === 'chatting' && (
+          {step === 'chatting' && !sessionExpired && (
             <div className="border-t border-slate-100 p-3 shrink-0">
               <form onSubmit={sendMessage} className="flex gap-2">
                 <input

@@ -61,4 +61,10 @@ test-local*.js
 test-local*.ts
 test_*.ts
 test_*.sql
+test_*.mjs
+test_*.js
+query_*.mjs
+query_*.js
+admin_*.mjs
+admin_*.js
 test_db.ts

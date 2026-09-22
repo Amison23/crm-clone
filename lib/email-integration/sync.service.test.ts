@@ -28,6 +28,7 @@ describe('EmailSyncService', () => {
         // Return this so single() or await works depending on the chain
         return this;
       }),
+      in: vi.fn().mockReturnThis(),
       single: vi.fn().mockResolvedValue({
         data: {
           id: 'acc_1',

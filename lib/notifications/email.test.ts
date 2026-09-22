@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { sendNotificationEmail } from './email';
 
+vi.mock('@/lib/email/resend', () => ({
+  sendResendEmail: vi.fn().mockResolvedValue({ success: true, id: 'msg_123' })
+}));
+
 describe('Notification Email Service', () => {
   it('should return error if recipient email is missing', async () => {
     const result = await sendNotificationEmail({
