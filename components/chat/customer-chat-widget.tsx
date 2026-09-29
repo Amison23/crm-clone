@@ -174,7 +174,7 @@ export function CustomerChatWidget({ tenantId }: { tenantId: string }) {
           is_bot_response: true,
         })
         // Increment usage count
-        await chatClient.from('faq_entries').update({ usage_count: faq.usage_count + 1 }).eq('id', faq.id)
+        await chatClient.rpc('increment_faq_usage', { p_faq_id: faq.id })
         if (faq.triggers_routing) {
           await chatClient.from('chat_sessions').update({ status: 'unassigned', department: faq.route_to_department || 'general' }).eq('id', sessionId)
           await chatClient.from('messages').insert({

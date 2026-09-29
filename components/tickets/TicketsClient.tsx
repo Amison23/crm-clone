@@ -14,7 +14,7 @@ import {
 } from "@/components/tickets/TicketBadges";
 
 interface TicketsClientProps {
-  role: "admin" | "sales_agent" | "customer";
+  role: "admin" | "sales_agent" | "client";
   actualRole?: string;
   ticketsData: any[] | null;
   companyEmployees?: any[];
@@ -103,7 +103,7 @@ export default function TicketsClient({
   });
 
   // ── Customer view ──────────────────────────────────────────────────────────
-  if (role === "customer") {
+  if (role === "client") {
     return (
       <CustomerTicketView
         tickets={dbTickets}
@@ -253,7 +253,7 @@ export default function TicketsClient({
       <div>
         <div className="flex items-center justify-between gap-4 mb-4">
           <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Ticket Queue</h2>
-          {(role as string) !== "customer" && (
+          {(role as string) !== "client" && (
             <button
               onClick={handleExportCSV}
               className="flex items-center gap-2 px-3.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"

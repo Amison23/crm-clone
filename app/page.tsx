@@ -138,7 +138,7 @@ export default function Home() {
           </div>
         </footer>
       </div>
-      <CustomerChatWidget tenantId="cabadf43-8874-43fe-adac-9c7b70889fef" />
+      <CustomerChatWidget tenantId={process.env.NEXT_PUBLIC_DEMO_TENANT_ID ?? ""} />
     </main>
   );
 }

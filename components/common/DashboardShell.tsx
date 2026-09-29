@@ -33,7 +33,7 @@ const systemItems = [
 const platformItems = [
   { href: "/protected/super-admin/overview", icon: "monitoring", label: "Overview" },
   { href: "/protected/super-admin/tenants", icon: "corporate_fare", label: "Tenants" },
-  { href: "/protected/super-admin/agents", icon: "manage_accounts", label: "Agent Management" },
+  // { href: "/protected/super-admin/agents", icon: "manage_accounts", label: "Agent Management" },
   { href: "/protected/super-admin/users", icon: "group", label: "Users" },
   { href: "/protected/super-admin/telephony", icon: "call", label: "Telephony" },
   { href: "/protected/super-admin/permissions", icon: "shield", label: "Permissions" },

@@ -18,7 +18,7 @@ interface TicketsTableProps {
   total: number;
   page: number;
   pageCount: number;
-  role: "admin" | "customer" | "sales_agent";
+  role: "admin" | "client" | "sales_agent";
   actualRole?: string;
 }
 
@@ -481,7 +481,7 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
                   <td className="px-6 py-4"><PriorityBadge priority={ticket.priority} /></td>
                   <td className="px-6 py-4"><SlaBadge sla={ticket.sla} /></td>
                   <td className="px-6 py-4">
-                    {role !== "customer" && ticket.agentId ? (
+                    {role !== "client" && ticket.agentId ? (
                       <div className="flex items-center gap-2.5">
                         <div className="size-7 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
                           {ticket.agentInitials}

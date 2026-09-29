@@ -25,6 +25,7 @@ interface User {
   role: string | null;
   company_id: string | null;
   companies: { name: string } | null;
+  updated_at?: string;
 }
 
 interface Company {
@@ -54,7 +55,8 @@ export default function UserManagementTable({ initialUsers, companies }: { initi
                     ...u, 
                     role, 
                     company_id: companyId,
-                    companies: companies.find(c => c.id === companyId) || null
+                    companies: companies.find(c => c.id === companyId) || null,
+                    updated_at: new Date().toISOString()
                 } : u
             ));
             toast.success("Identity updated successfully");
@@ -113,17 +115,18 @@ export default function UserManagementTable({ initialUsers, companies }: { initi
         <table className="w-full text-left border-collapse">
           <thead className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-100 dark:border-slate-800">
             <tr className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em]">
-              <th className="px-8 py-4">Identity Profile</th>
-              <th className="px-8 py-4">Assigned Role</th>
-              <th className="px-8 py-4">Infrastructure Lock (Tenant)</th>
-              <th className="px-8 py-4 text-right">Commit Changes</th>
+              <th className="px-4 py-3">Identity Profile</th>
+              <th className="px-4 py-3">Assigned Role</th>
+              <th className="px-4 py-3">Infrastructure Lock (Tenant)</th>
+              <th className="px-4 py-3">Password</th>
+              <th className="px-4 py-3 text-right">Commit Changes</th>
             </tr>
           </thead>
 
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {employees.length === 0 ? (
               <tr>
-                <td colSpan={4}>
+                <td colSpan={5}>
                   <EmptyState
                     icon={Users}
                     title="No users found"
@@ -168,10 +171,11 @@ function UserRow({ user, roles, companies, onUpdate, onResetPassword, isLoading 
   const [companyId, setCompanyId] = useState<string | null>(user.company_id);
 
   const hasChanges = role !== user.role || companyId !== user.company_id;
+  const isRecentCommit = user.updated_at ? (Date.now() - new Date(user.updated_at).getTime()) < 3 * 24 * 60 * 60 * 1000 : false;
 
   return (
     <tr className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
-      <td className="px-8 py-5">
+      <td className="px-4 py-3">
         <div className="flex items-center gap-4">
             <div className="size-10 rounded-full bg-slate-200 dark:bg-slate-700 flex flex-col items-center justify-center text-xs font-black uppercase text-slate-500 relative shrink-0">
                 {user.full_name?.substring(0, 2) || "U"}
@@ -187,8 +191,8 @@ function UserRow({ user, roles, companies, onUpdate, onResetPassword, isLoading 
         </div>
       </td>
 
-      <td className="px-8 py-5">
-        <div className="relative group/role">
+      <td className="px-4 py-3">
+        <div className="relative inline-block group/role w-fit">
             <Shield className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 transition-colors group-focus-within/role:text-orange-500" />
             <select
                 value={role}
@@ -201,15 +205,15 @@ function UserRow({ user, roles, companies, onUpdate, onResetPassword, isLoading 
         </div>
       </td>
 
-      <td className="px-8 py-5">
-        <div className="relative group/company">
+      <td className="px-4 py-3">
+        <div className="relative inline-block group/company w-fit">
             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 transition-colors group-focus-within/company:text-orange-500" />
             <select
                 disabled={role === "superadmin"}
                 value={companyId || ""}
                 onChange={(e) => setCompanyId(e.target.value || null)}
                 className={cn(
-                    "pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 outline-none focus:ring-1 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer appearance-none min-w-[200px]",
+                    "pl-8 pr-8 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 outline-none focus:ring-1 focus:ring-orange-500/20 focus:border-orange-500 transition-all cursor-pointer appearance-none",
                     role === "superadmin" && "opacity-50 cursor-not-allowed bg-slate-200 dark:bg-slate-950"
                 )}
             >
@@ -220,30 +224,37 @@ function UserRow({ user, roles, companies, onUpdate, onResetPassword, isLoading 
         </div>
       </td>
 
-      <td className="px-8 py-5 text-right">
-        <div className="flex items-center justify-end gap-2">
-          <button
-            type="button"
-            onClick={onResetPassword}
-            title="Reset/Generate Password"
-            className="p-2 bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all"
-          >
-            <KeyRound className="size-4" />
-          </button>
-
+      <td className="px-4 py-3">
+        <button
+          type="button"
+          onClick={onResetPassword}
+          className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2 bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 w-fit"
+        >
+          <KeyRound className="size-3" />
+          Reset Password
+        </button>
+      </td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex flex-col items-end gap-1.5">
           <button 
-              disabled={!hasChanges || isLoading}
+              disabled={isLoading || isRecentCommit}
+              title={isRecentCommit ? "Cannot commit changes more than once every 3 days" : "Save Commit"}
               onClick={() => onUpdate(user.id, role, companyId)}
               className={cn(
                   "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2",
-                  hasChanges 
-                      ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl" 
+                  (!isLoading && !isRecentCommit)
+                      ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xl hover:bg-slate-800 dark:hover:bg-slate-200" 
                       : "bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed"
               )}
           >
               {isLoading ? <Loader2 className="animate-spin size-3" /> : <Check className="size-3" />}
               Save Commit
           </button>
+          {(user.updated_at) && (
+            <span className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold pr-1">
+                Last Commit: {new Date(user.updated_at).toLocaleString()}
+            </span>
+          )}
         </div>
       </td>
     </tr>
@@ -261,6 +272,7 @@ function UserCard({ user, roles, companies, onUpdate, onResetPassword, isLoading
   const [role, setRole] = useState(user.role || "sales_agent");
   const [companyId, setCompanyId] = useState<string | null>(user.company_id);
   const hasChanges = role !== user.role || companyId !== user.company_id;
+  const isRecentCommit = user.updated_at ? (Date.now() - new Date(user.updated_at).getTime()) < 3 * 24 * 60 * 60 * 1000 : false;
 
   return (
     <div className="p-4 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
@@ -309,29 +321,37 @@ function UserCard({ user, roles, companies, onUpdate, onResetPassword, isLoading
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-        <button
-          type="button"
-          onClick={onResetPassword}
-          title="Reset/Generate Password"
-          className="p-2 bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-xl transition-all"
-        >
-          <KeyRound className="size-4" />
-        </button>
+      <div className="flex flex-col gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onResetPassword}
+            className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-slate-100 hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400"
+          >
+            <KeyRound className="size-3" />
+            Reset Password
+          </button>
 
-        <button 
-          disabled={!hasChanges || isLoading}
-          onClick={() => onUpdate(user.id, role, companyId)}
-          className={cn(
-            "px-4 py-2 rounded-xl text-xs font-bold uppercase transition-all flex items-center gap-2",
-            hasChanges 
-              ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg" 
-              : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
-          )}
-        >
-          {isLoading ? <Loader2 className="animate-spin size-3.5" /> : <Check className="size-3.5" />}
-          Save Changes
-        </button>
+          <button 
+            disabled={isLoading || isRecentCommit}
+            title={isRecentCommit ? "Cannot commit changes more than once every 3 days" : "Save Changes"}
+            onClick={() => onUpdate(user.id, role, companyId)}
+            className={cn(
+              "px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+              (!isLoading && !isRecentCommit)
+                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-lg hover:bg-slate-800 dark:hover:bg-slate-200" 
+                : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
+            )}
+          >
+            {isLoading ? <Loader2 className="animate-spin size-3" /> : <Check className="size-3" />}
+            Save Changes
+          </button>
+        </div>
+        {(user.updated_at) && (
+          <div className="text-right text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold pr-1">
+             Last Commit: {new Date(user.updated_at).toLocaleString()}
+          </div>
+        )}
       </div>
     </div>
   );

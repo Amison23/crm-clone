@@ -51,7 +51,7 @@ export function AgentDashboard({ userId, companyId }: { userId?: string; company
       const { data: employeesData } = await employeesQuery
 
       // Fetch customers (Clients) I am associated with
-      const companiesQuery = supabase.from('employees').select('*').eq('role', 'customer')
+      const companiesQuery = supabase.from('employees').select('*').eq('role', 'client')
       if (companyId) {
         companiesQuery.eq('company_id', companyId)
       }

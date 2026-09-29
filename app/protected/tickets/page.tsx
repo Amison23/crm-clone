@@ -13,9 +13,9 @@ export default async function TicketsPage() {
   } = await supabase.auth.getUser();
 
   // Fetch the user's role and company from the employees table
-  let role: "admin" | "sales_agent" | "customer" = "admin";
+  let role: "admin" | "sales_agent" | "client" = "admin";
   let actualRole: string | undefined;
-  let companyId = "261b9e2d-1351-4733-b760-f0966f44d55a";
+  let companyId = "";
 
   if (user) {
     const { data: employee } = await supabase
@@ -35,7 +35,7 @@ export default async function TicketsPage() {
     } else if (employee?.role === "sales_agent" || employee?.role === "dev") {
       role = "sales_agent";
     } else {
-      role = "customer";
+      role = "client";
     }
 
     companyId = employee?.company_id ?? "";
@@ -51,7 +51,7 @@ export default async function TicketsPage() {
     `)
     .order("created_at", { ascending: false });
 
-  if (role === "customer" && user) {
+  if (role === "client" && user) {
     // Clients only see their own tickets
     ticketsQuery = ticketsQuery.eq("client_id", user.id);
   } else if (companyId) {
@@ -80,7 +80,7 @@ export default async function TicketsPage() {
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-black leading-tight tracking-tight">Support Tickets</h1>
           <p className="text-slate-500 dark:text-slate-400 text-base">
-            {role === "customer"
+            {role === "client"
               ? "Submit and track your support requests"
               : "Track and manage active customer support requests"}
           </p>

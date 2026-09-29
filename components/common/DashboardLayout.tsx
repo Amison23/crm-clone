@@ -59,7 +59,7 @@ async function AuthGate({ children }: { children: ReactNode }) {
 
   const role = profile.role as string;
 
-  console.log("[AuthGate] Resolved role:", role, "| company_id:", profile.company_id, "| for user:", user.id);
+  // console.log("[AuthGate] Resolved role:", role, "| company_id:", profile.company_id, "| for user:", user.id);
 
   // No-Tenant Gating: unassigned role OR no company linked (platform admins are exempt)
   if (role === "unassigned") {

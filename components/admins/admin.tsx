@@ -109,7 +109,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
         }
 
         // Fetch customers in this company
-        const customersQuery = supabase.from('employees').select('*, companies(name, logo)').eq('role', 'customer')
+        const customersQuery = supabase.from('employees').select('*, companies(name, logo)').eq('role', 'client')
         if (companyId) {
           customersQuery.eq('company_id', companyId)
         }
@@ -532,7 +532,7 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
                 >
                   <option value="sales_agent">Sales Agent</option>
                   <option value="admin">Admin</option>
-                  <option value="customer">Customer</option>
+                  <option value="client">Client</option>
                 </select>
               </div>
               <button

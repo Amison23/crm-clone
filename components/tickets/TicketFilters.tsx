@@ -21,7 +21,7 @@ interface TicketFiltersProps {
   activeSla: SlaStatus | "All SLA";
   onSlaChange: (sla: SlaStatus | "All SLA") => void;
   tickets: Ticket[];
-  role: "admin" | "sales_agent" | "customer";
+  role: "admin" | "sales_agent" | "client";
 }
 
 export default function TicketFilters({ 
