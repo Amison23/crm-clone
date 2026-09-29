@@ -24,7 +24,7 @@ export async function joinTenantWithCode(inviteCode: string) {
   const { data: validCompanyId, error: rpcError } = await supabase.rpc('redeem_invite_code', { p_code: inviteCode });
 
   if (rpcError || !validCompanyId) {
-    return { success: false, error: rpcError?.message || "Invalid, expired, or already used invite code." };
+    return { success: false, error: "Invalid, expired, or already used invite code." };
   }
 
   const adminClient = createAdminClient();
@@ -45,7 +45,8 @@ export async function joinTenantWithCode(inviteCode: string) {
     await adminClient
       .from("invite_codes")
       .update({ used_at: null, used_by: null })
-      .eq("code", inviteCode);
+      .eq("code", inviteCode)
+      .eq("used_by", user.id);
 
     return { success: false, error: "Failed to join the organization." };
   }
@@ -171,34 +172,51 @@ export async function linkExistingUser(companyId: string, email: string, role: s
     return { success: false, error: "Unauthorized" };
   }
   
+  // Validate role assignment based on caller
+  if (profile.role === "admin" && !["sales_agent", "dev"].includes(role)) {
+    return { success: false, error: "Invalid role for admin assignment" };
+  }
+  if (profile.role === "superadmin" && !["sales_agent", "dev", "admin", "server_admin"].includes(role)) {
+    return { success: false, error: "Invalid role for superadmin assignment" };
+  }
+
   const targetCompanyId = profile.role === "admin" ? profile.company_id! : companyId;
 
   if (!targetCompanyId) {
     return { success: false, error: "Invalid organization context" };
   }
 
+  const adminClient = createAdminClient();
+
   // Look up the target user by email in the employees table
-  const { data: targetEmployee, error: lookupError } = await supabase
+  const { data: targetEmployee, error: lookupError } = await adminClient
     .from("employees")
     .select("id")
     .eq("email_address", email)
+    .eq("role", "unassigned")
+    .is("company_id", null)
     .single();
 
   if (lookupError || !targetEmployee) {
     return { 
       success: false, 
-      error: "User not found. Please ensure they have signed up and verified their email first." 
+      error: "User not found or is already assigned to a company." 
     };
   }
 
   // Update their company_id and role
-  const { error: updateError } = await supabase
+  const { data: updated, error: updateError } = await adminClient
     .from("employees")
     .update({ company_id: targetCompanyId, role: role })
-    .eq("id", targetEmployee.id);
+    .eq("id", targetEmployee.id)
+    .select("id");
 
   if (updateError) {
     return { success: false, error: updateError.message };
+  }
+  
+  if (!updated || updated.length === 0) {
+    return { success: false, error: "Failed to link user." };
   }
 
   return { success: true };
