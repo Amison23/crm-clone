@@ -166,13 +166,14 @@ export async function updateTenant(id: string, name: string) {
   // Fetch old state for audit
   const { data: oldTenant } = await supabase.from("companies").select("name").eq("id", id).single();
  
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("companies")
     .update({ 
       name,
       slug: slugify(name)
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
  
   if (error) {
     if (error.code === '23505' || error.message.includes('unique constraint') || error.message.includes('duplicate key')) {
@@ -180,6 +181,7 @@ export async function updateTenant(id: string, name: string) {
     }
     return { success: false, error: error.message };
   }
+  if (!data?.length) return { success: false, error: "Not permitted or company not found" };
  
   await logAction(supabase, "UPDATE_TENANT", "company", id, { 
       prev: { name: oldTenant?.name }, 
@@ -195,14 +197,16 @@ export async function archiveTenant(id: string) {
       return { success: false, error: "Unauthorized" };
   }
  
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("companies")
     .update({ deleted_at: new Date().toISOString() })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
  
   if (error) {
     return { success: false, error: error.message };
   }
+  if (!data?.length) return { success: false, error: "Not permitted or company not found" };
  
   await logAction(supabase, "ARCHIVE_TENANT", "company", id, {});
   revalidatePath("/protected/super-admin/tenants");
@@ -215,14 +219,16 @@ export async function restoreTenant(id: string) {
       return { success: false, error: "Unauthorized" };
   }
  
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("companies")
     .update({ deleted_at: null })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
  
   if (error) {
     return { success: false, error: error.message };
   }
+  if (!data?.length) return { success: false, error: "Not permitted or company not found" };
  
   await logAction(supabase, "RESTORE_TENANT", "company", id, {});
   revalidatePath("/protected/super-admin/tenants");
@@ -235,14 +241,16 @@ export async function purgeTenant(id: string) {
       return { success: false, error: "Unauthorized" };
   }
  
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("companies")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
  
   if (error) {
     return { success: false, error: error.message };
   }
+  if (!data?.length) return { success: false, error: "Not permitted or company not found" };
  
   await logAction(supabase, "PURGE_TENANT", "company", id, {});
   revalidatePath("/protected/super-admin/tenants");
@@ -265,14 +273,16 @@ export async function updateUserRole(userId: string, role: string, companyId?: s
     company_id: companyId || null 
   };
  
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("employees")
     .update(dataToUpdate)
-    .eq("id", userId);
+    .eq("id", userId)
+    .select("id");
  
   if (error) {
     return { success: false, error: error.message };
   }
+  if (!data?.length) return { success: false, error: "Not permitted or user not found" };
  
   await logAction(supabase, "UPDATE_USER_ROLE", "employee", userId, {
       prev: { role: oldUser?.role, company_id: oldUser?.company_id },
@@ -285,12 +295,14 @@ export async function assignLead(leadId: string, employeeId: string) {
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("leads")
     .update({ employee_id: employeeId })
-    .eq("id", leadId);
+    .eq("id", leadId)
+    .select("id");
 
   if (error) return { success: false, error: error.message };
+  if (!data?.length) return { success: false, error: "Not permitted or lead not found" };
 
   await logAction(supabase, "ASSIGN_LEAD", "lead", leadId, { employee_id: employeeId });
   return { success: true };
@@ -369,18 +381,20 @@ export async function updateSIMPort(id: string, phone: string, companyId: string
   // Fetch old state
   const { data: oldSIM } = await supabase.from("sim_ports").select("phone_number, company_id").eq("id", id).single();
  
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("sim_ports")
     .update({ 
         phone_number: phone, 
         company_id: companyId || null,
         updated_at: new Date().toISOString()
     })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id");
  
   if (error) {
     return { success: false, error: error.message };
   }
+  if (!data?.length) return { success: false, error: "Not permitted or SIM port not found" };
  
   await logAction(supabase, "UPDATE_SIM_PORT", "sim_port", id, {
       prev: { phone: oldSIM?.phone_number, company_id: oldSIM?.company_id },

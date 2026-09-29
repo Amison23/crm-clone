@@ -188,12 +188,14 @@ export async function updateTaskStatusAction(taskId: string, status: string) {
   const authRes = await checkTaskAuth(supabase, user.id, taskId);
   if (!authRes.authorized) return { error: authRes.error };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tasks")
     .update({ status })
-    .eq("id", taskId);
+    .eq("id", taskId)
+    .select("id");
 
   if (error) return { error: error.message };
+  if (!data?.length) return { error: "Not permitted or task not found" };
 
   await supabase.from("audit_logs").insert({
     actor_id: user.id,
@@ -216,12 +218,14 @@ export async function deleteTaskAction(taskId: string) {
   const authRes = await checkTaskAuth(supabase, user.id, taskId);
   if (!authRes.authorized) return { error: authRes.error };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tasks")
     .delete()
-    .eq("id", taskId);
+    .eq("id", taskId)
+    .select("id");
 
   if (error) return { error: error.message };
+  if (!data?.length) return { error: "Not permitted or task not found" };
 
   await supabase.from("audit_logs").insert({
     actor_id: user.id,
@@ -338,12 +342,14 @@ export async function archiveTaskAction(taskId: string) {
   if (!authRes.authorized) return { error: authRes.error };
 
   const now = new Date().toISOString();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tasks")
     .update({ archived_at: now, archived_by: user.id })
-    .eq("id", taskId);
+    .eq("id", taskId)
+    .select("id");
 
   if (error) return { error: error.message };
+  if (!data?.length) return { error: "Not permitted or task not found" };
 
   await supabase.from("audit_logs").insert({
     actor_id: user.id,
@@ -382,7 +388,7 @@ export async function unarchiveTaskAction(taskId: string) {
   const newCount = currentCount + 1;
   const isNowUsedUp = newCount >= maxLimit;
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("tasks")
     .update({
       archived_at: null,
@@ -390,9 +396,11 @@ export async function unarchiveTaskAction(taskId: string) {
       unarchive_count: newCount,
       unarchive_used: isNowUsedUp,
     })
-    .eq("id", taskId);
+    .eq("id", taskId)
+    .select("id");
 
   if (error) return { error: error.message };
+  if (!data?.length) return { error: "Not permitted or task not found" };
 
   await supabase.from("audit_logs").insert({
     actor_id: user.id,
@@ -426,12 +434,13 @@ export async function bulkArchiveTasksAction(taskIds: string[]) {
       continue;
     }
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("tasks")
       .update({ archived_at: now, archived_by: user.id })
-      .eq("id", taskId);
+      .eq("id", taskId)
+      .select("id");
 
-    if (error) {
+    if (error || !data?.length) {
       skippedIds.push(taskId);
     } else {
       archivedCount++;

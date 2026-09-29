@@ -135,12 +135,14 @@ export async function updateLeadAction(leadId: string, payload: any) {
   }
 
   // Logic: Update handles potential_value which feeds the Revenue charts
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("leads")
     .update(updateData)
-    .eq("id", leadId);
+    .eq("id", leadId)
+    .select("id");
 
   if (error) return { error: error.message };
+  if (!data?.length) return { error: "Not permitted or lead not found" };
   
   revalidatePath("/protected/crm-leads-table");
   revalidatePath("/protected/analytics-and-reporting");
@@ -152,12 +154,14 @@ export async function deleteLeadAction(leadId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Unauthorized Node Access" };
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("leads")
     .delete()
-    .eq("id", leadId);
+    .eq("id", leadId)
+    .select("id");
 
   if (error) return { error: error.message };
+  if (!data?.length) return { error: "Not permitted or lead not found" };
 
   revalidatePath("/protected/crm-leads-table");
   revalidatePath("/protected/analytics-and-reporting");
@@ -203,12 +207,14 @@ export async function assignSalesAgents(leadId: string, employeeId: string){
   const {data: {user}} = await supabase.auth.getUser()
   if(!user) return {error: 'Unauthorized'}
 
-  const {error} = await supabase
+  const {data: updatedData, error} = await supabase
     .from("leads")
     .update({ employee_id: employeeId })
-    .eq("id", leadId);
+    .eq("id", leadId)
+    .select("id");
 
   if(error) return {error: error.message};
+  if(!updatedData?.length) return {error: "Not permitted or lead not found"};
 
   // Record action in audit_logs
   await supabase.from("audit_logs").insert({
