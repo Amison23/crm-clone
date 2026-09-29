@@ -265,15 +265,17 @@ export async function updateUserRole(userId: string, role: string, companyId?: s
       return { success: false, error: "Unauthorized" };
   }
  
+  const adminClient = createAdminClient();
+ 
   // Fetch old state
-  const { data: oldUser } = await supabase.from("employees").select("role, company_id").eq("id", userId).single();
+  const { data: oldUser } = await adminClient.from("employees").select("role, company_id").eq("id", userId).single();
  
   const dataToUpdate = { 
     role, 
     company_id: companyId || null 
   };
  
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from("employees")
     .update(dataToUpdate)
     .eq("id", userId)
@@ -295,7 +297,9 @@ export async function assignLead(leadId: string, employeeId: string) {
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
 
-  const { data, error } = await supabase
+  const adminClient = createAdminClient();
+
+  const { data, error } = await adminClient
     .from("leads")
     .update({ employee_id: employeeId })
     .eq("id", leadId)
@@ -312,7 +316,9 @@ export async function assignAgentToProduct(agentId: string, productId: string) {
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
 
-  const { error } = await supabase
+  const adminClient = createAdminClient();
+
+  const { error } = await adminClient
     .from("agent_products")
     .upsert({ agent_id: agentId, product_id: productId });
 
@@ -326,7 +332,9 @@ export async function unassignAgentFromProduct(agentId: string, productId: strin
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
 
-  const { error } = await supabase
+  const adminClient = createAdminClient();
+
+  const { error } = await adminClient
     .from("agent_products")
     .delete()
     .match({ agent_id: agentId, product_id: productId });
@@ -341,7 +349,9 @@ export async function createAgent(data: { full_name: string, email_address: stri
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
 
-  const { data: employee, error } = await supabase
+  const adminClient = createAdminClient();
+
+  const { data: employee, error } = await adminClient
     .from("employees")
     .insert([data])
     .select()
@@ -495,16 +505,19 @@ export async function createProduct(data: { name: string, description: string })
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
 
+  const adminClient = createAdminClient();
+
   // Generate a mock API key (usually this would be done by a database trigger or a more secure method)
   const apiKey = `pk_${Math.random().toString(36).substring(2, 15)}_${Math.random().toString(36).substring(2, 15)}`;
 
-  const { data: product, error } = await supabase
+  const { data: product, error } = await adminClient
     .from("products")
     .insert([{ ...data, api_key: apiKey }])
     .select("*, agent_products(agent_id, employees(full_name))")
     .single();
 
   if (error) return { success: false, error: error.message };
+  if (!product) return { success: false, error: "Not permitted or creation failed" };
 
   await logAction(supabase, "CREATE_PRODUCT", "product", product.id, data);
   return { success: true, data: product };

@@ -134,6 +134,14 @@ export async function updateLeadAction(leadId: string, payload: any) {
     };
   }
 
+  const { data: profile } = await supabase.from("employees").select("role").eq("id", user.id).single();
+  if (profile && profile.role !== "admin" && profile.role !== "superadmin") {
+    const { data: existingLead } = await supabase.from("leads").select("employee_id").eq("id", leadId).single();
+    if (existingLead && existingLead.employee_id === null) {
+      (updateData as any).employee_id = user.id;
+    }
+  }
+
   // Logic: Update handles potential_value which feeds the Revenue charts
   const { data, error } = await supabase
     .from("leads")

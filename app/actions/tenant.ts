@@ -21,40 +21,32 @@ export async function joinTenantWithCode(inviteCode: string) {
     return { success: false, error: "Unauthorized" };
   }
 
-  const adminClient = createAdminClient();
+  const { data: validCompanyId, error: rpcError } = await supabase.rpc('redeem_invite_code', { p_code: inviteCode });
 
-  // Try to lock and redeem the invite code atomically
-  // The .is('used_at', null) ensures race conditions are handled (only 1 can succeed)
-  const { data: invite, error: inviteError } = await adminClient
-    .from("invite_codes")
-    .update({ 
-      used_at: new Date().toISOString(),
-      used_by: user.id 
-    })
-    .eq("code", inviteCode)
-    .is("used_at", null)
-    .eq("revoked", false)
-    .gt("expires_at", new Date().toISOString())
-    .select()
-    .single();
-
-  if (inviteError || !invite) {
-    return { success: false, error: "Invalid, expired, or already used invite code." };
+  if (rpcError || !validCompanyId) {
+    return { success: false, error: rpcError?.message || "Invalid, expired, or already used invite code." };
   }
 
-  // Update or insert the employee record for this user
-  const { error: upsertError } = await supabase
+  const adminClient = createAdminClient();
+
+  // Update or insert the employee record for this user using adminClient to bypass self-escalation block
+  const { error: upsertError } = await adminClient
     .from("employees")
     .upsert({
       id: user.id,
       email_address: user.email,
       full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Operator",
       role: "sales_agent", // Default role
-      company_id: invite.company_id,
+      company_id: validCompanyId,
     });
 
   if (upsertError) {
-    // Ideally we would roll back the invite code here, but for now we return the error
+    // Rollback the invite code consumption if user update fails
+    await adminClient
+      .from("invite_codes")
+      .update({ used_at: null, used_by: null })
+      .eq("code", inviteCode);
+
     return { success: false, error: "Failed to join the organization." };
   }
 
