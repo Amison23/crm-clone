@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { getCurrentEmployee } from "@/lib/auth/current-employee";
 import { NextResponse } from "next/server";
 
 /**
@@ -8,34 +8,21 @@ import { NextResponse } from "next/server";
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const employee = await getCurrentEmployee();
 
-    if (!user) {
+    if (!employee) {
       return NextResponse.json(
         { error: "Unauthorized: Authentication required" },
         { status: 401 }
       );
     }
 
-    // Resolve role from user metadata or employees table
-    let role = user.user_metadata?.role;
-
-    if (!role) {
-      const { data: employee } = await supabase
-        .from("employees")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      role = employee?.role;
-    }
-
-    // SERVER-SIDE ACL GATE: Superadmin only
-    if (role !== "superadmin") {
+    // SERVER-SIDE ACL GATE: Superadmin only (role always from employees table)
+    if (employee.role !== "superadmin") {
       return NextResponse.json(
         {
           error: "Forbidden: Action requires superadmin privileges",
-          attempted_role: role || "unknown",
+          attempted_role: employee.role,
           allowed_roles: ["superadmin"],
         },
         { status: 403 }
@@ -48,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       actionExecuted: action,
-      executedBy: user.id,
+      executedBy: employee.userId,
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {

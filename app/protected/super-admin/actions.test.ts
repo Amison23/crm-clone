@@ -63,22 +63,122 @@ describe('Super Admin Actions', () => {
   describe('Tenant Actions', () => {
     it('createTenant should verify superadmin and insert to companies', async () => {
       mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } });
+      const mockAdminClient = {
+        from: vi.fn((table: string) => {
+          if (table === 'employees') {
+            return {
+              select: () => ({ ilike: () => ({ maybeSingle: async () => ({ data: null }) }) }),
+              upsert: async () => ({ error: null })
+            };
+          }
+          if (table === 'companies') {
+            return {
+              insert: () => ({ select: () => ({ single: async () => ({ data: { id: 'tenant-1', name: 'New Tenant', slug: 'new-tenant' }, error: null }) }) })
+            };
+          }
+          return { insert: async () => ({}) };
+        }),
+        auth: { admin: { createUser: vi.fn().mockResolvedValue({ data: { user: { id: 'new-user-1' } }, error: null }) } }
+      };
+      
+      const { createAdminClient } = await import('@/lib/supabase/server');
+      (createAdminClient as any).mockReturnValue(mockAdminClient);
+
       mockSupabase.from.mockImplementation((table: string) => {
         if (table === 'employees') {
           return {
             select: () => ({ eq: () => ({ single: async () => ({ data: { role: 'superadmin' } }) }) })
           };
         }
-        if (table === 'companies') {
+        return { insert: async () => ({}) };
+      });
+
+      const result = await actions.createTenant('New Tenant', 'admin@example.com', 'Admin Name', 'pro');
+      expect(result.success).toBe(true);
+    });
+
+    it('createTenant should return error for missing plan', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } });
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'employees') {
           return {
-            insert: () => ({ select: () => ({ single: async () => ({ data: { id: 'tenant-1', name: 'New Tenant', slug: 'new-tenant' }, error: null }) }) })
+            select: () => ({ eq: () => ({ single: async () => ({ data: { role: 'superadmin' } }) }) })
           };
         }
         return { insert: async () => ({}) };
       });
 
-      const result = await actions.createTenant('New Tenant');
-      expect(result.success).toBe(true);
+      const result = await actions.createTenant('New Tenant', 'admin@example.com', 'Admin Name', '');
+      expect(result.success).toBe(false);
+      expect(result.fieldErrors?.plan).toBeDefined();
+    });
+
+    it('createTenant should return error for duplicate email preflight', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } });
+      const mockAdminClient = {
+        from: vi.fn((table: string) => {
+          if (table === 'employees') {
+            return {
+              select: () => ({ ilike: () => ({ maybeSingle: async () => ({ data: { id: 'existing' } }) }) }),
+            };
+          }
+          return { insert: async () => ({}) };
+        })
+      };
+      const { createAdminClient } = await import('@/lib/supabase/server');
+      (createAdminClient as any).mockReturnValue(mockAdminClient);
+      
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'employees') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { role: 'superadmin' } }) }) })
+          };
+        }
+        return { insert: async () => ({}) };
+      });
+
+      const result = await actions.createTenant('New Tenant', 'admin@example.com', 'Admin Name', 'pro');
+      expect(result.success).toBe(false);
+      expect(result.fieldErrors?.email).toBeDefined();
+    });
+
+    it('createTenant should rollback auth user if company insert fails', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'admin-1' } } });
+      const deleteUserMock = vi.fn().mockResolvedValue({ error: null });
+      
+      const mockAdminClient = {
+        from: vi.fn((table: string) => {
+          if (table === 'employees') {
+            return {
+              select: () => ({ ilike: () => ({ maybeSingle: async () => ({ data: null }) }) }),
+              delete: () => ({ eq: async () => ({ error: null }) })
+            };
+          }
+          if (table === 'companies') {
+            return {
+              insert: () => ({ select: () => ({ single: async () => ({ data: null, error: new Error('Insert failed') }) }) })
+            };
+          }
+          return { insert: async () => ({}) };
+        }),
+        auth: { admin: { createUser: vi.fn().mockResolvedValue({ data: { user: { id: 'new-user-1' } }, error: null }), deleteUser: deleteUserMock } }
+      };
+      
+      const { createAdminClient } = await import('@/lib/supabase/server');
+      (createAdminClient as any).mockReturnValue(mockAdminClient);
+
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'employees') {
+          return {
+            select: () => ({ eq: () => ({ single: async () => ({ data: { role: 'superadmin' } }) }) })
+          };
+        }
+        return { insert: async () => ({}) };
+      });
+
+      const result = await actions.createTenant('New Tenant', 'admin@example.com', 'Admin Name', 'pro');
+      expect(result.success).toBe(false);
+      expect(deleteUserMock).toHaveBeenCalledWith('new-user-1');
     });
 
     it('archiveTenant should update deleted_at', async () => {
@@ -91,7 +191,7 @@ describe('Super Admin Actions', () => {
         }
         if (table === 'companies') {
           return {
-            update: () => ({ eq: async () => ({ error: null }) })
+            update: () => ({ eq: () => ({ select: async () => ({ error: null, data: [{ id: 'tenant-1' }] }) }) })
           };
         }
         return { insert: async () => ({}) };
@@ -114,6 +214,20 @@ describe('Super Admin Actions', () => {
         }
         return { insert: async () => ({}) };
       });
+      
+      const mockAdminClient = {
+        from: vi.fn((table: string) => {
+          if (table === 'employees') {
+            return {
+              select: () => ({ eq: () => ({ single: async () => ({ data: { role: 'superadmin', company_id: 'old-co' } }) }) }),
+              update: () => ({ eq: () => ({ select: async () => ({ error: null, data: [{ id: 'user-1' }] }) }) })
+            };
+          }
+          return { insert: async () => ({}) };
+        })
+      };
+      const { createAdminClient } = await import('@/lib/supabase/server');
+      (createAdminClient as any).mockReturnValue(mockAdminClient);
 
       const result = await actions.updateUserRole('user-1', 'admin', 'new-co');
       expect(result.success).toBe(true);

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentEmployee } from "@/lib/auth/current-employee";
 import { redirect } from "next/navigation";
 import { getTasks } from "@/lib/api/tasks";
 import { DevWorkspaceView } from "@/components/dev/DevWorkspaceView";
@@ -12,27 +13,12 @@ export const revalidate = 0;
  * Features assigned dev tasks, internal team chat, and telemetry.
  */
 export default async function DevWorkspacePage() {
-  const supabase = await createClient();
-
   // 1. IDENTITY & ACL GATE
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/auth/login");
+  // Role and company always come from the employees table — never user_metadata
+  const employee = await getCurrentEmployee();
+  if (!employee) redirect("/auth/login");
 
-  let role = user.user_metadata?.role;
-  let companyId = user.user_metadata?.company_id;
-
-  if (!role || !companyId) {
-    const { data: employee } = await supabase
-      .from("employees")
-      .select("role, company_id")
-      .eq("id", user.id)
-      .single();
-
-    if (employee) {
-      role = role || employee.role;
-      companyId = companyId || employee.company_id;
-    }
-  }
+  const { role, companyId } = employee;
 
   // ACL Gate: Allow dev & superadmin only
   if (role !== "dev" && role !== "superadmin") {
@@ -40,6 +26,8 @@ export default async function DevWorkspacePage() {
   }
 
   const isSuperAdmin = role === "superadmin";
+
+  const supabase = await createClient();
 
   let logsQuery = supabase
     .from("audit_logs")
@@ -67,7 +55,7 @@ export default async function DevWorkspacePage() {
       <DevWorkspaceView
         initialTasks={devTasks}
         companyName={companyName}
-        userId={user.id}
+        userId={employee.userId}
         auditLogs={auditLogs}
       />
     </div>

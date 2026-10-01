@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { getLeads } from "@/lib/api/leads";
 import { getTasks } from "@/lib/api/tasks";
+import { getCurrentEmployee } from "@/lib/auth/current-employee";
 import { LeadsClientWrapper } from "@/components/crm/leads-client-wrapper";
 
 export const dynamic = "force-dynamic";
@@ -17,9 +18,10 @@ export default function CrmLeadsTablePage() {
 
 async function CrmLeadsTableData() {
   await connection();
-  const [leadsRes, tasksRes] = await Promise.all([
+  const [leadsRes, tasksRes, employee] = await Promise.all([
     getLeads(),
     getTasks(),
+    getCurrentEmployee(),
   ]);
 
   if (leadsRes.error) {
@@ -34,9 +36,11 @@ async function CrmLeadsTableData() {
       initialLeads={leadsRes.leads || []}
       salesAgents={leadsRes.salesAgents || []}
       initialTasks={tasksRes.tasks || []}
+      role={employee?.role ?? null}
     />
   );
 }
+
 
 function LeadsTableSkeleton() {
   return (

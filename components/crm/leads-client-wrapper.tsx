@@ -97,7 +97,7 @@ function validateLeadRow(row: any) {
   return errors;
 }
 
-export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [] }: { initialLeads: Lead[], salesAgents: any[], initialTasks?: any[] }) {
+export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [], role: initialRole = null }: { initialLeads: Lead[], salesAgents: any[], initialTasks?: any[], role?: string | null }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
@@ -107,7 +107,7 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
   const [isUploading, setIsUploading] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [role, setRole] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(initialRole);
 
   // Filter States
   const [statusFilter, setStatusFilter] = useState("All");
@@ -125,12 +125,10 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
   useEffect(() => {
     setLeads(initialLeads);
     setTasks(initialTasks);
-    
-    // Fetch user to determine role
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setRole(user?.user_metadata?.role || 'sales_agent');
-    });
-  }, [initialLeads, initialTasks]);
+    // Role is passed as a prop from the server component (CrmLeadsTableData via getCurrentEmployee).
+    // It is NOT read from user_metadata.
+    setRole(initialRole);
+  }, [initialLeads, initialTasks, initialRole]);
 
   const handleUpload = async (file: File) => {
     Papa.parse(file, {

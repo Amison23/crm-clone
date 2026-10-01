@@ -1,14 +1,16 @@
+import { getCurrentEmployee } from '@/lib/auth/current-employee';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const supabase = await createClient();
-
   // 1. SECURITY: Only allow Super Admins to poll this node
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user || user.user_metadata?.role !== 'superadmin') {
+  // Role always resolved from employees table — never user_metadata
+  const employee = await getCurrentEmployee();
+  if (!employee || employee.role !== 'superadmin') {
     return NextResponse.json({ error: 'Unauthorized Access' }, { status: 401 });
   }
+
+  const supabase = await createClient();
 
   // 2. FETCH: Get the latest metrics joined with company names
   // We use the view we created earlier for higher performance

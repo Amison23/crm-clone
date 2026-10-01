@@ -28,23 +28,17 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [plan, setPlan] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ companyName?: string; adminName?: string; email?: string; plan?: string }>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
-        toast.error("Company name is required");
-        return;
-    }
+    setFieldErrors({});
     setIsSubmitting(true);
 
     try {
         if (mode === "create") {
-            if (!adminEmail.trim()) {
-                toast.error("Admin Email Address is required");
-                setIsSubmitting(false);
-                return;
-            }
-            const result = await createTenant(name, adminEmail, adminName);
+            const result = await createTenant(name, adminEmail, adminName, plan);
             if (result.success) {
                 const creds = ('credentials' in result) ? result.credentials as { email: string, password: string } : null;
                 if (creds) {
@@ -88,11 +82,19 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                 } else {
                     toast.success(`Tenant "${name}" provisioned successfully`);
                 }
+                if (!result.emailSent) {
+                    toast.error("Tenant provisioned, but welcome email failed to send.");
+                }
                 setIsOpen(false);
                 setName("");
                 setAdminName("");
                 setAdminEmail("");
+                setPlan("");
+                setFieldErrors({});
                 onSuccess?.();
+            } else if (result.fieldErrors) {
+                setFieldErrors(result.fieldErrors);
+                toast.error("Please correct the highlighted errors.");
             } else {
                 toast.error(result.error || "Failed to create tenant");
             }
@@ -156,11 +158,18 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                     type="text"
                     id="company-name"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, companyName: undefined }));
+                    }}
+                    disabled={isSubmitting}
                     placeholder="e.g. Acme Corp"
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                    className={`w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${fieldErrors.companyName ? 'border-red-500' : 'border-slate-100 dark:border-slate-800'}`}
                   />
                 </div>
+                {fieldErrors.companyName && (
+                  <p className="text-red-500 text-xs mt-1 ml-1 font-semibold">{fieldErrors.companyName}</p>
+                )}
               </div>
 
               {mode === "create" && (
@@ -173,11 +182,18 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                         type="text"
                         id="admin-name"
                         value={adminName}
-                        onChange={(e) => setAdminName(e.target.value)}
+                        onChange={(e) => {
+                          setAdminName(e.target.value);
+                          setFieldErrors(prev => ({ ...prev, adminName: undefined }));
+                        }}
+                        disabled={isSubmitting}
                         placeholder="e.g. John Doe"
-                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                        className={`w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${fieldErrors.adminName ? 'border-red-500' : 'border-slate-100 dark:border-slate-800'}`}
                       />
                     </div>
+                    {fieldErrors.adminName && (
+                      <p className="text-red-500 text-xs mt-1 ml-1 font-semibold">{fieldErrors.adminName}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="admin-email" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Admin Email Address</label>
@@ -187,21 +203,29 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                         type="email"
                         id="admin-email"
                         value={adminEmail}
-                        onChange={(e) => setAdminEmail(e.target.value)}
+                        onChange={(e) => {
+                          setAdminEmail(e.target.value);
+                          setFieldErrors(prev => ({ ...prev, email: undefined }));
+                        }}
+                        disabled={isSubmitting}
                         placeholder="admin@acmecorp.com"
-                        className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                        className={`w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed ${fieldErrors.email ? 'border-red-500' : 'border-slate-100 dark:border-slate-800'}`}
                       />
                     </div>
+                    {fieldErrors.email && (
+                      <p className="text-red-500 text-xs mt-1 ml-1 font-semibold">{fieldErrors.email}</p>
+                    )}
                   </div>
                 </>
               )}
               
               <div className="space-y-2">
-                <label htmlFor="company-logo" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Logo</label>
+                  <label htmlFor="company-logo" className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Company Logo</label>
                 <input
                   type="file"
                   id="company-logo"
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                  disabled={isSubmitting}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <div className="space-y-2">
@@ -212,15 +236,25 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                   <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/select:text-indigo-500 transition-colors" />
                   <select
                     id="company-subscription-plan"
-                    className="w-full pl-12 pr-10 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer"
+                    value={plan}
+                    onChange={(e) => {
+                      setPlan(e.target.value);
+                      setFieldErrors(prev => ({ ...prev, plan: undefined }));
+                    }}
+                    disabled={isSubmitting}
+                    className={`w-full pl-12 pr-10 py-3 bg-slate-50 dark:bg-slate-800/50 border rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${fieldErrors.plan ? 'border-red-500' : 'border-slate-100 dark:border-slate-800'}`}
                   >
+                    <option value="" disabled>Select a plan</option>
                     <option value="free">Free</option>
-                    <option value="basic">Basic</option>
+                    <option value="starter">Starter</option>
                     <option value="pro">Pro</option>
                     <option value="enterprise">Enterprise</option>
                   </select>
                   <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 pointer-events-none group-hover/select:text-slate-600 transition-colors" />
                 </div>
+                {fieldErrors.plan && (
+                  <p className="text-red-500 text-xs mt-1 ml-1 font-semibold">{fieldErrors.plan}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -229,7 +263,8 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                   <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400 group-focus-within/select:text-indigo-500 transition-colors" />
                   <select
                     id="company-status"
-                    className="w-full pl-12 pr-10 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer"
+                    disabled={isSubmitting}
+                    className="w-full pl-12 pr-10 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -245,7 +280,8 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                     type="text"
                     id="company-agent-incharge"
                     placeholder="Search or select agent..."
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                    disabled={isSubmitting}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -257,7 +293,8 @@ export default function TenantDialog({ children, mode, tenant, onSuccess }: Tena
                     type="text"
                     id="company-internal-agent"
                     placeholder="Internal reference ID..."
-                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none"
+                    disabled={isSubmitting}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-2xl text-sm font-bold focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>

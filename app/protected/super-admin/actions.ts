@@ -2,6 +2,7 @@
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { SupabaseClient } from "@supabase/supabase-js";
+import { randomBytes } from 'node:crypto';
 import { revalidatePath } from "next/cache";
 import { normalizeEmail, formatEmailError } from "@/lib/utils";
 import { sendNotificationEmail } from "@/lib/notifications/email";
@@ -65,96 +66,173 @@ function slugify(text: string) {
 
 // --- TENANT ACTIONS ---
 
-export async function createTenant(name: string, rawAdminEmail?: string, adminName?: string) {
+export async function createTenant(name: string, rawAdminEmail: string, adminName: string, plan: string) {
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) {
       return { success: false, error: "Unauthorized: Super Admin access required" };
   }
- 
-  const adminEmail = rawAdminEmail ? normalizeEmail(rawAdminEmail) : undefined;
 
-  const { data, error } = await supabase
-    .from("companies")
-    .insert({ 
-      name,
-      slug: slugify(name)
-    })
-    .select()
-    .single();
- 
-  if (error) {
-    if (error.code === '23505' || error.message.includes('unique constraint') || error.message.includes('duplicate key')) {
-        return { success: false, error: "A company with this name (or a very similar one) already exists. Please use a unique name." };
-    }
-    return { success: false, error: error.message };
+  // 3a. Validate and preflight
+  const fieldErrors: { companyName?: string; adminName?: string; email?: string; plan?: string } = {};
+  
+  const cleanName = name?.trim().replace(/\s+/g, ' ');
+  const cleanAdminName = adminName?.trim().replace(/\s+/g, ' ');
+  const email = rawAdminEmail?.trim().toLowerCase();
+
+  if (!cleanName || cleanName.length < 2 || cleanName.length > 100) {
+    fieldErrors.companyName = "Company name must be between 2 and 100 characters.";
+  }
+  if (!cleanAdminName || cleanAdminName.length < 2 || cleanAdminName.length > 100) {
+    fieldErrors.adminName = "Admin name must be between 2 and 100 characters.";
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    fieldErrors.email = "A valid email address is required.";
+  }
+  
+  const allowedPlans = ['free', 'starter', 'pro', 'enterprise'];
+  if (!plan || !allowedPlans.includes(plan)) {
+    fieldErrors.plan = "Please select a valid subscription plan.";
   }
 
-  let generatedPassword;
+  const adminClient = createAdminClient();
 
-  if (adminEmail) {
-    generatedPassword = `Admin!${Math.random().toString(36).substring(2, 10).toUpperCase()}${Math.floor(1000 + Math.random() * 9000)}`;
-    const adminClient = createAdminClient();
+  // Check email uniqueness if format is valid
+  if (!fieldErrors.email) {
+    const escapedEmail = email.replace(/[\\%_]/g, '\\$&');
+    const { data: existingEmp } = await adminClient
+      .from("employees")
+      .select("id")
+      .ilike("email_address", escapedEmail)
+      .maybeSingle();
+      
+    if (existingEmp) {
+      fieldErrors.email = "This email is already registered.";
+    }
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return { success: false, fieldErrors };
+  }
+
+  // Identity decisions
+  const companyId = crypto.randomUUID();
+  const slug = `${slugify(cleanName)}-${companyId.substring(0, 6)}`;
+  const generatedPassword = `${randomBytes(9).toString('base64url')}Aa1!`;
+  
+  let newAuthUserId: string | null = null;
+  let companyInserted = false;
+
+  try {
+    // 3b. auth.admin.createUser first
+    const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
+      email,
+      password: generatedPassword,
+      email_confirm: true
+    });
+
+    if (inviteError) {
+      if (inviteError.code === 'email_exists' || /already.*registered/i.test(inviteError.message)) {
+        return { success: false, fieldErrors: { email: "This email is already registered." } };
+      }
+      return { success: false, error: `Failed to create admin user: ${inviteError.message}` };
+    }
     
-    try {
-      const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
-        email: adminEmail,
-        password: generatedPassword,
-        email_confirm: true,
-        user_metadata: {
-          company_id: data.id,
-          role: "admin"
-        }
-      });
-
-      if (inviteError) {
-        return { success: false, error: `Tenant created but failed to create admin: ${formatEmailError(inviteError)}` };
-      }
-
-      if (inviteData?.user?.id) {
-        const { error: upsertError } = await adminClient.from("employees").upsert({
-          id: inviteData.user.id,
-          email_address: adminEmail,
-          role: "admin",
-          company_id: data.id,
-          full_name: adminName || "Company Admin"
-        });
-        
-        if (upsertError) {
-            console.error("Failed to upsert employee details:", upsertError);
-            return { success: false, error: `Tenant created but failed to configure admin profile: ${upsertError.message}` };
-        }
-
-        await sendNotificationEmail({
-          recipientEmail: adminEmail,
-          recipientName: adminName || "Company Admin",
-          eventType: "TENANT_PROVISIONED",
-          subject: `Welcome to Cloudora CRM - ${name}`,
-          body: `Your tenant "<strong>${name}</strong>" has been provisioned successfully.<br/><br/>
-                 <strong>Login Details:</strong><br/>
-                 Email: ${adminEmail}<br/>
-                 Password: <code>${generatedPassword}</code><br/><br/>
-                 Please log in and change your password immediately.`,
-        });
-
-      } else {
-         console.error("User created but no ID returned from Supabase Auth");
-         return { success: false, error: "Tenant created but failed to retrieve new admin account ID." };
-      }
-    } catch (err) {
-      console.error("Exception during admin user creation:", err);
-      return { success: false, error: "Tenant created but an unexpected error occurred while creating the admin account." };
-    } finally {
-      // Optional: Add cleanup or finalize metrics here if needed in the future.
+    if (!inviteData?.user?.id) {
+       return { success: false, error: "Failed to retrieve new admin account ID." };
     }
+    newAuthUserId = inviteData.user.id;
+
+    // 3c. insert the company with pre-generated id
+    const { data: companyData, error: companyError } = await adminClient
+      .from("companies")
+      .insert({ 
+        id: companyId,
+        name: cleanName,
+        slug,
+        pricing_tier: plan
+      })
+      .select()
+      .single();
+
+    if (companyError) {
+      throw companyError;
+    }
+    companyInserted = true;
+
+    // 3d. upsert the employees row
+    const { error: upsertError } = await adminClient.from("employees").upsert({
+      id: newAuthUserId,
+      email_address: email,
+      role: "admin",
+      company_id: companyId,
+      full_name: cleanAdminName
+    });
+    
+    if (upsertError) {
+      throw new Error(`Failed to configure admin profile: ${upsertError.message}`);
+    }
+
+    // Success notifications and logs
+    let emailSent = true;
+    try {
+      await sendNotificationEmail({
+        recipientEmail: email,
+        recipientName: cleanAdminName,
+        eventType: "TENANT_PROVISIONED",
+        subject: `Welcome to Cloudora CRM - ${cleanName}`,
+        body: `Your tenant "<strong>${cleanName}</strong>" has been provisioned successfully.<br/><br/>
+               <strong>Login Details:</strong><br/>
+               Email: ${email}<br/>
+               Password: <code>${generatedPassword}</code><br/><br/>
+               Please log in and change your password immediately.`,
+      });
+    } catch (mailErr) {
+      console.error("Failed to send notification email:", mailErr);
+      emailSent = false;
+    }
+
+    try {
+      await logAction(supabase, "CREATE_TENANT", "company", companyId, { name: cleanName, slug, plan });
+    } catch (logErr) {
+      console.error("Failed to log CREATE_TENANT action:", logErr);
+    }
+    
+    // 3f. revalidate list and return success
+    revalidatePath("/protected/super-admin/tenants");
+    
+    return { 
+      success: true, 
+      data: companyData, 
+      credentials: { email, password: generatedPassword },
+      emailSent
+    };
+
+  } catch (err: any) {
+    // 3e. compensate in reverse order on failure
+    console.error(`Provisioning failure for ${cleanName}. Rolling back. Error:`, err);
+    
+    if (newAuthUserId) {
+      const { error: empDelErr } = await adminClient.from("employees").delete().eq("id", newAuthUserId);
+      if (empDelErr) console.error(`Rollback: failed to delete employee ${newAuthUserId}`, empDelErr);
+    }
+    
+    if (companyInserted) {
+      const { error: compDelErr } = await adminClient.from("companies").delete().eq("id", companyId);
+      if (compDelErr) console.error(`Rollback: failed to delete company ${companyId}`, compDelErr);
+    }
+    
+    if (newAuthUserId) {
+      const { error: authDelErr } = await adminClient.auth.admin.deleteUser(newAuthUserId);
+      if (authDelErr) console.error(`Rollback: failed to delete auth user ${newAuthUserId}`, authDelErr);
+    }
+
+    if (err?.code === '23505') {
+      return { success: false, fieldErrors: { companyName: "A company with this name already exists." } };
+    }
+
+    return { success: false, error: err?.message || "An unexpected error occurred during provisioning." };
   }
- 
-  await logAction(supabase, "CREATE_TENANT", "company", data.id, { name, slug: data.slug });
-  revalidatePath("/protected/super-admin/tenants");
-  return { 
-    success: true, 
-    data, 
-    credentials: (adminEmail && generatedPassword) ? { email: adminEmail, password: generatedPassword } : undefined 
-  };
 }
 
 export async function updateTenant(id: string, name: string) {
@@ -545,11 +623,7 @@ export async function provisionAgent(companyId: string, name: string, rawEmail: 
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
       email,
       password: generatedPassword,
-      email_confirm: true,
-      user_metadata: {
-        company_id: companyId,
-        role: "sales_agent"
-      }
+      email_confirm: true
     });
 
     if (inviteError) {

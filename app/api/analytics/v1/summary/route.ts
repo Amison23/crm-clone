@@ -1,3 +1,4 @@
+import { getCurrentEmployee } from '@/lib/auth/current-employee';
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
@@ -5,9 +6,21 @@ export async function GET() {
   const supabase = await createClient();
 
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    const tenantId = user?.user_metadata?.tenant_id;
-    
+    // 1. IDENTITY & TENANT RESOLUTION
+    // Role and companyId always come from the employees table — never user_metadata
+    const employee = await getCurrentEmployee();
+
+    if (!employee) {
+      return NextResponse.json({ error: 'Unauthorized Node Access' }, { status: 401 });
+    }
+
+    // 2. ROLE GATE: admin and superadmin only
+    if (employee.role !== 'admin' && employee.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
+    const tenantId = employee.companyId;
+
     if (!tenantId) {
       return NextResponse.json({ error: 'Unauthorized Node Access' }, { status: 401 });
     }

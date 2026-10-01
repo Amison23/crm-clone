@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentEmployee } from '@/lib/auth/current-employee';
 import { redirect } from 'next/navigation';
 import ServerAdminView from '@/app/ui/dashboard/analytics/components/SeverAdminView';
 import { StaffChatbot } from '@/components/server-admin/StaffChatbot';
@@ -9,32 +10,19 @@ import { StaffChatbot } from '@/components/server-admin/StaffChatbot';
  * Accessible to 'server_admin' and 'superadmin' roles.
  */
 export default async function ServerAdminPage() {
-  const supabase = await createClient();
-
   // 1. SECURITY PROTOCOL & ROLE RESOLUTION
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/auth/login');
+  // Role and company always come from the employees table — never user_metadata
+  const employee = await getCurrentEmployee();
+  if (!employee) redirect('/auth/login');
 
-  let role = user.user_metadata?.role;
-  let companyId = user.user_metadata?.company_id;
-
-  if (!role || !companyId) {
-    const { data: employee } = await supabase
-      .from('employees')
-      .select('role, company_id')
-      .eq('id', user.id)
-      .single();
-
-    if (employee) {
-      role = role || employee.role;
-      companyId = companyId || employee.company_id;
-    }
-  }
+  const { role, companyId } = employee;
 
   // Authorization Check: Allow server_admin & superadmin
   if (role !== 'server_admin' && role !== 'superadmin') {
     redirect('/protected');
   }
+
+  const supabase = await createClient();
 
   // 2. ORG DATA & TELEMETRY FETCH
   const [companyReq, ticketsReq, tasksReq, employeesReq, metricsReq] = await Promise.all([
@@ -131,7 +119,7 @@ export default async function ServerAdminPage() {
          </p>
          <div className="px-4 py-1 bg-slate-100 dark:bg-slate-800 rounded-full">
             <p className="text-[8px] font-mono uppercase italic tracking-tighter">
-              Assigned Org ID: {companyId || "Self-Managed"} | Root User: {user.id.slice(0, 14)}...
+              Assigned Org ID: {companyId || "Self-Managed"} | Root User: {employee.userId.slice(0, 14)}...
             </p>
          </div>
       </div>

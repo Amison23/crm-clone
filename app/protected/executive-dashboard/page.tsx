@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { getCurrentEmployee } from '@/lib/auth/current-employee';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -21,42 +22,22 @@ import PipelineFunnel from '@/app/ui/dashboard/analytics/components/PipelineFunn
 import { transformAgentData, transformPipelineData } from '@/utils/transformAgentData';
 
 export default async function ExecutiveDashboard() {
-  const supabase = await createClient();
-
   // 1. IDENTITY & ACL GATE
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  // Role and company always come from the employees table — never user_metadata
+  const employee = await getCurrentEmployee();
+  if (!employee) redirect('/auth/login');
 
-  let tenantId = user.user_metadata?.tenant_id;
-  let userRole = user.user_metadata?.role;
-
-  // Fallback to employees table if metadata is missing
-  if (!tenantId || !userRole) {
-    const { data: employee } = await supabase
-      .from('employees')
-      .select('role, company_id')
-      .eq('id', user.id)
-      .single();
-    
-    if (employee) {
-      tenantId = tenantId || employee.company_id;
-      userRole = userRole || employee.role;
-    }
-  }
+  const userRole = employee.role;
+  const tenantId = employee.companyId;
 
   if (userRole === 'server_admin') redirect('/protected/server-admin');
   if (userRole === 'sales_agent') redirect('/protected/sales-agent');
   if (userRole !== 'admin' && userRole !== 'superadmin') redirect('/protected');
-  
-  if (!tenantId) {
-    // For presentation purposes, if no tenant is linked, try to get the first company
-    const { data: firstCompany } = await supabase.from('companies').select('id').limit(1).single();
-    if (firstCompany) {
-      tenantId = firstCompany.id;
-    } else {
-      return <NodeIsolatedError />;
-    }
-  }
+
+  // No companyId: do not fall back to first company — require explicit assignment
+  if (!tenantId) redirect('/protected');
+
+  const supabase = await createClient();
 
   const { data: company } = await supabase
     .from('companies')
