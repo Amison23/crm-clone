@@ -427,18 +427,80 @@ export async function createAgent(data: { full_name: string, email_address: stri
   const supabase = await createClient();
   if (!(await checkSuperAdmin(supabase))) return { success: false, error: "Unauthorized" };
 
+  const fieldErrors: { full_name?: string; email?: string; role?: string; company_id?: string } = {};
+  const cleanName = data.full_name?.trim().replace(/\s+/g, ' ');
+  const email = data.email_address?.trim().toLowerCase();
+  const role = data.role?.trim();
+  const companyId = data.company_id?.trim();
+
+  if (!cleanName || cleanName.length < 2 || cleanName.length > 100) {
+    fieldErrors.full_name = "Name must be between 2 and 100 characters.";
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    fieldErrors.email = "A valid email address is required.";
+  }
+  const allowedRoles = ['sales_agent', 'admin', 'server_admin', 'dev'];
+  if (!role || !allowedRoles.includes(role)) {
+    fieldErrors.role = "Invalid role selected.";
+  }
+  const uuidRegex = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/i;
+  if (!companyId || !uuidRegex.test(companyId)) {
+    fieldErrors.company_id = "A valid company is required.";
+  }
+
+  if (Object.keys(fieldErrors).length > 0) return { success: false, fieldErrors };
+
   const adminClient = createAdminClient();
 
-  const { data: employee, error } = await adminClient
-    .from("employees")
-    .insert([data])
-    .select()
-    .single();
+  const { data: existingCompany } = await adminClient.from("companies").select("id").eq("id", companyId!).maybeSingle();
+  if (!existingCompany) {
+    return { success: false, fieldErrors: { company_id: "Company does not exist." } };
+  }
 
-  if (error) return { success: false, error: error.message };
+  const escapedEmail = email.replace(/[\\%_]/g, '\\$&');
+  const { data: existingEmp } = await adminClient.from("employees").select("id").ilike("email_address", escapedEmail).maybeSingle();
+  if (existingEmp) {
+    return { success: false, fieldErrors: { email: "This email is already registered." } };
+  }
 
-  await logAction(supabase, "CREATE_AGENT", "employee", employee.id, data);
-  return { success: true, data: employee };
+  const generatedPassword = randomBytes(9).toString('base64url') + 'Aa1!';
+  
+  const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
+    email,
+    password: generatedPassword,
+    email_confirm: true
+  });
+
+  if (inviteError) {
+    if (inviteError.code === 'email_exists' || /already.*registered/i.test(inviteError.message)) {
+      return { success: false, fieldErrors: { email: "This email is already registered." } };
+    }
+    return { success: false, error: `Failed to create auth user: ${inviteError.message}` };
+  }
+
+  const newAuthUserId = inviteData?.user?.id;
+  if (!newAuthUserId) {
+    return { success: false, error: "Failed to retrieve new account ID." };
+  }
+
+  const { data: upsertData, error: upsertError } = await adminClient.from("employees").upsert({
+    id: newAuthUserId,
+    email_address: email,
+    role,
+    company_id: companyId,
+    full_name: cleanName
+  }).select("id").maybeSingle();
+
+  if (upsertError || !upsertData) {
+    await adminClient.auth.admin.deleteUser(newAuthUserId);
+    return { success: false, error: "Failed to create agent profile, rolled back." };
+  }
+
+  await logAction(supabase, "CREATE_AGENT", "employee", newAuthUserId, { role, company_id: companyId });
+  
+  revalidatePath("/protected/super-admin/agents");
+  return { success: true, credentials: { email, password: generatedPassword } };
 }
 
 

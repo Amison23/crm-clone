@@ -28,6 +28,7 @@ export default function AddAgentDialog({
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<{ full_name?: string; email?: string; role?: string; company_id?: string }>({});
   const [formData, setFormData] = useState({
     full_name: "",
     email_address: "",
@@ -38,6 +39,7 @@ export default function AddAgentDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setFieldErrors({});
     try {
       const result = await createAgent({
         ...formData,
@@ -45,11 +47,15 @@ export default function AddAgentDialog({
       });
       if (result.success) {
         toast.success("Identity provisioned successfully");
-        onSuccess(result.data);
+        onSuccess(result.credentials);
         setIsOpen(false);
         setFormData({ full_name: "", email_address: "", role: "sales_agent", company_id: "" });
       } else {
-        toast.error(result.error || "Failed to provision identity");
+        if (result.fieldErrors) {
+          setFieldErrors(result.fieldErrors);
+        } else {
+          toast.error(result.error || "Failed to provision identity");
+        }
       }
     } catch (err) {
       toast.error("System connection failure");
@@ -105,6 +111,7 @@ export default function AddAgentDialog({
                     value={formData.full_name}
                     onChange={e => setFormData({ ...formData, full_name: e.target.value })}
                   />
+                  {fieldErrors.full_name && <p className="text-red-500 text-xs mt-1 ml-2">{fieldErrors.full_name}</p>}
                 </div>
 
                 <div className="relative group">
@@ -117,33 +124,41 @@ export default function AddAgentDialog({
                     value={formData.email_address}
                     onChange={e => setFormData({ ...formData, email_address: e.target.value })}
                   />
+                  {fieldErrors.email && <p className="text-red-500 text-xs mt-1 ml-2">{fieldErrors.email}</p>}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="relative group">
-                    <Shield className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-500 group-focus-within:text-primary transition-colors" />
-                    <select 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-[10px] font-black uppercase tracking-widest outline-none focus:border-primary appearance-none cursor-pointer text-white"
-                      value={formData.role}
-                      onChange={e => setFormData({ ...formData, role: e.target.value })}
-                    >
-                      <option value="sales_agent">Sales Agent</option>
-                      <option value="admin">Company Admin</option>
-                      <option value="support">Support</option>
-                      <option value="billing">Billing</option>
-                    </select>
+                  <div>
+                    <div className="relative group">
+                      <Shield className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-500 group-focus-within:text-primary transition-colors" />
+                      <select 
+                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-[10px] font-black uppercase tracking-widest outline-none focus:border-primary appearance-none cursor-pointer text-white"
+                        value={formData.role}
+                        onChange={e => setFormData({ ...formData, role: e.target.value })}
+                      >
+                        <option value="sales_agent">Sales Agent</option>
+                        <option value="admin">Company Admin</option>
+                        <option value="server_admin">Server Admin</option>
+                        <option value="dev">Developer</option>
+                      </select>
+                    </div>
+                    {fieldErrors.role && <p className="text-red-500 text-xs mt-1 ml-2">{fieldErrors.role}</p>}
                   </div>
 
-                  <div className="relative group">
-                    <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-500 group-focus-within:text-primary transition-colors" />
-                    <select 
-                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-[10px] font-black uppercase tracking-widest outline-none focus:border-primary appearance-none cursor-pointer text-white"
-                      value={formData.company_id}
-                      onChange={e => setFormData({ ...formData, company_id: e.target.value })}
-                    >
-                      <option value="">Global Command</option>
-                      {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                  <div>
+                    <div className="relative group">
+                      <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-500 group-focus-within:text-primary transition-colors" />
+                      <select 
+                        required
+                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-[10px] font-black uppercase tracking-widest outline-none focus:border-primary appearance-none cursor-pointer text-white"
+                        value={formData.company_id}
+                        onChange={e => setFormData({ ...formData, company_id: e.target.value })}
+                      >
+                        <option value="" disabled>Select Company...</option>
+                        {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                    {fieldErrors.company_id && <p className="text-red-500 text-xs mt-1 ml-2">{fieldErrors.company_id}</p>}
                   </div>
                 </div>
               </div>
