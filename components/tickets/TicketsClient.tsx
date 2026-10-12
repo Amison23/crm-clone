@@ -3,7 +3,6 @@
 import { useState } from "react";
 import TicketFilters, { type FilterOption } from "@/components/tickets/TicketFilters";
 import TicketTable from "@/components/tickets/TicketTable";
-import CustomerTicketView from "@/components/tickets/CustomerTicketView";
 import NewTicketForm from "@/components/tickets/NewTicketForm";
 import { 
   StatusBadge, 
@@ -15,7 +14,7 @@ import {
 } from "@/components/tickets/TicketBadges";
 
 interface TicketsClientProps {
-  role: "admin" | "sales_agent" | "client";
+  role: "admin" | "sales_agent";
   actualRole?: string;
   ticketsData: any[] | null;
   companyEmployees?: any[];
@@ -107,18 +106,6 @@ export default function TicketsClient({
       clientId: t.client_id,
     };
   });
-
-  // ── Customer view ──────────────────────────────────────────────────────────
-  if (role === "client") {
-    return (
-      <CustomerTicketView
-        tickets={dbTickets}
-        rawTickets={ticketsData}
-        companyId={companyId ?? ""}
-        currentUserId={currentUserId ?? ""}
-      />
-    );
-  }
 
   // ── Summary Stats calculation ──────────────────────────────────────────────
   const totalOpen = dbTickets.filter(t => t.status === "Open").length;
