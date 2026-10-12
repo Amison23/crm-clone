@@ -207,7 +207,7 @@ function NodeIsolatedError() {
         <Lock className="size-10 mx-auto text-indigo-500 mb-2" />
         <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Company Context Required</h1>
         <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">Please sign in with a valid company account to access Executive Analytics.</p>
-        <Link href="/login" className="block w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-500/20 transition-all">Re-Validate Session</Link>
+        <Link href="/auth/login" className="block w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-indigo-500/20 transition-all">Re-Validate Session</Link>
       </div>
     </div>
   );
