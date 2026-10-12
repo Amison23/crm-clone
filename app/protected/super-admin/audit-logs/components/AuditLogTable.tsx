@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   History, 
   User, 
@@ -8,13 +8,12 @@ import {
   Database, 
   Clock, 
   ChevronRight, 
-  Eye,
   Info,
   Download,
-  ArrowRight,
   MinusCircle,
   PlusCircle,
-  Search
+  Calendar,
+  X
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import EmptyState from "@/components/common/EmptyState";
@@ -30,9 +29,69 @@ interface AuditLog {
   actor: { full_name: string; email_address: string } | null;
 }
 
+type Preset = "today" | "7d" | "30d" | "custom" | "all";
+
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+}
+
+function endOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+}
+
+function toInputDate(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
 export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
-  const [logs, setLogs] = useState(initialLogs);
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+
+  // --- Date filter state ---
+  const [preset, setPreset]       = useState<Preset>("all");
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo]   = useState("");
+
+  // Derived: effective date range
+  const dateRange = useMemo<{ from: Date | null; to: Date | null }>(() => {
+    const now = new Date();
+    if (preset === "today") {
+      return { from: startOfDay(now), to: endOfDay(now) };
+    }
+    if (preset === "7d") {
+      const from = new Date(now);
+      from.setDate(now.getDate() - 7);
+      return { from, to: now };
+    }
+    if (preset === "30d") {
+      const from = new Date(now);
+      from.setDate(now.getDate() - 30);
+      return { from, to: now };
+    }
+    if (preset === "custom") {
+      return {
+        from: customFrom ? new Date(customFrom) : null,
+        to:   customTo   ? new Date(new Date(customTo).setHours(23, 59, 59, 999)) : null,
+      };
+    }
+    return { from: null, to: null };
+  }, [preset, customFrom, customTo]);
+
+  // Filtered logs
+  const logs = useMemo(() => {
+    if (!dateRange.from && !dateRange.to) return initialLogs;
+    return initialLogs.filter(log => {
+      const ts = new Date(log.created_at).getTime();
+      if (dateRange.from && ts < dateRange.from.getTime()) return false;
+      if (dateRange.to   && ts > dateRange.to.getTime())   return false;
+      return true;
+    });
+  }, [initialLogs, dateRange]);
+
+  const clearFilter = () => {
+    setPreset("all");
+    setCustomFrom("");
+    setCustomTo("");
+  };
 
   const formatAction = (action: string) => {
     return action.split("_").map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(" ");
@@ -55,7 +114,6 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
         log.entity_id,
         JSON.stringify(log.payload).replace(/"/g, '""')
     ]);
-
     const csvContent = [headers, ...rows].map(e => e.map(cell => `"${cell}"`).join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -68,8 +126,77 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
     document.body.removeChild(link);
   };
 
+  const presets: { key: Preset; label: string }[] = [
+    { key: "all",    label: "All Time" },
+    { key: "today",  label: "Today" },
+    { key: "7d",     label: "Last 7 Days" },
+    { key: "30d",    label: "Last 30 Days" },
+    { key: "custom", label: "Custom Range" },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* ── Date filter bar ── */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-5 py-4 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 text-slate-400">
+          <Calendar className="size-4" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Filter by Date</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {presets.map(p => (
+            <button
+              key={p.key}
+              onClick={() => setPreset(p.key)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border transition-all",
+                preset === p.key
+                  ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-transparent shadow"
+                  : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-slate-400"
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom date inputs */}
+        {preset === "custom" && (
+          <div className="flex items-center gap-2 ml-1 flex-wrap">
+            <input
+              type="date"
+              id="audit-date-from"
+              value={customFrom}
+              max={customTo || toInputDate(new Date())}
+              onChange={e => setCustomFrom(e.target.value)}
+              className="h-8 px-3 rounded-lg text-[11px] font-medium border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            />
+            <span className="text-[10px] text-slate-400 font-bold">→</span>
+            <input
+              type="date"
+              id="audit-date-to"
+              value={customTo}
+              min={customFrom}
+              max={toInputDate(new Date())}
+              onChange={e => setCustomTo(e.target.value)}
+              className="h-8 px-3 rounded-lg text-[11px] font-medium border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400"
+            />
+          </div>
+        )}
+
+        {/* Active filter clear button */}
+        {preset !== "all" && (
+          <button
+            onClick={clearFilter}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border border-orange-200 dark:border-orange-800/50 hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-all"
+          >
+            <X className="size-3" />
+            Clear
+          </button>
+        )}
+      </div>
+
+      {/* ── Main card ── */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-100/50 dark:shadow-none transition-all">
         
         <div className="px-8 py-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/50 flex justify-between items-center">
@@ -88,7 +215,7 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
                 Export CSV
             </button>
             <span className="px-4 py-2 bg-slate-100 dark:bg-slate-800 border border-transparent rounded-xl text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest shadow-inner">
-                {logs.length} Transactions
+                {logs.length}{preset !== "all" ? ` / ${initialLogs.length}` : ""} Transactions
             </span>
           </div>
         </div>
@@ -98,8 +225,8 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
           {logs.length === 0 ? (
             <EmptyState
               icon={History}
-              title="No audit logs recorded yet"
-              description="Administrative actions and platform state changes will appear here."
+              title="No audit logs for this period"
+              description="Try a different date range or clear the filter."
             />
           ) : (
             logs.map((log) => (
@@ -136,6 +263,8 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
 
                   <div className="flex items-center gap-1 text-[10px]">
                     <Clock className="size-3 text-slate-400" />
+                    <span>{new Date(log.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
+                    <span className="text-slate-300 dark:text-slate-600">·</span>
                     <span>{new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                   </div>
                 </div>
@@ -163,8 +292,8 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
                   <td colSpan={5}>
                     <EmptyState
                       icon={History}
-                      title="No audit logs recorded yet"
-                      description="Administrative actions and platform state changes will appear here."
+                      title="No audit logs for this period"
+                      description="Try a different date range or clear the filter."
                     />
                   </td>
                 </tr>
@@ -209,10 +338,15 @@ export default function AuditLogTable({ initialLogs }: { initialLogs: any[] }) {
 
                   <td className="px-8 py-4">
                     <div className="flex items-center gap-2">
-                        <Clock className="size-3.5 text-slate-400 font-bold" />
-                        <span className="text-slate-500 font-medium whitespace-nowrap">
-                            {new Date(log.created_at).toLocaleString()}
-                        </span>
+                        <Clock className="size-3.5 text-slate-400 shrink-0" />
+                        <div className="flex flex-col">
+                            <span className="text-slate-800 dark:text-slate-200 font-bold">
+                                {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </span>
+                            <span className="text-[9px] text-slate-400 font-medium">
+                                {new Date(log.created_at).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </span>
+                        </div>
                     </div>
                   </td>
 

@@ -13,25 +13,19 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
 
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      redirect(next);
-    } else {
-      redirect(`/auth/error?error=${encodeURIComponent(error.message)}`);
-    }
+    // Defer PKCE code exchange to the client-side to prevent email scanners from consuming the token on GET requests
+    const redirectUrl = new URL(next, request.url);
+    redirectUrl.searchParams.set("code", code);
+    return redirect(redirectUrl.toString());
   }
 
   if (token_hash && type) {
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    });
-    if (!error) {
-      redirect(next);
-    } else {
-      redirect(`/auth/error?error=${encodeURIComponent(error.message)}`);
-    }
+    // Defer OTP verification to the client-side to prevent email scanners from consuming the token on GET requests
+    const redirectUrl = new URL(next, request.url);
+    redirectUrl.searchParams.set("token_hash", token_hash);
+    redirectUrl.searchParams.set("type", type);
+    return redirect(redirectUrl.toString());
   }
 
-  redirect(`/auth/error?error=${encodeURIComponent("Invalid or expired authentication link")}`);
+  return redirect(`/auth/error?error=${encodeURIComponent("Invalid or expired authentication link")}`);
 }

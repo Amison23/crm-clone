@@ -43,6 +43,8 @@ export function UpdatePasswordForm({
       const errorDesc = searchParams.get("error_description") || hashParams.get("error_description");
       const errName = searchParams.get("error") || hashParams.get("error");
       const code = searchParams.get("code");
+      const type = searchParams.get("type") || hashParams.get("type");
+      const tokenHash = searchParams.get("token_hash") || hashParams.get("token_hash");
 
       // Handle invalid/expired link in URL or Hash
       if (errorCode === "otp_expired" || errName === "access_denied" || (errorDesc && errorDesc.includes("expired"))) {
@@ -64,6 +66,24 @@ export function UpdatePasswordForm({
           }
         } catch (e: any) {
           console.error("Code exchange error:", e);
+        }
+      }
+      
+      // If using non-PKCE token_hash (e.g. from deferred route), verify it
+      if (tokenHash && type) {
+        try {
+          const { error: verifyErr } = await supabase.auth.verifyOtp({
+            type: type as any,
+            token_hash: tokenHash,
+          });
+          if (verifyErr) {
+            setIsExpired(true);
+            setError("This password reset link has already been used or expired. Please request a new link.");
+            setIsCheckingAuth(false);
+            return;
+          }
+        } catch (e: any) {
+          console.error("OTP verification error:", e);
         }
       }
 

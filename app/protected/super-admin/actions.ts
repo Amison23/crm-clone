@@ -786,6 +786,7 @@ export async function adminResetUserPassword(
   const adminClient = createAdminClient();
   const { error: updateError } = await adminClient.auth.admin.updateUserById(targetUserId, {
     password: finalPassword,
+    email_confirm: true,
   });
 
   if (updateError) {

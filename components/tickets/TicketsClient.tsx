@@ -4,6 +4,7 @@ import { useState } from "react";
 import TicketFilters, { type FilterOption } from "@/components/tickets/TicketFilters";
 import TicketTable from "@/components/tickets/TicketTable";
 import CustomerTicketView from "@/components/tickets/CustomerTicketView";
+import NewTicketForm from "@/components/tickets/NewTicketForm";
 import { 
   StatusBadge, 
   SlaBadge, 
@@ -43,6 +44,9 @@ export default function TicketsClient({
   const [activePriority, setActivePriority] = useState<TicketPriority | "All Priorities">("All Priorities");
   const [activeSla, setActiveSla] = useState<SlaStatus | "All SLA">("All SLA");
   const [expandedWorker, setExpandedWorker] = useState<string | null>(null);
+  
+  const [activeTab, setActiveTab] = useState<"external" | "internal">("external");
+  const [isRaisingConcern, setIsRaisingConcern] = useState(false);
 
   const handleExportCSV = () => {
     const listToExport = ticketsData || [];
@@ -99,6 +103,8 @@ export default function TicketsClient({
       agentId: t.assigned_to,
       agentInitials,
       rawId: t.id,
+      ticketType: t.ticket_type || "external",
+      clientId: t.client_id,
     };
   });
 
@@ -139,7 +145,20 @@ export default function TicketsClient({
   ];
 
   // ── Admin / agent view ─────────────────────────────────────────────────────
-  const filteredTickets = dbTickets.filter((ticket) => {
+  // First, filter by tab and role visibility
+  const visibleTickets = dbTickets.filter((ticket) => {
+    if (activeTab === "external") {
+      return ticket.ticketType === "external";
+    } else {
+      if (ticket.ticketType !== "internal") return false;
+      // Server admins see all internal concerns. Others see only their own.
+      if (actualRole === "server_admin") return true;
+      return ticket.clientId === currentUserId;
+    }
+  });
+
+  // Then apply UI filters
+  const filteredTickets = visibleTickets.filter((ticket) => {
     const statusMatch = activeFilter === "All Tickets" || ticket.status === activeFilter;
     const priorityMatch = activePriority === "All Priorities" || ticket.priority === activePriority;
     const slaMatch = activeSla === "All SLA" || ticket.sla === activeSla;
@@ -148,6 +167,31 @@ export default function TicketsClient({
 
   return (
     <div className="flex flex-col gap-8">
+      {/* ── Tabs ── */}
+      <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800">
+        <button
+          onClick={() => setActiveTab("external")}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === "external"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+          }`}
+        >
+          Customer Tickets
+        </button>
+        <button
+          onClick={() => setActiveTab("internal")}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors flex items-center gap-2 ${
+            activeTab === "internal"
+              ? "border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400"
+              : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+          }`}
+        >
+          Internal Concerns
+          <span className="material-symbols-outlined text-[16px] text-amber-500">lock</span>
+        </button>
+      </div>
+
       {/* ── Summary Stats ── */}
       {role === 'admin' && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -252,16 +296,29 @@ export default function TicketsClient({
       {/* ── Filters & Table ── */}
       <div>
         <div className="flex items-center justify-between gap-4 mb-4">
-          <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Ticket Queue</h2>
-          {(role as string) !== "client" && (
-            <button
-              onClick={handleExportCSV}
-              className="flex items-center gap-2 px-3.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
-            >
-              <span className="material-symbols-outlined text-base">ios_share</span>
-              Export CSV
-            </button>
-          )}
+          <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            {activeTab === "external" ? "Ticket Queue" : "Internal Concerns Queue"}
+          </h2>
+           <div className="flex items-center gap-3">
+            {actualRole !== "server_admin" && (
+              <button
+                onClick={() => setIsRaisingConcern(true)}
+                className="flex items-center gap-2 px-3.5 py-1.5 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-xl text-xs font-bold text-indigo-700 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shadow-sm"
+              >
+                <span className="material-symbols-outlined text-base">add</span>
+                Raise Concern
+              </button>
+            )}
+            {(role as string) !== "client" && (
+              <button
+                onClick={handleExportCSV}
+                className="flex items-center gap-2 px-3.5 py-1.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+              >
+                <span className="material-symbols-outlined text-base">ios_share</span>
+                Export CSV
+              </button>
+            )}
+          </div>
         </div>
 
         <TicketFilters
@@ -287,6 +344,18 @@ export default function TicketsClient({
           />
         </div>
       </div>
+
+      {isRaisingConcern && companyId && (
+        <NewTicketForm
+          companyId={companyId}
+          ticketType="internal"
+          onSuccess={() => {
+            setIsRaisingConcern(false);
+            window.location.reload();
+          }}
+          onCancel={() => setIsRaisingConcern(false)}
+        />
+      )}
     </div>
   );
 }

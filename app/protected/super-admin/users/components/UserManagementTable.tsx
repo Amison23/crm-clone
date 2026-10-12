@@ -171,7 +171,7 @@ function UserRow({ user, roles, companies, onUpdate, onResetPassword, isLoading 
   const [companyId, setCompanyId] = useState<string | null>(user.company_id);
 
   const hasChanges = role !== user.role || companyId !== user.company_id;
-  const isRecentCommit = user.updated_at ? (Date.now() - new Date(user.updated_at).getTime()) < 3 * 24 * 60 * 60 * 1000 : false;
+  const isRecentCommit = false;
 
   return (
     <tr className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
@@ -272,7 +272,7 @@ function UserCard({ user, roles, companies, onUpdate, onResetPassword, isLoading
   const [role, setRole] = useState(user.role || "sales_agent");
   const [companyId, setCompanyId] = useState<string | null>(user.company_id);
   const hasChanges = role !== user.role || companyId !== user.company_id;
-  const isRecentCommit = user.updated_at ? (Date.now() - new Date(user.updated_at).getTime()) < 3 * 24 * 60 * 60 * 1000 : false;
+  const isRecentCommit = false;
 
   return (
     <div className="p-4 space-y-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">

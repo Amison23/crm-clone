@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "react-hot-toast"
 import { provisionAgent } from "@/app/protected/super-admin/actions"
-import { generateInviteCode, linkExistingUser, getActiveInvites, revokeInviteCode, getAgentMetrics } from "@/app/actions/tenant"
+import { generateInviteCode, provisionAgentByCompanyAdmin, getActiveInvites, revokeInviteCode, getAgentMetrics } from "@/app/actions/tenant"
 import { getCompanyProducts, createCompanyProduct, getAgentProducts, toggleAgentProduct } from "@/app/actions/products"
 import { ActivityTab, RolesTab } from "./OrgActivityAndRoles"
 import { ResetPasswordModal } from "@/components/common/ResetPasswordModal"
@@ -71,8 +71,8 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
             console.error("No company found for ID:", companyId)
           }
         }
-        // Fetch agents in this company
-        const agentsQuery = supabase.from('employees').select('*').eq('role', 'sales_agent')
+        // Fetch employees in this company (excluding clients)
+        const agentsQuery = supabase.from('employees').select('*').neq('role', 'client')
         if (companyId) {
           agentsQuery.eq('company_id', companyId)
         }
@@ -95,15 +95,18 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
           setAgents(employees.map(e => {
             const agentTickets = tickets.filter(t => t.assigned_to === e.id)
             return {
+              ...e,
               id: e.id,
               name: e.full_name,
+              full_name: e.full_name,
               avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${e.full_name}`,
               role: e.role,
               status: "Online",
               customers: 0,
               open_tickets: agentTickets.filter(t => t.status !== 'resolved').length,
               resolved_this_week: agentTickets.filter(t => t.status === 'resolved').length,
-              email: e.email_address
+              email: e.email_address,
+              email_address: e.email_address
             }
           }))
         }
@@ -180,7 +183,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
 
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "overview", label: "Overview", icon: "dashboard" },
-    { key: "agents", label: "Agents", icon: "support_agent" },
+    { key: "agents", label: "Employees", icon: "badge" },
     { key: "products", label: "Products", icon: "inventory_2" },
     { key: "customers", label: "Customers", icon: "business" },
     { key: "issues", label: "Issues", icon: "bug_report" },
@@ -255,7 +258,7 @@ export function CompanyAdmin({ companyId, initialCompany }: { companyId?: string
 
         {/* Stat Pills */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-          <StatCard icon="support_agent" label="Total Agents" value={agents.length} color="indigo" />
+          <StatCard icon="badge" label="Total Employees" value={agents.length} color="indigo" />
           <StatCard icon="inventory_2" label="Products" value={products.length} color="emerald" />
           <StatCard icon="business" label="Customers" value={customers.length} color="violet" />
           <StatCard icon="warning" label="Open Issues" value={totalOpenIssues} color={criticalIssues > 0 ? "red" : "amber"} />
@@ -399,6 +402,8 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isGeneratingCode, setIsGeneratingCode] = useState(false)
   const [showInviteCode, setShowInviteCode] = useState(false)
+  const [generatedCredentials, setGeneratedCredentials] = useState<{email: string, password: string} | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const latestInviteCode = activeInvites?.[0]?.code;
 
@@ -430,15 +435,13 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
     setIsSubmitting(true);
 
     try {
-      const result = await linkExistingUser(companyId, agentEmail.trim(), agentRole);
-      if (result.success) {
-        toast.success("User successfully added to organization!");
-        setIsAddingAgent(false);
-        setAgentEmail("");
-        setAgentRole("sales_agent");
+      const result = await provisionAgentByCompanyAdmin(companyId, agentEmail.trim(), agentRole);
+      if (result.success && result.credentials) {
+        toast.success("Sales agent provisioned successfully!");
+        setGeneratedCredentials(result.credentials);
         onAgentAdded?.();
       } else {
-        toast.error(result.error || "Failed to add user");
+        toast.error(result.error || "Failed to provision agent");
       }
     } catch (err: any) {
       toast.error(err.message || "An error occurred");
@@ -497,7 +500,7 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
           className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-500/30 hover:bg-indigo-500 transition-all active:scale-95"
         >
           <span className="material-symbols-outlined text-sm">person_add</span>
-          Add Sales Agent
+          Add Employee
         </button>
       </div>
 
@@ -505,91 +508,157 @@ function AgentsTab({ company, companyId, agents, issues, customers, products, ag
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-800 p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white">Add Sales Agent</h2>
+              <h2 className="text-xl font-black text-slate-900 dark:text-white">Add Employee</h2>
               <button onClick={() => setIsAddingAgent(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
 
-            <form onSubmit={handleAddAgent} className="space-y-4">
-              <div>
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">User Email Address</label>
-                <input
-                  type="email"
-                  required
-                  value={agentEmail}
-                  onChange={(e) => setAgentEmail(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
-                  placeholder="user@company.com"
-                />
+            {generatedCredentials ? (
+              <div className="space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl text-center space-y-2">
+                  <p className="text-xs font-black uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Employee Provisioned</p>
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{generatedCredentials.email}</p>
+                  <div className="p-3 bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800 rounded-xl font-mono text-lg font-bold text-slate-900 dark:text-white tracking-widest selection:bg-emerald-200">
+                    {generatedCredentials.password}
+                  </div>
+                  {latestInviteCode && (
+                    <div className="mt-2 p-3 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-800 rounded-xl">
+                      <p className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 mb-1 uppercase tracking-wider">Company Verification Code</p>
+                      <p className="font-mono text-base font-bold text-slate-900 dark:text-white tracking-widest">{latestInviteCode}</p>
+                    </div>
+                  )}
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Share these credentials securely with the employee so they can log in.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!generatedCredentials) return;
+                      let text = `Welcome to ${company?.name || "our company"}!\n\nEmail: ${generatedCredentials.email}\nPassword: ${generatedCredentials.password}`;
+                      if (latestInviteCode) {
+                        text += `\nCompany Invite Code: ${latestInviteCode}\n(You will need this code to verify your access on first login)`;
+                      }
+                      navigator.clipboard.writeText(text);
+                      setCopied(true);
+                      toast.success("Credentials copied!");
+                      setTimeout(() => setCopied(false), 3000);
+                    }}
+                    className="flex-1 py-3 px-4 bg-indigo-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-indigo-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                  >
+                    <span className="material-symbols-outlined text-sm">{copied ? "check" : "content_copy"}</span>
+                    {copied ? "Copied!" : "Copy Credentials"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAddingAgent(false);
+                      setGeneratedCredentials(null);
+                      setAgentEmail("");
+                    }}
+                    className="py-3 px-5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Role</label>
-                <select
-                  value={agentRole}
-                  onChange={(e) => setAgentRole(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            ) : (
+              <form onSubmit={handleAddAgent} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">User Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    value={agentEmail}
+                    onChange={(e) => setAgentEmail(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                    placeholder="user@company.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black uppercase text-slate-500 tracking-wider mb-2">Role</label>
+                  <select
+                    value={agentRole}
+                    onChange={(e) => setAgentRole(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                  >
+                    <option value="sales_agent">Sales Agent</option>
+                    <option value="admin">Admin</option>
+                    <option value="dev">Developer</option>
+                    <option value="server_admin">Server Admin</option>
+                  </select>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full mt-4 bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl hover:bg-indigo-500 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  <option value="sales_agent">Sales Agent</option>
-                  <option value="admin">Admin</option>
-                  <option value="client">Client</option>
-                </select>
-              </div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full mt-4 bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest py-4 rounded-xl hover:bg-indigo-500 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
-                ) : (
-                  <span className="material-symbols-outlined text-sm">check_circle</span>
-                )}
-                {isSubmitting ? "Linking..." : "Add User"}
-              </button>
-            </form>
+                  {isSubmitting ? (
+                    <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                  ) : (
+                    <span className="material-symbols-outlined text-sm">person_add</span>
+                  )}
+                  {isSubmitting ? "Provisioning..." : "Add User"}
+                </button>
+              </form>
+            )}
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {agents.map((agent) => (
-          <div
-            key={agent.id}
-            onClick={() => setSelected(agent)}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-indigo-500/30 transition-all duration-300 cursor-pointer group flex flex-col items-center text-center"
-          >
-            <div className="size-16 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/30 mb-4 group-hover:scale-110 transition-transform">
-              {agent.full_name?.[0] || agent.email_address?.[0]?.toUpperCase()}
-            </div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-lg">
-              {agent.full_name || "Unknown Agent"}
-            </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 truncate w-full">
-              {agent.email_address}
-            </p>
-            
-            {/* Agent Metrics summary in card */}
-            <div className="w-full flex justify-around text-xs text-slate-500 mt-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <div className="flex flex-col">
-                <span className="font-black text-slate-700 dark:text-slate-200">{agentMetrics[agent.id]?.leadsAssigned || 0}</span>
-                Leads
-              </div>
-              <div className="flex flex-col">
-                <span className="font-black text-slate-700 dark:text-slate-200">{agentMetrics[agent.id]?.ticketsResolved || 0}</span>
-                Resolved
-              </div>
-              <div className="flex flex-col">
-                <span className="font-black text-slate-700 dark:text-slate-200">{agentMetrics[agent.id]?.products?.length || 0}</span>
-                Products
-              </div>
-            </div>
-
-            <span className="mt-4 inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 capitalize">
-              {agent.role.replace("_", " ")}
-            </span>
-          </div>
-        ))}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm mt-4">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[600px]">
+            <thead>
+              <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                <th className="px-6 py-4">Employee</th>
+                <th className="px-6 py-4">Role</th>
+                <th className="px-6 py-4 text-center">Leads</th>
+                <th className="px-6 py-4 text-center">Resolved</th>
+                <th className="px-6 py-4 text-center">Products</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+              {agents.map((agent) => (
+                <tr
+                  key={agent.id}
+                  onClick={() => setSelected(agent)}
+                  className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-4">
+                      <div className="size-10 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-md shrink-0">
+                        {agent.full_name?.[0]?.toUpperCase() || agent.email_address?.[0]?.toUpperCase()}
+                      </div>
+                      <div className="truncate min-w-0">
+                        <div className="font-bold text-sm text-slate-900 dark:text-white truncate">{agent.name || "Unknown Employee"}</div>
+                        <div className="text-xs text-slate-500 truncate">{agent.email_address}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-md text-[10px] font-black bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 uppercase tracking-wider">
+                      {agent.role.replace("_", " ")}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-center text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {agentMetrics[agent.id]?.leadsAssigned || 0}
+                  </td>
+                  <td className="px-6 py-4 text-center text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {agentMetrics[agent.id]?.ticketsResolved || 0}
+                  </td>
+                  <td className="px-6 py-4 text-center text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {agentMetrics[agent.id]?.products?.length || 0}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {selected && <AgentDetailModal 

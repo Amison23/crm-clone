@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { sendNotificationEmail } from "@/lib/notifications/email";
 
 const AMBIGUOUS_CHARS = /[0O1I]/g;
 
@@ -11,6 +12,112 @@ function generateSecureCode() {
     code += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return code;
+}
+
+export async function requestInviteCodeEmail() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  const { data: profile } = await supabase
+    .from("employees")
+    .select("full_name, email_address, company_id, companies(name)")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || !profile.company_id) {
+    return { success: false, error: "You are not assigned to any company." };
+  }
+
+  const adminClient = createAdminClient();
+  const { data: invite } = await adminClient
+    .from("invite_codes")
+    .select("code")
+    .eq("company_id", profile.company_id)
+    .is("used_at", null)
+    .eq("revoked", false)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!invite) {
+    return { success: false, error: "No active invite code found for your company. Please contact your administrator." };
+  }
+
+  // Cast companies to any because it might be an array or object
+  const companyData = profile.companies as any;
+  const companyName = companyData?.name || "your company";
+  
+  const body = `
+    Hello ${profile.full_name || 'there'},<br/><br/>
+    You requested the verification code to complete your setup at <strong>${companyName}</strong> on Cloudora.<br/><br/>
+    Your Company Verification Code is: <strong style="font-family: monospace; font-size: 18px; color: #4f46e5; letter-spacing: 2px;">${invite.code}</strong><br/><br/>
+    Please enter this code in the onboarding screen to securely verify your access.<br/><br/>
+    If you did not request this, please contact your administrator immediately.
+  `;
+
+  const { success, error } = await sendNotificationEmail({
+    recipientEmail: profile.email_address,
+    recipientName: profile.full_name || undefined,
+    eventType: 'INVITE_CODE_REQUEST',
+    subject: `Your Cloudora Verification Code for ${companyName}`,
+    body: body
+  });
+
+  if (!success) {
+    return { success: false, error: error || "Failed to send email." };
+  }
+
+  return { success: true };
+}
+
+export async function completeOnboarding(fullName: string, inviteCode: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: "Unauthorized" };
+
+  if (!fullName || fullName.trim().length < 2) {
+    return { success: false, error: "Name must be at least 2 characters." };
+  }
+  
+  if (!inviteCode || inviteCode.trim().length === 0) {
+    return { success: false, error: "Company invite code is required." };
+  }
+
+  // Fetch the user's company_id
+  const { data: profile } = await supabase.from("employees").select("company_id").eq("id", user.id).single();
+  
+  if (!profile || !profile.company_id) {
+    return { success: false, error: "You are not assigned to any company." };
+  }
+
+  const adminClient = createAdminClient();
+
+  // Verify the invite code belongs to their company and is active
+  const { data: invite } = await adminClient
+    .from("invite_codes")
+    .select("id")
+    .eq("company_id", profile.company_id)
+    .eq("code", inviteCode.trim())
+    .is("used_at", null)
+    .eq("revoked", false)
+    .gt("expires_at", new Date().toISOString())
+    .single();
+    
+  if (!invite) {
+    return { success: false, error: "Invalid, expired, or used company invite code." };
+  }
+
+  const { error } = await supabase
+    .from("employees")
+    .update({ full_name: fullName.trim(), is_verified: true })
+    .eq("id", user.id);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true };
 }
 
 export async function joinTenantWithCode(inviteCode: string) {
@@ -38,6 +145,7 @@ export async function joinTenantWithCode(inviteCode: string) {
       full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Operator",
       role: "sales_agent", // Default role
       company_id: validCompanyId,
+      is_verified: true,
     });
 
   if (upsertError) {
@@ -155,13 +263,12 @@ export async function revokeInviteCode(companyId: string, inviteId: string) {
   return { success: true };
 }
 
-export async function linkExistingUser(companyId: string, email: string, role: string) {
+export async function provisionAgentByCompanyAdmin(companyId: string, email: string, role: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) return { success: false, error: "Unauthorized" };
 
-  // Check if current user is admin or superadmin
   const { data: profile } = await supabase
     .from("employees")
     .select("role, company_id")
@@ -172,7 +279,6 @@ export async function linkExistingUser(companyId: string, email: string, role: s
     return { success: false, error: "Unauthorized" };
   }
   
-  // Validate role assignment based on caller
   if (profile.role === "admin" && !["sales_agent", "dev"].includes(role)) {
     return { success: false, error: "Invalid role for admin assignment" };
   }
@@ -181,45 +287,58 @@ export async function linkExistingUser(companyId: string, email: string, role: s
   }
 
   const targetCompanyId = profile.role === "admin" ? profile.company_id! : companyId;
-
   if (!targetCompanyId) {
     return { success: false, error: "Invalid organization context" };
   }
 
+  const cleanEmail = email.trim().toLowerCase();
+  const defaultName = cleanEmail.split("@")[0] || "New Agent";
   const adminClient = createAdminClient();
 
-  // Look up the target user by email in the employees table
-  const { data: targetEmployee, error: lookupError } = await adminClient
+  // Check if email exists
+  const escapedEmail = cleanEmail.replace(/[\\%_]/g, '\\$&');
+  const { data: existingEmp } = await adminClient
     .from("employees")
     .select("id")
-    .eq("email_address", email)
-    .eq("role", "unassigned")
-    .is("company_id", null)
-    .single();
-
-  if (lookupError || !targetEmployee) {
-    return { 
-      success: false, 
-      error: "User not found or is already assigned to a company." 
-    };
+    .ilike("email_address", escapedEmail)
+    .maybeSingle();
+  if (existingEmp) {
+    return { success: false, error: "This email is already registered." };
   }
 
-  // Update their company_id and role
-  const { data: updated, error: updateError } = await adminClient
-    .from("employees")
-    .update({ company_id: targetCompanyId, role: role })
-    .eq("id", targetEmployee.id)
-    .select("id");
+  const crypto = require('crypto');
+  const generatedPassword = crypto.randomBytes(9).toString('base64url') + 'Aa1!';
 
-  if (updateError) {
-    return { success: false, error: updateError.message };
-  }
-  
-  if (!updated || updated.length === 0) {
-    return { success: false, error: "Failed to link user." };
+  // Create Auth User
+  const { data: inviteData, error: inviteError } = await adminClient.auth.admin.createUser({
+    email: cleanEmail,
+    password: generatedPassword,
+    email_confirm: true
+  });
+
+  if (inviteError) {
+    return { success: false, error: `Failed to create auth user: ${inviteError.message}` };
   }
 
-  return { success: true };
+  const newAuthUserId = inviteData?.user?.id;
+  if (!newAuthUserId) return { success: false, error: "Failed to retrieve new account ID." };
+
+  // Create Employee Record
+  const { error: upsertError } = await adminClient.from("employees").upsert({
+    id: newAuthUserId,
+    email_address: cleanEmail,
+    role: role,
+    company_id: targetCompanyId,
+    full_name: defaultName,
+    is_verified: true,
+  });
+
+  if (upsertError) {
+    await adminClient.auth.admin.deleteUser(newAuthUserId);
+    return { success: false, error: "Failed to create agent profile, rolled back." };
+  }
+
+  return { success: true, credentials: { email: cleanEmail, password: generatedPassword } };
 }
 
 export async function getAgentMetrics(companyId: string) {

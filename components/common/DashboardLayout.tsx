@@ -28,6 +28,8 @@ function DashboardSkeleton() {
   );
 }
 
+import OnboardingModal from "@/components/common/OnboardingModal";
+
 // Roles that are platform-wide (not company-scoped)
 const PLATFORM_ROLES = new Set(["superadmin"]);
 
@@ -44,11 +46,15 @@ async function AuthGate({ children }: { children: ReactNode }) {
   // Fetch role and company_id from employees table to ensure sidebar has authoritative info
   const { data: profile, error: profileError } = await supabase
     .from("employees")
-    .select("role, company_id, full_name")
+    .select("role, company_id, full_name, is_verified")
     .eq("id", user.id)
     .single();
 
-  const name = profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || "Operator";
+  const emailPrefix = user.email?.split('@')[0];
+  const name = profile?.full_name || user.user_metadata?.full_name || emailPrefix || "Operator";
+  
+  // They need onboarding if they haven't verified their invite code yet
+  const needsOnboarding = profile?.is_verified === false;
 
   // Role MUST come from the employees table only — never trust user_metadata for RBAC.
   // If the user has no employee row yet (brand new signup), send them to the unassigned screen.
@@ -58,8 +64,6 @@ async function AuthGate({ children }: { children: ReactNode }) {
   }
 
   const role = profile.role as string;
-
-  // console.log("[AuthGate] Resolved role:", role, "| company_id:", profile.company_id, "| for user:", user.id);
 
   // No-Tenant Gating: unassigned role OR no company linked (platform admins are exempt)
   if (role === "unassigned") {
@@ -73,8 +77,11 @@ async function AuthGate({ children }: { children: ReactNode }) {
   }
 
   return (
-    <DashboardShell name={name} role={role}>
-      {children}
-    </DashboardShell>
+    <>
+      <OnboardingModal needsOnboarding={needsOnboarding} initialName={name} />
+      <DashboardShell name={name} role={role}>
+        {children}
+      </DashboardShell>
+    </>
   );
 }

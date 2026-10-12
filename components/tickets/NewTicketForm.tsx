@@ -24,6 +24,7 @@ interface NewTicketFormProps {
   onSuccess: () => void;
   onCancel: () => void;
   preselectedCategory?: string;
+  ticketType?: "external" | "internal";
 }
 
 export default function NewTicketForm({
@@ -31,6 +32,7 @@ export default function NewTicketForm({
   onSuccess,
   onCancel,
   preselectedCategory,
+  ticketType = "external",
 }: NewTicketFormProps) {
   const supabase = createClient();
 
@@ -66,6 +68,7 @@ export default function NewTicketForm({
       description: description.trim() || null,
       priority,
       status: "open",
+      ticket_type: ticketType,
     });
 
     if (insertError) {
@@ -92,7 +95,7 @@ export default function NewTicketForm({
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-200 dark:border-slate-800">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              New Support Ticket
+              {ticketType === "internal" ? "Raise Internal Concern" : "New Support Ticket"}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               We'll get back to you as soon as possible
@@ -215,7 +218,7 @@ export default function NewTicketForm({
                   <span className="material-symbols-outlined text-base leading-none">
                     send
                   </span>
-                  Submit Ticket
+                  {ticketType === "internal" ? "Submit Concern" : "Submit Ticket"}
                 </>
               )}
             </button>

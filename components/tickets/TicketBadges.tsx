@@ -22,6 +22,8 @@ export interface Ticket {
   agentId?: string;
   agentInitials?: string;
   rawId?: string;
+  ticketType?: "external" | "internal";
+  clientId?: string;
 }
 
 export interface Worker {

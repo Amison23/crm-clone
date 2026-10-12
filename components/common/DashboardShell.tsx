@@ -14,11 +14,11 @@ const navItems = [
   { href: "/protected/server-admin", icon: "dns", label: "Server Node", roles: ["server_admin", "superadmin"] },
   { href: "/protected/sales-agent", icon: "badge", label: "My Workspace", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin"] },
-  { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin", "superadmin"] },
+  { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin"] },
   { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/settings/email", icon: "mark_email_read", label: "Email", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "dev"] },
+  // { href: "/protected/settings/email", icon: "mark_email_read", label: "Email", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin"] },
   { href: "/protected/settings", icon: "settings", label: "Settings", roles: ["superadmin", "server_admin", "admin", "sales_agent", "dev"] }
 ];
@@ -36,7 +36,7 @@ const platformItems = [
   // { href: "/protected/super-admin/agents", icon: "manage_accounts", label: "Agent Management" },
   { href: "/protected/super-admin/users", icon: "group", label: "Users" },
   { href: "/protected/super-admin/telephony", icon: "call", label: "Telephony" },
-  { href: "/protected/super-admin/permissions", icon: "shield", label: "Permissions" },
+  // { href: "/protected/super-admin/permissions", icon: "shield", label: "Permissions" },
   { href: "/protected/super-admin/audit-logs", icon: "history", label: "Audit Logs" },
   { href: "/protected/super-admin/settings", icon: "settings", label: "System Settings" },
 ];
@@ -87,8 +87,8 @@ export default function DashboardShell({ children, role, name }: { children: Rea
           <span className="material-symbols-outlined">dataset</span>
         </div>
         <div>
-          <h2 className="text-lg font-bold leading-tight tracking-tight">CRM Executive</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400">{role} Console</p>
+          <h2 className="text-lg font-bold leading-tight tracking-tight">{name}</h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400">{role?.toUpperCase()} Console</p>
         </div>
       </div>
 
@@ -211,11 +211,11 @@ export default function DashboardShell({ children, role, name }: { children: Rea
         {/* Platform Control section is now rendered inline as a dropdown inside the nav items map above */}
 
         {/* ── Personal & Team Throughput Performance (Real DB Metrics) ── */}
-        {role !== 'superadmin' && (
+        {/* {role !== 'superadmin' && (
           <div className="pt-8 pb-4">
             <button
               onClick={() => setThroughputOpen(!throughputOpen)}
-              className="w-full flex items-center justify-between px-3 mb-4 group"
+              className="w-full flex items-center justify-between px-1 mb-4 group"
             >
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors">
                 Throughput Performance
@@ -237,7 +237,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
               </div>
             )}
           </div>
-        )}
+        )} */}
       </nav>
 
       {/* Dynamic User Profile Footer */}
