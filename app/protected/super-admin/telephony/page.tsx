@@ -1,3 +1,5 @@
+import { notFound } from "next/navigation";
+import { features } from "@/lib/features";
 import { createClient } from "@/lib/supabase/server";
 import GatewayTable from "./components/GatewayTable";
 import SIMPortTable from "./components/SIMPortTable";
@@ -7,6 +9,10 @@ import { Server, Smartphone, Hash } from "lucide-react";
 import PageHeader from "@/components/common/PageHeader";
 
 export default async function TelephonyPage() {
+  if (!features.telephony) {
+    notFound();
+  }
+
   const supabase = await createClient();
 
   // Initial data fetch

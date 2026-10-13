@@ -1,6 +1,6 @@
 "use client";
 
-import { cn, normalizeEmail, formatEmailError } from "@/lib/utils";
+import { cn, normalizeEmail } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,9 +44,9 @@ export function LoginForm({
         password,
       });
       if (error) {
-        console.error("SUPABASE LOGIN ERROR PAYLOAD:", JSON.stringify(error, null, 2));
-        alert(`Supabase Error: ${error.message} (Code: ${error.status})\n\nDEBUG INFO:\nEmail: "${cleanEmail}" (Len: ${cleanEmail.length})\nPassword: "${password}" (Len: ${password.length})`);
-        throw error;
+        console.error("SUPABASE LOGIN ERROR PAYLOAD:", error);
+        setError("Incorrect email or password");
+        return;
       }
       
       const { data: { session } } = await supabase.auth.getSession();
@@ -64,7 +64,8 @@ export function LoginForm({
       // Update this route to redirect to an authenticated route. The user already has an active session.
       router.push("/protected");
     } catch (error: unknown) {
-      setError(formatEmailError(error));
+      console.error("Login error:", error);
+      setError("Incorrect email or password");
     } finally {
       setIsLoading(false);
     }

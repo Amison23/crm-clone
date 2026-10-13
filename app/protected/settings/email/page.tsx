@@ -7,7 +7,7 @@ export default async function EmailSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   // Fetch connected accounts for this employee

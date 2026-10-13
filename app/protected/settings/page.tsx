@@ -7,7 +7,7 @@ export default async function SettingsOverviewPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/login');
+    redirect('/auth/login');
   }
 
   // Fetch employee data

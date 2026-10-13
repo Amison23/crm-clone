@@ -13,7 +13,7 @@ export default async function TicketsPage() {
   } = await supabase.auth.getUser();
 
   // Fetch the user's role and company from the employees table
-  let role: "admin" | "sales_agent" | "client" = "admin";
+  let role: "admin" | "sales_agent" = "admin";
   let actualRole: string | undefined;
   let companyId = "";
 
@@ -32,10 +32,8 @@ export default async function TicketsPage() {
       employee?.role === "server_admin"
     ) {
       role = "admin";
-    } else if (employee?.role === "sales_agent" || employee?.role === "dev") {
-      role = "sales_agent";
     } else {
-      role = "client";
+      role = "sales_agent";
     }
 
     companyId = employee?.company_id ?? "";
@@ -51,10 +49,7 @@ export default async function TicketsPage() {
     `)
     .order("created_at", { ascending: false });
 
-  if (role === "client" && user) {
-    // Clients only see their own tickets
-    ticketsQuery = ticketsQuery.eq("client_id", user.id);
-  } else if (companyId) {
+  if (companyId) {
     // Admins & agents only see their company's tickets
     ticketsQuery = ticketsQuery.eq("company_id", companyId);
   }
@@ -65,7 +60,7 @@ export default async function TicketsPage() {
 
   // Fetch all employees for the company (to show workload even for those with 0 tickets)
   let employees: any[] = [];
-  if (companyId && (role === "admin" || role === "sales_agent")) {
+  if (companyId) {
     const { data: empData } = await supabase
       .from("employees")
       .select("id, full_name, role")
@@ -80,9 +75,7 @@ export default async function TicketsPage() {
         <div className="flex flex-col gap-1">
           <h1 className="text-3xl font-black leading-tight tracking-tight">Support Tickets</h1>
           <p className="text-slate-500 dark:text-slate-400 text-base">
-            {role === "client"
-              ? "Submit and track your support requests"
-              : "Track and manage active customer support requests"}
+            Track and manage active customer support requests
           </p>
         </div>
       </div>

@@ -7,39 +7,9 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { createClient } from "@/lib/supabase/client";
 import { getThroughputMetrics, type ThroughputMetrics } from "@/app/actions/throughput";
 import toast from "react-hot-toast";
+import { navItems, systemItems, platformItems } from "@/lib/nav";
+import { features } from "@/lib/features";
 
-const navItems = [
-  { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/dev", icon: "code", label: "Dev Workspace", roles: ["dev", "superadmin"] },
-  { href: "/protected/server-admin", icon: "dns", label: "Server Node", roles: ["server_admin", "superadmin"] },
-  { href: "/protected/sales-agent", icon: "badge", label: "My Workspace", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin"] },
-  { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin"] },
-  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "dev"] },
-  // { href: "/protected/settings/email", icon: "mark_email_read", label: "Email", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin"] },
-  { href: "/protected/settings", icon: "settings", label: "Settings", roles: ["superadmin", "server_admin", "admin", "sales_agent", "dev"] }
-];
-
-const systemItems = [
-  { href: "/protected/visual-bot-builder", icon: "robot_2", label: "Bot Builder", roles: ["sales_agent", "admin", "dev", "superadmin"] },
-  { href: "/protected/visual-ivr-builder", icon: "account_tree", label: "IVR Builder", roles: ["sales_agent", "admin", "dev", "superadmin"], disabled: true },
-  { href: "/protected/telephony-and-softphone", icon: "call", label: "Telephony", roles: ["sales_agent", "admin", "dev"], disabled: true },
-];
-
-// Superadmin-only: platform control routes
-const platformItems = [
-  { href: "/protected/super-admin/overview", icon: "monitoring", label: "Overview" },
-  { href: "/protected/super-admin/tenants", icon: "corporate_fare", label: "Tenants" },
-  // { href: "/protected/super-admin/agents", icon: "manage_accounts", label: "Agent Management" },
-  { href: "/protected/super-admin/users", icon: "group", label: "Users" },
-  { href: "/protected/super-admin/telephony", icon: "call", label: "Telephony" },
-  // { href: "/protected/super-admin/permissions", icon: "shield", label: "Permissions" },
-  { href: "/protected/super-admin/audit-logs", icon: "history", label: "Audit Logs" },
-  { href: "/protected/super-admin/settings", icon: "settings", label: "System Settings" },
-];
 export default function DashboardShell({ children, role, name }: { children: ReactNode; role?: string; name?: string }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -74,9 +44,10 @@ export default function DashboardShell({ children, role, name }: { children: Rea
     setSidebarOpen(false);
   }, [pathname]);
 
-  // Filter items based on role
-  const filteredNav = navItems.filter(item => item.roles?.includes(role || "sales_agent"));
-  const filteredSystem = systemItems.filter(item => item.roles?.includes(role || "sales_agent"));
+  // Filter items based on role and feature flags
+  const filteredNav = navItems.filter(item => (!item.flag || features[item.flag]) && item.roles?.includes(role || "sales_agent"));
+  const filteredSystem = systemItems.filter(item => (!item.flag || features[item.flag]) && item.roles?.includes(role || "sales_agent"));
+  const filteredPlatform = platformItems.filter(item => !item.flag || features[item.flag]);
 
   /* ── Sidebar content (shared between desktop & mobile) ── */
   const sidebarContent = (
@@ -123,7 +94,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
                 </button>
                 {platformOpen && (
                   <div className="pl-9 space-y-1 mt-1">
-                    {platformItems.map((item) => {
+                    {filteredPlatform.map((item) => {
                       const isItemActive = pathname.startsWith(item.href);
                       return (
                         <Link

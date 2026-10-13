@@ -1,6 +1,6 @@
-# Platform User Guide
+# Cloudora CRM — User Guide
 
-Welcome to your new CRM workspace! This guide will help you understand how to navigate the platform, manage your daily workflows, and utilize your role-specific tools.
+Welcome to your Cloudora CRM workspace! This guide will help you understand how to navigate the platform, manage your daily workflows, and utilize your role-specific tools.
 
 ## 1. Getting Started
 
