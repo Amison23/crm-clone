@@ -1,110 +1,182 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# Cloudora CRM
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+A **multi-tenant SaaS CRM** built on Next.js 16 (App Router) and Supabase. Designed for B2B teams to manage leads, support tickets, tasks, and team communication across multiple companies from a single platform.
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+---
 
-## Features
+## Tech Stack
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Language | TypeScript + React 19 |
+| Styling | Tailwind CSS v3 + shadcn/ui |
+| Backend / DB | Supabase (PostgreSQL + RLS + Auth) |
+| Email | Resend API |
+| Data fetching | Server Actions (mutations) + SWR (client reads) |
 
-## Demo
+---
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+## Getting Started (Local Dev)
 
-## Deploy to Vercel
+### Prerequisites
 
-Vercel deployment will guide you through creating a Supabase account and project.
+- **Node.js** v20+
+- A **Supabase** project ([create one free](https://supabase.com/dashboard))
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+### 1. Clone and install
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
-
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
-
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
-
-## Clone and run locally
-
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
-
-2. Create a Next.js app using the Supabase Starter template npx command
-
-   ```
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
-
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
-
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
-
-3. Use `cd` to change into the app's directory
-
-   ```bash
-   cd with-supabase-app
-   ```
-
-4. Rename `.env.example` to `.env.local` and update the following:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
+```bash
+git clone <repo-url>
+cd crm-clone
+npm install
 ```
 
+### 2. Configure environment variables
+
+Copy the example file and fill in your Supabase credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://<your-project-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
+RESEND_API_KEY=<your-resend-key>          # required for email features
+```
+
+Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are in your project's **Settings → API** in the Supabase dashboard.
+
+### 3. Apply the database schema
+
+```bash
+supabase db push
+```
+
+> [!IMPORTANT]
+> Never edit migration files manually. Create a new timestamped migration file in `supabase/migrations/` for any schema change.
+
+### 4. Start the dev server
+
+```bash
+npm run dev
+```
+
+The app runs on [http://localhost:3000](http://localhost:3000).
+
 > [!NOTE]
-> This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-> Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-> See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+> On Windows, the production build can exhaust Node's default heap. Always run builds with:
+> ```powershell
+> $env:NODE_OPTIONS="--max-old-space-size=4096"; npm run build
+> ```
 
-Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+---
 
-5. You can now run the Next.js local development server:
+## Project Structure
 
-   ```bash
-   npm run dev
-   ```
+```
+crm-clone/
+├── app/
+│   ├── actions/            # Server Actions — all DB mutations go here
+│   ├── api/                # Route Handlers (webhooks, external integrations)
+│   ├── auth/               # Auth routes (login, signup, confirm, update-password)
+│   └── protected/          # Authenticated app pages (role-gated)
+│       └── super-admin/    # Superadmin-only platform control pages
+├── components/
+│   ├── admins/             # Admin and superadmin management UI
+│   ├── common/             # DashboardShell, modals, page headers
+│   ├── tickets/            # Support ticket views and forms
+│   └── ui/                 # shadcn base components
+├── lib/
+│   ├── supabase/           # Supabase client singletons (server / client / middleware)
+│   ├── nav.ts              # ⭐ Single source of truth for navigation items per role
+│   ├── features.ts         # ⭐ Feature flags (telephony, ivrBuilder, softphone, botBuilder)
+│   └── auth/               # Session helpers (getCurrentEmployee, etc.)
+├── supabase/
+│   └── migrations/         # PostgreSQL schema, triggers, RLS policies (in order)
+├── docs/
+│   ├── developer-guide.md  # Deep-dive architecture and RBAC docs
+│   └── ui-audit/           # UI audit reports from the Phase 0 cleanup
+└── types/
+    └── supabase.ts         # Auto-generated Supabase TypeScript types
+```
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+---
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+## Roles & Access
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+The platform uses **7 roles** stored in `employees.role`. Access is enforced at two layers: the UI (nav filtering) and the database (PostgreSQL RLS).
 
-## Feedback and issues
+| Role | Description |
+|---|---|
+| `superadmin` | Platform-wide access — all tenants, infrastructure, audit logs |
+| `admin` | Tenant-scoped company admin |
+| `sales_agent` | Standard CRM user (leads, tasks, tickets, chat) |
+| `server_admin` | Infrastructure + support ticket resolver |
+| `dev` | Engineering workspace + ticket access |
+| `unassigned` | Default state — pending org assignment, redirected on login |
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+> `client` / `customer` roles exist in the DB schema for historical reasons but are **not served any UI** in this codebase. The ticket and nav systems only handle internal team roles.
 
-## More Supabase examples
+### Navigation config
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+All sidebar nav items live in **[`lib/nav.ts`](lib/nav.ts)**. To add or change a route's visibility, edit only that file — `DashboardShell` reads from it automatically.
+
+```ts
+// lib/nav.ts
+export const navItems: NavItem[] = [
+  { href: "/protected/crm-leads-table", label: "Leads", icon: "groups", roles: ["sales_agent", "admin"] },
+  // ...
+];
+```
+
+---
+
+## Feature Flags
+
+Experimental/incomplete features are gated in **[`lib/features.ts`](lib/features.ts)**:
+
+```ts
+export const features = {
+  telephony: false,    // Super-admin telephony infrastructure page
+  ivrBuilder: false,   // Visual IVR flow builder
+  softphone: false,    // In-browser softphone
+  botBuilder: false,   // Visual FAQ / chatbot builder
+} as const;
+```
+
+- When a flag is `false`: the nav item is hidden **and** the page returns a Next.js `notFound()` (404).
+- To enable a feature: set it to `true` here. No other changes needed.
+
+---
+
+## Branch Strategy
+
+| Branch | Purpose |
+|---|---|
+| `main` | Production-ready, stable code |
+| `dev` | Active development; merge into `main` via PR |
+
+**Rules:**
+- Stage files by explicit path only (`git add <file>`). Never `git add .` or `git commit -a`.
+- One logical commit per feature/fix.
+- Never push directly to `main`.
+
+---
+
+## Key Conventions
+
+- **Server Actions** (`app/actions/`) handle all writes. Route Handlers (`app/api/`) are for external integrations and webhooks only.
+- **Never read role from `auth.users.user_metadata`**. Always query `employees.role` directly from the DB.
+- **DB isolation**: Every non-superadmin query is scoped by `company_id` via RLS. A DB trigger overwrites any manually supplied `company_id` at the DB level.
+- **Auth**: Login route is `/auth/login`. There is no `/login`. Redirects anywhere else will 404.
+
+---
+
+## Further Reading
+
+- [`docs/developer-guide.md`](docs/developer-guide.md) — Architecture deep-dive, RBAC patterns, DB schema ERD
+- [`docs/ui-audit/`](docs/ui-audit/) — Phase 0 audit reports (IA, routes, components, roles)
+- [Supabase RLS docs](https://supabase.com/docs/guides/database/postgres/row-level-security)
+- [Next.js App Router docs](https://nextjs.org/docs/app)
