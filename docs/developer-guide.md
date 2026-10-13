@@ -1,6 +1,6 @@
-# Developer Guide: CRM Clone Codebase
+# Cloudora CRM — Developer Guide
 
-Welcome to the CRM Clone project! This guide provides a detailed technical overview to help you navigate, understand, contribute to, and deploy the codebase.
+Welcome to the Cloudora CRM project! This guide provides a detailed technical overview to help you navigate, understand, contribute to, and deploy the codebase.
 
 ## 1. Architecture Overview
 This platform is a **multi-tenant SaaS CRM** built on the **Next.js App Router** and powered by **Supabase**. It uses server-side rendering (SSR) and Server Actions for data mutation, ensuring a secure and fast experience.
