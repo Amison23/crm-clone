@@ -1,5 +1,6 @@
 import { getCurrentEmployee } from '@/lib/auth/current-employee';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { features } from '@/lib/features';
 import { VisualBotBuilderClient } from './visual-bot-builder-client';
 
 /**
@@ -8,6 +9,10 @@ import { VisualBotBuilderClient } from './visual-bot-builder-client';
  * No role gate — any authenticated employee with a company may manage their FAQs.
  */
 export default async function VisualBotBuilderPage() {
+  if (!features.botBuilder) {
+    notFound();
+  }
+
   const employee = await getCurrentEmployee();
   if (!employee) redirect('/auth/login');
   if (!employee.companyId) redirect('/protected');

@@ -1,4 +1,4 @@
-export type FeatureFlag = "telephony" | "ivrBuilder" | "softphone" | "botBuilder";
+import { FeatureFlag } from "./features";
 
 export interface NavItem {
   href: string;

@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getThroughputMetrics, type ThroughputMetrics } from "@/app/actions/throughput";
 import toast from "react-hot-toast";
 import { navItems, systemItems, platformItems } from "@/lib/nav";
+import { features } from "@/lib/features";
 
 export default function DashboardShell({ children, role, name }: { children: ReactNode; role?: string; name?: string }) {
   const router = useRouter();
@@ -43,9 +44,10 @@ export default function DashboardShell({ children, role, name }: { children: Rea
     setSidebarOpen(false);
   }, [pathname]);
 
-  // Filter items based on role
-  const filteredNav = navItems.filter(item => item.roles?.includes(role || "sales_agent"));
-  const filteredSystem = systemItems.filter(item => item.roles?.includes(role || "sales_agent"));
+  // Filter items based on role and feature flags
+  const filteredNav = navItems.filter(item => (!item.flag || features[item.flag]) && item.roles?.includes(role || "sales_agent"));
+  const filteredSystem = systemItems.filter(item => (!item.flag || features[item.flag]) && item.roles?.includes(role || "sales_agent"));
+  const filteredPlatform = platformItems.filter(item => !item.flag || features[item.flag]);
 
   /* ── Sidebar content (shared between desktop & mobile) ── */
   const sidebarContent = (
@@ -92,7 +94,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
                 </button>
                 {platformOpen && (
                   <div className="pl-9 space-y-1 mt-1">
-                    {platformItems.map((item) => {
+                    {filteredPlatform.map((item) => {
                       const isItemActive = pathname.startsWith(item.href);
                       return (
                         <Link

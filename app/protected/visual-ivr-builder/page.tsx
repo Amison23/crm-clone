@@ -1,4 +1,11 @@
+import { notFound } from "next/navigation";
+import { features } from "@/lib/features";
+
 export default function VisualIvrBuilder() {
+  if (!features.ivrBuilder) {
+    notFound();
+  }
+
   return (
     <>
 
