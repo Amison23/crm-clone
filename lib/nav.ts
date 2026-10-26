@@ -10,17 +10,20 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
+  // ── Superadmin sees Global Command only (below) + Dev + Server Node + Chat
   { href: "/protected", icon: "dashboard", label: "Dashboard", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/dev", icon: "code", label: "Dev Workspace", roles: ["dev", "superadmin"] },
-  { href: "/protected/server-admin", icon: "dns", label: "Server Node", roles: ["server_admin", "superadmin"] },
+  { href: "/protected/dev", icon: "code", label: "Dev Workspace", roles: ["dev"] },
+  { href: "/protected/server-admin", icon: "dns", label: "Server Node", roles: ["server_admin"] },
   { href: "/protected/sales-agent", icon: "badge", label: "My Workspace", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
-  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin", "superadmin"] },
+  { href: "/protected/executive-dashboard", icon: "monitoring", label: "Executive", roles: ["admin"] },
   { href: "/protected/crm-leads-table", icon: "groups", label: "Leads", roles: ["sales_agent", "admin"] },
-  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
+  { href: "/protected/task-management-board", icon: "assignment_turned_in", label: "Tasks", roles: ["sales_agent", "admin", "server_admin", "dev"] },
   { href: "/protected/omnichannel-chat-inbox", icon: "chat_bubble", label: "Chat", roles: ["sales_agent", "admin", "server_admin", "dev", "superadmin"] },
   { href: "/protected/tickets", icon: "support_agent", label: "Support", roles: ["sales_agent", "admin", "server_admin", "dev"] },
+  // Global Command is the superadmin's settings hub (sub-items in platformItems below)
   { href: "/protected/super-admin", icon: "public", label: "Global Command", roles: ["superadmin"] },
-  { href: "/protected/settings", icon: "settings", label: "Settings", roles: ["superadmin", "server_admin", "admin", "sales_agent", "dev"] }
+  // Settings excluded for superadmin — they use /super-admin/settings inside Global Command
+  { href: "/protected/settings", icon: "settings", label: "Settings", roles: ["server_admin", "admin", "sales_agent", "dev"] },
 ];
 
 export const systemItems: NavItem[] = [

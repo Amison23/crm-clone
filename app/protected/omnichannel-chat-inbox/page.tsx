@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getColleagues, Colleague } from './actions'
 
 const supabase = createClient()
 
@@ -38,10 +39,11 @@ export default function OmnichannelChatInbox() {
   const [messageInput, setMessageInput] = useState('')
   const [loading, setLoading] = useState(true)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentRole, setCurrentRole] = useState<string>('')
   const [employeeName, setEmployeeName] = useState<string>('')
   const [companyId, setCompanyId] = useState<string | null>(null)
-  const [teamMembers, setTeamMembers] = useState<any[]>([])
-  const [filter, setFilter] = useState<FilterTab>('unassigned')
+  const [teamMembers, setTeamMembers] = useState<Colleague[]>([])
+  const [filter, setFilter] = useState<FilterTab>('mine')
   const [searchQuery, setSearchQuery] = useState('')
   const [colleagueSearchQuery, setColleagueSearchQuery] = useState('')
   const [isCreatingNewChat, setIsCreatingNewChat] = useState(false)
@@ -52,28 +54,51 @@ export default function OmnichannelChatInbox() {
       const { data: { user } } = await supabase.auth.getUser()
       setCurrentUser(user)
 
-      // Fetch and cache employee full_name once — employees.id === auth.uid()
       if (user) {
-        const { data: employee } = await supabase
-          .from('employees')
-          .select('full_name, company_id')
-          .eq('id', user.id)
-          .single()
-        setEmployeeName(employee?.full_name || user.email || '')
-        setCompanyId(employee?.company_id || null)
+        // Fetch current employee profile and team members securely via server action
+        const colleaguesRes = await getColleagues()
 
-        // Fetch team members in the same company
-        if (employee?.company_id) {
-          const { data: team } = await supabase
+        let empCompId: string | null = null
+        if (colleaguesRes.success && colleaguesRes.currentEmployee) {
+          const emp = colleaguesRes.currentEmployee
+          empCompId = emp.company_id || null
+          setEmployeeName(emp.full_name || user.email || '')
+          setCompanyId(empCompId)
+          setCurrentRole(emp.role || '')
+          setTeamMembers(colleaguesRes.data || [])
+        } else {
+          // Fallback: direct query with full columns if server action isn't available
+          const { data: employee, error: empError } = await supabase
             .from('employees')
-            .select('id, full_name, email_address, role')
-            .eq('company_id', employee.company_id)
-            .neq('id', user.id)
-            .in('role', ['admin', 'sales_agent', 'dev', 'superadmin', 'server_admin'])
-          setTeamMembers(team || [])
+            .select('id, full_name, email_address, role, company_id')
+            .eq('id', user.id)
+            .maybeSingle()
+
+          if (empError) {
+            console.error('Error fetching current employee profile:', empError)
+          }
+
+          empCompId = employee?.company_id || null
+          setEmployeeName(employee?.full_name || user.email || '')
+          setCompanyId(empCompId)
+          setCurrentRole(employee?.role || '')
+
+          if (empCompId) {
+            const { data: team, error: teamError } = await supabase
+              .from('employees')
+              .select('id, full_name, email_address, role, company_id')
+              .eq('company_id', empCompId)
+              .neq('id', user.id)
+              .neq('role', 'client')
+
+            if (teamError) {
+              console.error('Error fetching team members:', teamError)
+            }
+            setTeamMembers((team as Colleague[]) || [])
+          }
         }
 
-        await loadChats('unassigned', user?.id, employee?.company_id, user?.email)
+        await loadChats('unassigned', user.id, empCompId, user.email)
       } else {
         await loadChats('unassigned', undefined, null, undefined)
       }
@@ -124,13 +149,8 @@ export default function OmnichannelChatInbox() {
       let query = supabase.from('chat_sessions').select('*').order('created_at', { ascending: false }).eq('is_deleted', false)
       if (compId) query = query.eq('company_id', compId)
       if (tab === 'unassigned') query = query.is('assigned_to', null).eq('status', 'unassigned')
-      else if (tab === 'mine') {
-        if (userEmail) {
-          query = query.or(`assigned_to.eq.${userId ?? ''},customer_email.eq.${userEmail}`)
-        } else {
-          query = query.eq('assigned_to', userId ?? '')
-        }
-      }
+      // FIX: strict assigned_to match only — do NOT match customer_email which caused own chats to bleed in
+      else if (tab === 'mine') query = query.eq('assigned_to', userId ?? '')
       else if (tab === 'bot-only') query = query.eq('status', 'bot_only')
       const { data } = await query
       setChats(data || [])
@@ -151,6 +171,12 @@ export default function OmnichannelChatInbox() {
   const handleSelectChat = async (chat: ChatSession) => {
     setSelectedChat(chat)
     await loadMessages(chat.id)
+    // Mark conversation as read
+    try {
+      await supabase.rpc('mark_conversation_read', { conversation_id: chat.id })
+    } catch (_) {
+      // RPC may not exist yet — silently skip
+    }
   }
 
   const handleFilterChange = (tab: FilterTab) => {
@@ -171,6 +197,18 @@ export default function OmnichannelChatInbox() {
     if (!error) {
       setSelectedChat({ ...selectedChat, assigned_to: currentUser.id, status: 'active' })
       loadChats(filter, currentUser.id)
+    }
+  }
+  const closeChat = async () => {
+    if (!selectedChat) return
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update({ status: 'closed' })
+      .eq('id', selectedChat.id)
+    if (!error) {
+      setSelectedChat({ ...selectedChat, status: 'closed' })
+      // Refresh list — closed chats won't appear in mine/unassigned tabs
+      loadChats(filter, currentUser?.id, companyId, currentUser?.email)
     }
   }
 
@@ -210,10 +248,9 @@ export default function OmnichannelChatInbox() {
   })
 
   const filteredTeam = teamMembers.filter((t) => {
-    // Show all team members in the "Start New Chat" view if no query, but hide them in the sidebar if no query.
-    // We can handle the sidebar hiding down in the render, but here we'll filter based on either query.
-    if (!searchQuery && !colleagueSearchQuery) return true 
-    const q = (searchQuery || colleagueSearchQuery).toLowerCase()
+    // FIX: use colleagueSearchQuery only — keeps team results separate from chat search
+    if (!colleagueSearchQuery) return true
+    const q = colleagueSearchQuery.toLowerCase()
     return t.full_name?.toLowerCase().includes(q) || t.email_address?.toLowerCase().includes(q)
   })
 
@@ -232,7 +269,7 @@ export default function OmnichannelChatInbox() {
     if (!existingChat) {
       // Create a new internal chat session
       const { data, error } = await supabase.from('chat_sessions').insert({
-        company_id: companyId,
+        company_id: companyId || teamMember.company_id,
         customer_name: teamMember.full_name,
         customer_email: teamMember.email_address,
         assigned_to: currentUser?.id,
@@ -340,7 +377,10 @@ export default function OmnichannelChatInbox() {
                     <div className="flex items-center gap-1">
                       <span className="material-symbols-outlined text-[13px] text-primary">language</span>
                       <span className="text-[10px] uppercase font-bold text-slate-400">
-                        {chat.source === 'landing_page' ? 'Web Chat' : 'CRM'}
+                        {chat.source === 'landing_page' ? 'Web Chat'
+                          : chat.source === 'internal' ? 'Internal'
+                          : chat.source === 'crm' ? 'CRM'
+                          : chat.source?.replace('_', ' ') || 'Web'}
                       </span>
                     </div>
                   </div>
@@ -423,12 +463,21 @@ export default function OmnichannelChatInbox() {
                     Claim Chat
                   </button>
                 )}
+                {selectedChat.status !== 'closed' && (
+                  <button
+                    onClick={closeChat}
+                    className="px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-semibold hover:bg-amber-200 transition-colors flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                    Close Chat
+                  </button>
+                )}
                   <button
                     onClick={() => { setSelectedChat(null); setIsCreatingNewChat(false); }}
                     className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-semibold hover:bg-slate-200 transition-colors flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">close</span>
-                    Close
+                    Dismiss
                   </button>
                   <button
                     onClick={deleteChat}
@@ -542,7 +591,9 @@ export default function OmnichannelChatInbox() {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary transition-colors">{member.full_name || 'Unknown'}</p>
-                          <p className="text-xs text-slate-400">{member.role === 'admin' ? 'Admin' : member.role === 'dev' ? 'Dev' : member.role === 'superadmin' ? 'Super Admin' : 'Sales Agent'}</p>
+                          <p className="text-xs text-slate-400">
+                            {member.role === 'admin' ? 'Admin' : member.role === 'dev' ? 'Dev' : member.role === 'superadmin' || member.role === 'super_admin' ? 'Super Admin' : member.role === 'server_admin' ? 'Server Admin' : 'Sales Agent'}
+                          </p>
                         </div>
                       </div>
                       <span className="material-symbols-outlined text-slate-300 group-hover:text-primary transition-colors text-sm">chat</span>

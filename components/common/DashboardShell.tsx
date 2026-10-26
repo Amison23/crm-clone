@@ -14,7 +14,7 @@ export default function DashboardShell({ children, role, name }: { children: Rea
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [platformOpen, setPlatformOpen] = useState(pathname.startsWith('/protected/super-admin'));
+  const [platformOpen, setPlatformOpen] = useState(role === 'superadmin' || pathname.startsWith('/protected/super-admin'));
   const [systemOpen, setSystemOpen] = useState(false);
   const [throughputOpen, setThroughputOpen] = useState(true);
   const [metrics, setMetrics] = useState<ThroughputMetrics | null>(null);
@@ -74,23 +74,27 @@ export default function DashboardShell({ children, role, name }: { children: Rea
               : pathname.startsWith(href);
 
           if (isPlatformTrigger) {
+            const isSuperadmin = role === 'superadmin';
             return (
               <div key={href} className="space-y-1">
                 <button
-                  onClick={() => setPlatformOpen(!platformOpen)}
+                  onClick={() => !isSuperadmin && setPlatformOpen(!platformOpen)}
                   className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? "bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
                       : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-indigo-600 dark:hover:text-indigo-400"
-                  }`}
+                  } ${isSuperadmin ? 'cursor-default' : ''}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="material-symbols-outlined text-[22px]">{icon}</span>
                     <span>{label}</span>
                   </div>
-                  <span className={`material-symbols-outlined text-[18px] transition-transform ${platformOpen ? "rotate-180" : ""}`}>
-                    expand_more
-                  </span>
+                  {/* Only show collapse chevron for non-superadmin roles */}
+                  {!isSuperadmin && (
+                    <span className={`material-symbols-outlined text-[18px] transition-transform ${platformOpen ? "rotate-180" : ""}`}>
+                      expand_more
+                    </span>
+                  )}
                 </button>
                 {platformOpen && (
                   <div className="pl-9 space-y-1 mt-1">
