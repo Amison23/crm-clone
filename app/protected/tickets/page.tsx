@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import TicketsClient from "@/components/tickets/TicketsClient";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +17,14 @@ export default async function TicketsPage() {
   let actualRole: string | undefined;
   let companyId = "";
 
+  const adminClient = createAdminClient();
+
   if (user) {
-    const { data: employee } = await supabase
+    const { data: employee } = await adminClient
       .from("employees")
       .select("role, company_id")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
     actualRole = employee?.role;
 
@@ -39,34 +41,63 @@ export default async function TicketsPage() {
     companyId = employee?.company_id ?? "";
   }
 
-  // Fetch tickets with joined customer and employee data
-  let ticketsQuery = supabase
+  // Fetch all employees for the company (using admin client to prevent RLS hiding colleagues from dev/agents)
+  let employees: any[] = [];
+  if (companyId) {
+    const { data: empData } = await adminClient
+      .from("employees")
+      .select("id, full_name, role, email_address")
+      .eq("company_id", companyId);
+    employees = empData ?? [];
+  } else if (actualRole === "superadmin") {
+    const { data: empData } = await adminClient
+      .from("employees")
+      .select("id, full_name, role, email_address")
+      .neq("role", "client");
+    employees = empData ?? [];
+  }
+
+  // Fetch tickets with reliable server query
+  let ticketsQuery = adminClient
     .from("tickets")
-    .select(`
-      *,
-      assigned_agent:employees!tickets_assigned_to_fkey(id, full_name, role),
-      customer:customers!tickets_client_id_fkey(full_name)
-    `)
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (companyId) {
-    // Admins & agents only see their company's tickets
     ticketsQuery = ticketsQuery.eq("company_id", companyId);
   }
 
-  const { data: ticketsData } = await ticketsQuery;
-
-  const finalTicketsData = ticketsData ?? [];
-
-  // Fetch all employees for the company (to show workload even for those with 0 tickets)
-  let employees: any[] = [];
-  if (companyId) {
-    const { data: empData } = await supabase
-      .from("employees")
-      .select("id, full_name, role")
-      .eq("company_id", companyId);
-    employees = empData ?? [];
+  const { data: rawTicketsData, error: ticketError } = await ticketsQuery;
+  if (ticketError) {
+    console.error("[TicketsPage] Error fetching tickets:", ticketError);
   }
+
+  // Fetch customers to resolve client_id
+  let customers: any[] = [];
+  if (companyId) {
+    const { data: custData } = await adminClient
+      .from("customers")
+      .select("id, full_name")
+      .eq("company_id", companyId);
+    customers = custData ?? [];
+  }
+
+  // Map joined customer and assigned_agent safely
+  const ticketsData = (rawTicketsData ?? []).map((t: any) => {
+    const assignedAgent = employees.find((e) => e.id === t.assigned_to) ?? null;
+    const customerObj =
+      customers.find((c) => c.id === t.client_id) ||
+      employees.find((e) => e.id === t.client_id) ||
+      null;
+
+    return {
+      ...t,
+      assigned_agent: assignedAgent
+        ? { id: assignedAgent.id, full_name: assignedAgent.full_name, role: assignedAgent.role }
+        : null,
+      customer: customerObj ? { full_name: customerObj.full_name } : null,
+    };
+  });
 
   return (
     <>
@@ -84,7 +115,7 @@ export default async function TicketsPage() {
       <TicketsClient
         role={role}
         actualRole={actualRole}
-        ticketsData={finalTicketsData}
+        ticketsData={ticketsData}
         companyEmployees={employees}
         companyId={companyId}
         currentUserId={user?.id}

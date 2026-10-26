@@ -1,6 +1,3 @@
-
-
-
 export default function DashboardLoading() {
   return (
     <div className="p-8 w-full space-y-12 pb-20 animate-pulse">

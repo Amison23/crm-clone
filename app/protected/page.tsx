@@ -87,7 +87,7 @@ async function DashboardContent() {
       icon: LayoutDashboard,
       bg: "bg-green-100 dark:bg-green-900/40",
       iconColor: "text-green-600 dark:text-green-400",
-      roles: ["sales_agent", "admin", "dev", "superadmin"],
+      roles: ["sales_agent", "dev", "superadmin"],
       desc: "Tasks & pipeline queue",
     },
     {

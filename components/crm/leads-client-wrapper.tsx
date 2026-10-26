@@ -108,6 +108,7 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [role, setRole] = useState<string | null>(initialRole);
+  const [addLead, setAddLead] = useState(false)
 
   // Filter States
   const [statusFilter, setStatusFilter] = useState("All");
@@ -311,6 +312,16 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
                   >
                     <Upload className="mr-1.5 h-3.5 w-3.5" />
                     Upload CSV
+                  </Button>
+                </div>
+                <div>
+                  <Button
+                    onClick={() => setAddLead(true)}
+                    className="w-full sm:w-auto text-xs"
+                    size="sm"
+                  >
+                    <Plus className="mr-1.5 h-3.5 w-3.5"/>
+                    Add Lead
                   </Button>
                 </div>
               </div>
@@ -902,6 +913,44 @@ export function LeadsClientWrapper({ initialLeads, salesAgents, initialTasks = [
                   }}
                   onSuccess={() => setEditingLead(null)}
                   onMessage={showToast}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Add Lead Modal */}
+          {addLead && (
+            <div
+              className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-4 overflow-y-auto"
+              onClick={() => setAddLead(false)}
+            >
+              <div
+                className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-lg p-6 relative mx-auto mt-16 mb-8"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setAddLead(false)}
+                  className="absolute top-4 right-4 h-8 w-8 flex items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-lg">close</span>
+                </button>
+                <div className="mb-6">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
+                    Add New Lead
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Fill in the details to create a new lead record.
+                  </p>
+                </div>
+                <AddLeadForm
+                  onSuccess={() => {
+                    setAddLead(false);
+                    router.refresh();
+                  }}
+                  onMessage={(type, msg) => {
+                    if (type === "success") toast.success(msg);
+                    else toast.error(msg);
+                  }}
                 />
               </div>
             </div>

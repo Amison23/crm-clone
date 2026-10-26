@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { toast } from "react-hot-toast";
+import { requestTicketFollowUp, resolveTicket } from "@/app/protected/tickets/actions";
 import {
   StatusBadge,
   PriorityBadge,
@@ -162,65 +164,89 @@ export const TicketModal = ({
 }: TicketModalProps) => {
   const supabase = createClient();
   const router = useRouter();
+  const [ticketStatus, setTicketStatus] = useState<TicketStatus>(selectedTicket.status);
+  const isResolved = ticketStatus === "Resolved";
   const [showAssign, setShowAssign] = useState(false);
   const [agent, setAgent] = useState(selectedTicket.agent);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(true);
   const [saving, setSaving] = useState(false);
-
+  const [followingUp, setFollowingUp] = useState(false);
+  
   // Load real audit data: ticket_assignments + ticket_comments
-  useEffect(() => {
+  const loadAudit = async () => {
     if (!rawTicketId) return;
-    async function load() {
-      setLoadingAudit(true);
-      const entries: AuditEntry[] = [];
+    setLoadingAudit(true);
+    const entries: AuditEntry[] = [];
 
-      // Fetch assignment history
-      const { data: assignments } = await supabase
-        .from("ticket_assignments")
-        .select("id, assigned_to, assigned_by, created_at")
-        .eq("ticket_id", rawTicketId)
-        .order("created_at", { ascending: false });
+    // Fetch assignment history
+    const { data: assignments } = await supabase
+      .from("ticket_assignments")
+      .select("id, assigned_to, assigned_by, created_at")
+      .eq("ticket_id", rawTicketId)
+      .order("created_at", { ascending: false });
 
-      (assignments ?? []).forEach((a) => {
-        entries.push({
-          id: a.id,
-          action: "assigned",
-          actor: "Agent",
-          actorInitials: "AG",
-          description: `Ticket assigned`,
-          timestamp: new Date(a.created_at).toLocaleString(),
-        });
+    (assignments ?? []).forEach((a) => {
+      entries.push({
+        id: a.id,
+        action: "assigned",
+        actor: "Agent",
+        actorInitials: "AG",
+        description: `Ticket assigned`,
+        timestamp: new Date(a.created_at).toLocaleString(),
       });
+    });
 
-      // Fetch all comments (public + internal) for the agent/admin view
-      const { data: comments } = await supabase
-        .from("ticket_comments")
-        .select("id, author_id, body, is_internal, created_at")
-        .eq("ticket_id", rawTicketId)
-        .order("created_at", { ascending: false });
+    // Fetch all comments (public + internal) for the agent/admin view
+    const { data: comments } = await supabase
+      .from("ticket_comments")
+      .select("id, author_id, body, is_internal, created_at")
+      .eq("ticket_id", rawTicketId)
+      .order("created_at", { ascending: false });
 
-      (comments ?? []).forEach((c) => {
-        entries.push({
-          id: c.id,
-          action: "comment",
-          actor: c.is_internal ? "Internal Note" : "Comment",
-          actorInitials: c.is_internal ? "🔒" : "💬",
-          description: c.body,
-          timestamp: new Date(c.created_at).toLocaleString(),
-        });
+    (comments ?? []).forEach((c) => {
+      const isFollowUp = c.body?.startsWith("🔔 Follow-up");
+      entries.push({
+        id: c.id,
+        action: "comment",
+        actor: isFollowUp ? "Follow-Up Alert" : c.is_internal ? "Internal Note" : "Comment",
+        actorInitials: isFollowUp ? "🔔" : c.is_internal ? "🔒" : "💬",
+        description: c.body,
+        timestamp: new Date(c.created_at).toLocaleString(),
       });
+    });
 
-      // Sort by timestamp descending
-      entries.sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-      );
+    // Sort by timestamp descending
+    entries.sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
 
-      setAuditLog(entries);
-      setLoadingAudit(false);
-    }
-    load();
+    setAuditLog(entries);
+    setLoadingAudit(false);
+  };
+
+  useEffect(() => {
+    loadAudit();
   }, [rawTicketId]);
+
+  async function handleModalFollowUp() {
+    if (!rawTicketId) return;
+    setFollowingUp(true);
+    try {
+      const res = await requestTicketFollowUp(rawTicketId);
+      if (res.success) {
+        toast.success(`Follow-up sent to ${res.notifiedName} (${res.notifiedRole})`);
+        await loadAudit();
+        router.refresh();
+      } else {
+        toast.error(res.error || "Failed to trigger follow-up");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An error occurred");
+    } finally {
+      setFollowingUp(false);
+    }
+  }
 
   async function handleAssign(emp: DbEmployee) {
     if (!rawTicketId) return;
@@ -255,19 +281,23 @@ export const TicketModal = ({
   async function handleResolve() {
     if (!rawTicketId) return;
     setSaving(true);
-    await supabase
-      .from("tickets")
-      .update({
-        status: "resolved",
-        resolved_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", rawTicketId);
-    onStatusChange("Resolved");
-    setSaving(false);
-    setOpenModal(false);
-    onClose();
-    router.refresh();
+    try {
+      const res = await resolveTicket(rawTicketId);
+      if (res.success) {
+        setTicketStatus("Resolved");
+        onStatusChange("Resolved");
+        toast.success("Ticket marked as resolved");
+        setOpenModal(false);
+        onClose();
+        router.refresh();
+      } else {
+        toast.error(res.error || "Failed to resolve ticket");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "An unexpected error occurred");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!openModal) return null;
@@ -291,7 +321,15 @@ export const TicketModal = ({
           {/* Header */}
           <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-200 dark:border-slate-800 flex-shrink-0">
             <div>
-              <p className="text-xs text-slate-400 mb-1">{selectedTicket?.id}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-xs text-slate-400">{selectedTicket?.id}</p>
+                {isResolved && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                    <span className="material-symbols-outlined text-[13px] leading-none">check_circle</span>
+                    Resolved
+                  </span>
+                )}
+              </div>
               <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">{selectedTicket?.subject}</h2>
             </div>
             <button
@@ -306,7 +344,7 @@ export const TicketModal = ({
           <div className="overflow-y-auto flex-1">
             {/* Badges */}
             <div className="flex items-center gap-2 px-6 py-3 border-b border-slate-200 dark:border-slate-800 flex-wrap">
-              <StatusBadge status={selectedTicket?.status} />
+              <StatusBadge status={ticketStatus} />
               <PriorityBadge priority={selectedTicket?.priority} />
               <SlaBadge sla={selectedTicket?.sla} />
               <span className="ml-auto text-xs text-slate-400">
@@ -326,7 +364,16 @@ export const TicketModal = ({
             <div className="grid grid-cols-3 gap-4 px-6 py-4 border-b border-slate-200 dark:border-slate-800">
               {[
                 { label: "Agent", value: agent },
-                { label: "Customer", value: selectedTicket?.customer },
+                {
+                  label: selectedTicket?.ticketType === 'internal'
+                    ? (() => {
+                        const r = selectedTicket?.clientRole || '';
+                        const map: Record<string, string> = { dev: 'Dev', sales_agent: 'Sales Agent', admin: 'Admin', server_admin: 'Server Admin', superadmin: 'Super Admin' };
+                        return map[r] || 'Requester';
+                      })()
+                    : 'Customer',
+                  value: selectedTicket?.customer,
+                },
                 { label: "Opened", value: selectedTicket?.createdAt },
               ].map(({ label, value }) => (
                 <div key={label}>
@@ -357,8 +404,20 @@ export const TicketModal = ({
             >
               Close
             </button>
-            {actualRole !== "superadmin" && (
+
+            {actualRole == "admin" && !isResolved && (
               <>
+                <button
+                  onClick={handleModalFollowUp}
+                  disabled={followingUp}
+                  className="px-4 py-2 text-sm font-medium rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                  title={selectedTicket?.agentId ? `Notify assigned agent (${selectedTicket.agent})` : "Notify Server Admin to assign an agent"}
+                >
+                  <span className="material-symbols-outlined text-base leading-none">
+                    {followingUp ? "progress_activity" : "notifications_active"}
+                  </span>
+                  {followingUp ? "Sending…" : "Follow up"}
+                </button>
                 <button
                   onClick={() => setShowAssign(true)}
                   disabled={saving}
@@ -367,15 +426,22 @@ export const TicketModal = ({
                   <span className="material-symbols-outlined text-base leading-none">person_add</span>
                   Assign agent
                 </button>
-                <button
-                  onClick={handleResolve}
-                  disabled={saving || selectedTicket?.status === "Resolved"}
-                  className="px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50"
-                >
-                  {saving ? "Saving…" : "Mark resolved"}
-                </button>
               </>
             )}
+            <button
+              onClick={handleResolve}
+              disabled={saving || isResolved}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-all shadow-sm flex items-center gap-1.5 ${
+                isResolved
+                  ? "bg-emerald-600 text-white cursor-not-allowed opacity-90"
+                  : "bg-gradient-to-r from-orange-500 to-red-500 text-white hover:opacity-90 disabled:opacity-50"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base leading-none">
+                {saving ? "progress_activity" : isResolved ? "check_circle" : "check"}
+              </span>
+              {saving ? "Saving…" : isResolved ? "Resolved" : "Mark resolved"}
+            </button>
           </div>
         </div>
       </div>
@@ -388,16 +454,47 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
   const start = tickets.length > 0 ? (page - 1) * tickets.length + 1 : 0;
   const end = start + tickets.length - (tickets.length > 0 ? 1 : 0);
 
+  const router = useRouter();
   const [openModal, setOpenModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [rawTicketId, setRawTicketId] = useState("");
   const [, setStatus] = useState<TicketStatus>("Open");
+  const [followUpLoading, setFollowUpLoading] = useState<string | null>(null);
 
+  const userRoleKey = actualRole || role;
   const filteredColumns: Record<string, string[]> = {
-    admin:      ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"],
-    sales_agent:["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent"],
-    customer:   ["Ticket ID", "Subject", "Status", "Priority", "SLA Status"],
+    admin: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent", "Actions"],
+    sales_agent: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent", "Actions"],
+    server_admin: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent", "Actions"],
+    superadmin: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent", "Actions"],
+    dev: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status", "Agent", "Actions"],
+    customer: ["Ticket ID", "Subject", "Status", "Priority", "SLA Status"],
   };
+
+  const columns = filteredColumns[userRoleKey] || filteredColumns[role] || filteredColumns.admin;
+
+  async function handleFollowUp(ticket: Ticket) {
+    const raw = rawTickets.find(
+      (r) => `#${r.id.slice(0, 8).toUpperCase()}` === ticket.id
+    );
+    const targetId = raw?.id || ticket.rawId;
+    if (!targetId) return;
+
+    setFollowUpLoading(ticket.rawId || ticket.id);
+    try {
+      const res = await requestTicketFollowUp(targetId);
+      if (res.success) {
+        toast.success(`Follow-up sent to ${res.notifiedName} (${res.notifiedRole})`);
+        router.refresh();
+      } else {
+        toast.error(res.error || "Failed to send follow-up");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Error sending follow-up");
+    } finally {
+      setFollowUpLoading(null);
+    }
+  }
 
   function openTicketModal(ticket: Ticket) {
     // Look up the raw UUID using the display ID prefix
@@ -436,9 +533,36 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
               </div>
 
               <div className="flex items-center justify-between pt-1 text-xs text-slate-500 dark:text-slate-400">
-                <span>Customer: <strong className="text-slate-700 dark:text-slate-200">{ticket.customer}</strong></span>
+                <span>
+                  {ticket.ticketType === 'internal'
+                    ? (() => { const r = ticket.clientRole || ''; const map: Record<string, string> = { dev: 'Dev', sales_agent: 'Sales Agent', admin: 'Admin', server_admin: 'Server Admin', superadmin: 'Super Admin' }; return map[r] || 'Requester'; })()
+                    : 'Customer'
+                  }{': '}<strong className="text-slate-700 dark:text-slate-200">{ticket.customer}</strong>
+                </span>
                 <span>Agent: <strong className="text-slate-700 dark:text-slate-200">{ticket.agent}</strong></span>
               </div>
+
+              {columns.includes("Actions") && (
+                <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800" onClick={(e) => e.stopPropagation()}>
+                  {ticket.status === "Resolved" ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 py-1">
+                      <span className="material-symbols-outlined text-[15px] leading-none">check_circle</span>
+                      Resolved
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleFollowUp(ticket)}
+                      disabled={followUpLoading === (ticket.rawId || ticket.id)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 transition-colors disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">
+                        {followUpLoading === (ticket.rawId || ticket.id) ? "progress_activity" : "notifications_active"}
+                      </span>
+                      {followUpLoading === (ticket.rawId || ticket.id) ? "Notifying…" : "Follow up"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ))
         ) : (
@@ -453,7 +577,7 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-800/50">
-              {filteredColumns[role].map((col) => (
+              {columns.map((col) => (
                 <th key={col} className="px-6 py-4 text-xs font-bold uppercase tracking-wider border-b border-slate-200 dark:border-slate-800">
                   {col}
                 </th>
@@ -473,7 +597,10 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold">{ticket.subject}</span>
                       <span className="text-slate-500 dark:text-slate-400 text-xs">
-                        Customer: {ticket.customer} • {ticket.createdAt}
+                        {ticket.ticketType === 'internal'
+                          ? (() => { const r = ticket.clientRole || ''; const map: Record<string, string> = { dev: 'Dev', sales_agent: 'Sales Agent', admin: 'Admin', server_admin: 'Server Admin', superadmin: 'Super Admin' }; return map[r] || 'Requester'; })()
+                          : 'Customer'
+                        }{': '}{ticket.customer} • {ticket.createdAt}
                       </span>
                     </div>
                   </td>
@@ -498,11 +625,33 @@ export default function TicketTable({ tickets, rawTickets, total, page, pageCoun
                       <span className="text-slate-600 dark:text-slate-400 text-sm font-medium">{ticket.agent}</span>
                     )}
                   </td>
+                  {columns.includes("Actions") && (
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      {ticket.status === "Resolved" ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          <span className="material-symbols-outlined text-[15px] leading-none">check_circle</span>
+                          Resolved
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => handleFollowUp(ticket)}
+                          disabled={followUpLoading === (ticket.rawId || ticket.id)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors shadow-xs disabled:opacity-50"
+                          title={ticket.agentId ? `Notify assigned agent (${ticket.agent})` : "Notify Server Admin to assign an agent"}
+                        >
+                          <span className="material-symbols-outlined text-[15px]">
+                            {followUpLoading === (ticket.rawId || ticket.id) ? "progress_activity" : "notifications_active"}
+                          </span>
+                          {followUpLoading === (ticket.rawId || ticket.id) ? "Notifying…" : "Follow up"}
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={columns.length} className="px-6 py-12 text-center text-slate-500 dark:text-slate-400">
                   No tickets found matching this filter.
                 </td>
               </tr>

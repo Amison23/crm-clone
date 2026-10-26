@@ -31,7 +31,14 @@ export async function getCompanyProducts(companyId: string) {
     return { success: false, error: error.message };
   }
 
-  return { success: true, products };
+  // Normalize product properties to support both schema column styles
+  const normalizedProducts = (products || []).map((p: any) => ({
+    ...p,
+    name: p.product_name ?? p.name,
+    description: p.product_description ?? p.description,
+  }));
+
+  return { success: true, products: normalizedProducts };
 }
 
 export async function createCompanyProduct(companyId: string, name: string, product_description: string) {
@@ -48,17 +55,19 @@ export async function createCompanyProduct(companyId: string, name: string, prod
     .single();
 
   if (!profile || profile.role !== "admin" || profile.company_id !== companyId) {
-    return { success: false, error: "Unauthorized" };
+    return { success: false, error: "Unauthorized to add products" };
   }
 
   const adminClient = createAdminClient();
   
+  // The live database schema uses product_name and product_description
   const { data: product, error } = await adminClient
     .from("products")
     .insert({
-      name,
-      description: product_description,
-      company_id: companyId
+      company_id: companyId,
+      employee_id: user.id,
+      product_name: name,
+      product_description: product_description
     })
     .select()
     .single();
@@ -67,7 +76,13 @@ export async function createCompanyProduct(companyId: string, name: string, prod
     return { success: false, error: error.message };
   }
 
-  return { success: true, product };
+  const normalized = product ? {
+    ...product,
+    name: (product as any).product_name ?? (product as any).name,
+    description: (product as any).product_description ?? (product as any).description
+  } : product;
+
+  return { success: true, product: normalized };
 }
 
 export async function getAgentProducts(companyId: string) {
@@ -105,6 +120,11 @@ export async function getAgentProducts(companyId: string) {
     .in("agent_id", agentIds);
 
   if (error) {
+    // If the table doesn't exist yet in the database, return empty gracefully
+    if (error.code === "PGRST204" || error.code === "42P01" || error.message?.includes("agent_products")) {
+      console.warn("[getAgentProducts] Table agent_products does not exist yet.");
+      return { success: true, agentProducts: [] };
+    }
     return { success: false, error: error.message };
   }
 
@@ -147,14 +167,24 @@ export async function toggleAgentProduct(companyId: string, agentId: string, pro
       .from("agent_products")
       .insert({ agent_id: agentId, product_id: productId });
     
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      if (error.code === "PGRST204" || error.code === "42P01" || error.message?.includes("agent_products")) {
+        return { success: false, error: "The 'agent_products' table has not been created in the database yet. Please run the migration script in Supabase SQL Editor." };
+      }
+      return { success: false, error: error.message };
+    }
   } else {
     const { error } = await adminClient
       .from("agent_products")
       .delete()
       .match({ agent_id: agentId, product_id: productId });
     
-    if (error) return { success: false, error: error.message };
+    if (error) {
+      if (error.code === "PGRST204" || error.code === "42P01" || error.message?.includes("agent_products")) {
+        return { success: false, error: "The 'agent_products' table has not been created in the database yet. Please run the migration script in Supabase SQL Editor." };
+      }
+      return { success: false, error: error.message };
+    }
   }
 
   return { success: true };

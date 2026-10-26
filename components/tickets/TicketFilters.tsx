@@ -134,6 +134,7 @@ export default function TicketFilters({
                 <option value="Overdue">Overdue</option>
                 <option value="At risk">At risk</option>
                 <option value="On track">On track</option>
+                <option value="Complete">Complete</option>
               </select>
             </div>
 

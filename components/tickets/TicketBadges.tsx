@@ -1,6 +1,6 @@
 export type TicketStatus = "Open" | "Pending" | "Resolved";
 export type TicketPriority = "Urgent" | "High" | "Medium" | "Low";
-export type SlaStatus = "Overdue" | "At risk" | "On track";
+export type SlaStatus = "Overdue" | "At risk" | "On track" | "Complete";
 export type AuditAction =
   | "assigned"
   | "status_change"
@@ -14,6 +14,7 @@ export interface Ticket {
   subject: string;
   description: string;
   customer: string;
+  clientRole?: string; // actual role of who filed the ticket (employee role or 'customer')
   createdAt: string;
   status: TicketStatus;
   priority: TicketPriority;
@@ -97,6 +98,7 @@ export function SlaBadge({ sla }: { sla: SlaStatus }) {
     Overdue: { text: "text-red-600 dark:text-red-400", dot: "bg-red-600 dark:bg-red-400 animate-pulse" },
     "At risk": { text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-600 dark:bg-amber-400" },
     "On track": { text: "text-emerald-600 dark:text-emerald-400", dot: "bg-emerald-600 dark:bg-emerald-400" },
+    Complete: { text: "text-white dark:text-white", dot: "bg-white dark:bg-white" }
   };
   const s = styles[sla];
   return (
